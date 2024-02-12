@@ -40,6 +40,7 @@
     <modules>
         <module>wayang-iejoin</module>
         <module>wayang-ml</module>
+        <module>wayang-training</module>
     </modules>
 
 </project>
