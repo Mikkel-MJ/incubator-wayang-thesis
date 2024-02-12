@@ -1,4 +1,4 @@
-package org.apache.wayang.planGeneration;
+package org.apache.wayang.training;
 
 import java.util.HashMap;
 
