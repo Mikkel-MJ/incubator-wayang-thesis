@@ -18,10 +18,10 @@
 
 package org.apache.wayang.training;
 
-import org.apache.wayang.core.plan.wayangplan.UnarySource;
-import org.apache.wayang.core.plan.wayangplan.WayangPlan;
-import org.apache.wayang.core.plan.wayangplan.UnarySink;
-import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.*;
+import org.reflections.Reflections;
+import java.util.Comparator;
+import java.util.HashSet;
 
 public class PlanGenerator {
 
@@ -52,6 +52,31 @@ public class PlanGenerator {
     return null;
   }
 
-  private float[][] markovTransistionMatrix;
+  /**
+   * Lists all basic operators in Wayang
+   */
+  private final HashSet<Object> operators = new HashSet<>(
+          new Reflections("org.apache.wayang.basic.operators").getSubTypesOf(OperatorBase.class)
+  );
 
+
+  /**
+   * a 2D float array, with each float representing a probability from 0 to 1
+   * The first column representing the current operator,
+   * and the rows representing the probability to transition to a new operator.
+   */
+  //        source, filter, join, map, sink
+  //source
+  //filter
+  //join
+  //map
+  //sink
+  private final double[][] markovTransitionMatrix =
+      {
+              {0.00,0.33,0.33,0.33,0.00},
+              {0.00,0.10,0.40,0.40,0.10},
+              {0.00,0.40,0.10,0.40,0.10},
+              {0.00,0.40,0.40,0.10,0.10},
+              {0.00,0.00,0.00,0.00,0.00},
+      };
 }
