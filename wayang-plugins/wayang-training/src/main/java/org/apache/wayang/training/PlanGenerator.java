@@ -18,9 +18,14 @@
 
 package org.apache.wayang.training;
 
+import org.apache.wayang.basic.operators.FilterOperator;
+import org.apache.wayang.basic.operators.JoinOperator;
+import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.core.plan.wayangplan.*;
 import org.reflections.Reflections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class PlanGenerator {
@@ -52,6 +57,8 @@ public class PlanGenerator {
     return null;
   }
 
+
+
   /**
    * Lists all basic operators in Wayang
    */
@@ -77,6 +84,14 @@ public class PlanGenerator {
               {0.00,0.10,0.40,0.40,0.10},
               {0.00,0.40,0.10,0.40,0.10},
               {0.00,0.40,0.40,0.10,0.10},
-              {0.00,0.00,0.00,0.00,0.00},
+              {0.00,0.00,0.00,0.00,0.0
       };
+
+  private final HashMap<Object, Integer> operatorToMatrixIndexMap = new HashMap<>(){{
+    put(TextFileSource.class, 0);
+    put(FilterOperator.class, 1);
+    put(JoinOperator.class, 2);
+    put(MapOperator.class, 3);
+    put(UnarySink.class, 4);
+  }};
 }
