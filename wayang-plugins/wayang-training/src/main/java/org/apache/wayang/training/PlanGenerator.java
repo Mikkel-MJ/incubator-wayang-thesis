@@ -24,6 +24,8 @@ import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.core.plan.wayangplan.*;
 import org.reflections.Reflections;
+
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +38,11 @@ public class PlanGenerator {
     // number of executionplans to generate
 
     System.out.println("HELLO WORLD");
+
+    PlanGenerator plnG = new PlanGenerator();
+
+    TextFileSource textFileSource = new TextFileSource("dummy");
+    plnG.generateNextOperator(textFileSource);
   }
 
   // Should be able to generate a WayangPlan that matches a workload
@@ -54,7 +61,28 @@ public class PlanGenerator {
   // should be able to give a operator back that can and make sense to connect to
   // the currentOperator
   private Operator generateNextOperator(Operator currentOperator) {
-    return null;
+    int indexOfCurrentOperator = operatorToMatrixIndexMap.get(currentOperator.getClass());
+    double rng = Math.random();
+    double[] probabilities = markovTransitionMatrix[indexOfCurrentOperator];
+
+    double aggregate = 0;
+    int selectedOperator = -1;
+    for (int i = 0; i < probabilities.length; i++) {
+      aggregate+= probabilities[i];
+
+      if (rng < aggregate) {
+        selectedOperator = i;
+        break;
+      }
+    }
+
+    try {
+      return (Operator) matrixIndexToOperatorMap.get(selectedOperator).getClass().getDeclaredConstructor().newInstance();
+    } catch(Exception e) {
+      e.printStackTrace();
+      System.out.println("Tried to generate an operator but failed. Possibly due to missing args.");
+      return null;
+    }
   }
 
 
@@ -84,7 +112,7 @@ public class PlanGenerator {
               {0.00,0.10,0.40,0.40,0.10},
               {0.00,0.40,0.10,0.40,0.10},
               {0.00,0.40,0.40,0.10,0.10},
-              {0.00,0.00,0.00,0.00,0.0
+              {0.00,0.00,0.00,0.00,0.00},
       };
 
   private final HashMap<Object, Integer> operatorToMatrixIndexMap = new HashMap<>(){{
@@ -93,5 +121,13 @@ public class PlanGenerator {
     put(JoinOperator.class, 2);
     put(MapOperator.class, 3);
     put(UnarySink.class, 4);
+  }};
+
+  private final HashMap<Integer, Object> matrixIndexToOperatorMap = new HashMap<>(){{
+    put(0, TextFileSource.class);
+    put( 1,FilterOperator.class);
+    put( 2,JoinOperator.class);
+    put( 3,MapOperator.class);
+    put( 4,UnarySink.class);
   }};
 }
