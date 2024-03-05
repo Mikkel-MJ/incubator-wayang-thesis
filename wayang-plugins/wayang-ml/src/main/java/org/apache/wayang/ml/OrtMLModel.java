@@ -18,10 +18,7 @@
 
 package org.apache.wayang.ml;
 
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
+import ai.onnxruntime.*;
 import ai.onnxruntime.OrtSession.Result;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
@@ -68,33 +65,19 @@ public class OrtMLModel {
     /**
      * Close the session after running, {@link #closeSession()}
      * @param encodedVector
-     * @return NaN on error, and a predicted cost on any other value.
+     * @return Returns an OnnxValue, you can call Onnx.getValue() and cast to the preferred output
      * @throws OrtException
      */
-    public double runModel(long[] encodedVector) throws OrtException {
-        double costPrediction;
-
-        OnnxTensor tensor = OnnxTensor.createTensor(env, encodedVector);
-        this.inputMap.put("input", tensor);
-        this.requestedOutputs.add("output");
-
-        BiFunction<Result, String, Float> unwrapFunc = (r, s) -> {
-            try {
-                return ((float[]) r.get(s).get().getValue())[0];
-            } catch (OrtException e) {
-                return Float.NaN;
-            }
-        };
-
+    public OnnxValue runModel(long[] encodedVector) throws OrtException {
         try (Result r = session.run(inputMap, requestedOutputs)) {
-            costPrediction = unwrapFunc.apply(r, "output");
+            OnnxTensor tensor = OnnxTensor.createTensor(env, encodedVector);
+            this.inputMap.put("input", tensor);
+            this.requestedOutputs.add("output");
+            return r.get(0);
         } finally {
             inputMap.clear();
             requestedOutputs.clear();
         }
-
-
-        return costPrediction;
     }
 
     /**
