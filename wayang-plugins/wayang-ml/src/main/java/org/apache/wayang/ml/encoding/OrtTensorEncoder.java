@@ -62,7 +62,7 @@ public class OrtTensorEncoder {
         return new Tuple<>(flatTrees, indexes);
     }
 
-    public static ArrayList<int[][]> transpose(ArrayList<int[][]> flatTrees) {
+    private static ArrayList<int[][]> transpose(ArrayList<int[][]> flatTrees) {
         return flatTrees.stream().map(tree -> IntStream.range(0, tree[0].length) //transpose matrix
                         .mapToObj(i -> Arrays.stream(tree)
                                 .mapToInt(row -> row[i])
@@ -77,7 +77,7 @@ public class OrtTensorEncoder {
      * @param root
      * @return
      */
-    public int[][] treeConvIndexes(Node<int[]> root){
+    private int[][] treeConvIndexes(Node<int[]> root){
         Node<Integer> indexTree = preorderIndexes(root, 1);
 
         ArrayList<int[]> acc = new ArrayList<>(); //in place of a generator
@@ -92,7 +92,7 @@ public class OrtTensorEncoder {
     }
 
 
-    public void treeConvIndexesStep(Node<Integer> root, ArrayList<int[]> acc){
+    private void treeConvIndexesStep(Node<Integer> root, ArrayList<int[]> acc){
         if (!root.isLeaf()) {
             int ID  = root.value;
             int lID = root.l.value;
@@ -111,14 +111,14 @@ public class OrtTensorEncoder {
      * An array containing the nodes ordered by their index.
      * @return
      */
-    public ArrayList<Node<?>> orderedNodes = new ArrayList<>();
+    private ArrayList<Node<?>> orderedNodes = new ArrayList<>();
 
     /**
      * transforms a tree into a tree of preorder indexes
      * @return
      * @param idx needs to default to one.
      */
-    public Node<Integer> preorderIndexes(Node<int[]> root, int idx){ //this method is very scary
+    private Node<Integer> preorderIndexes(Node<int[]> root, int idx){ //this method is very scary
         System.out.println("Node: " + root + " id: " + idx);
         orderedNodes.add(root);
         if (root.isLeaf()) {
@@ -136,7 +136,7 @@ public class OrtTensorEncoder {
         return new Node<>(idx, leftSubTree, rightSubTree);
     }
 
-    public int rightMost(Node<Integer> root){
+    private int rightMost(Node<Integer> root){
         if (!root.isLeaf()) return rightMost(root.r);
         return root.value;
     }
@@ -145,7 +145,7 @@ public class OrtTensorEncoder {
      * @param flatTrees
      * @return
      */
-    public ArrayList<int[][]> padAndCombine(List<int[][]> flatTrees) {
+    private ArrayList<int[][]> padAndCombine(List<int[][]> flatTrees) {
         int secondDim = flatTrees.get(0)[0].length;                                   //find the size of a flat trees node structure
         int maxFirstDim = flatTrees.stream()
                 .map(a -> a.length)
@@ -236,7 +236,7 @@ public class OrtTensorEncoder {
      * @param root
      * @return
      */
-    public int[][] flatten(Node<int[]> root){
+    private int[][] flatten(Node<int[]> root){
         ArrayList<int[]> acc = new ArrayList<>();
         flattenStep(root,acc);
 
@@ -246,7 +246,7 @@ public class OrtTensorEncoder {
         return acc.toArray(int[][]::new); //fix this. idk if it distributes the rows correctly.
     }
 
-    public void flattenStep(Node<int[]> v, ArrayList<int[]> acc){
+    private void flattenStep(Node<int[]> v, ArrayList<int[]> acc){
         if (v.isLeaf()) {
             acc.add(v.value);
             return;

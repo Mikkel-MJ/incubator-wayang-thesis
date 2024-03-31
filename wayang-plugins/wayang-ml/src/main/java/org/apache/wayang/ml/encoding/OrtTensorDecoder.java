@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.stream.IntStream;
 
 public class OrtTensorDecoder {
-    Node<?> root;
     HashMap<Integer, Node<int[]>> nodeToIDMap = new HashMap<>();
 
     public static void main(String[] args) {
@@ -32,7 +31,6 @@ public class OrtTensorDecoder {
 
         OrtTensorDecoder testo2 = new OrtTensorDecoder();
         testo2.decode(t);
-        System.out.println(testo2.nodeToIDMap.size());
         System.out.println(testo2.nodeToIDMap.get(1));
     }
 
