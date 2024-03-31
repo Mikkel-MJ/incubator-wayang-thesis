@@ -19,6 +19,9 @@ class Node<V> {
         this.r = r;
         this.l = l;
     }
+    Node () {
+
+    }
 
     public V value;
     public Node<V> l;
@@ -104,7 +107,11 @@ public class OrtTensorEncoder {
     }
 
 
-
+    /**
+     * An array containing the nodes ordered by their index.
+     * @return
+     */
+    public ArrayList<Node<?>> orderedNodes = new ArrayList<>();
 
     /**
      * transforms a tree into a tree of preorder indexes
@@ -112,6 +119,8 @@ public class OrtTensorEncoder {
      * @param idx needs to default to one.
      */
     public Node<Integer> preorderIndexes(Node<int[]> root, int idx){ //this method is very scary
+        System.out.println("Node: " + root + " id: " + idx);
+        orderedNodes.add(root);
         if (root.isLeaf()) {
             return new Node<>(idx,null,null);
         }
