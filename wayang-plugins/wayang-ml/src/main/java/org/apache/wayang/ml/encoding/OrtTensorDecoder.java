@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.stream.IntStream;
 
 public class OrtTensorDecoder {
-    HashMap<Integer, Node<int[]>> nodeToIDMap = new HashMap<>();
+    private HashMap<Integer, Node<int[]>> nodeToIDMap = new HashMap<>();
 
     public static void main(String[] args) {
         OrtTensorEncoder testo = new OrtTensorEncoder();
@@ -30,8 +30,7 @@ public class OrtTensorDecoder {
         Tuple<ArrayList<int[][]>, ArrayList<int[][]>> t = testo.prepareTrees(testArr);
 
         OrtTensorDecoder testo2 = new OrtTensorDecoder();
-        testo2.decode(t);
-        System.out.println(testo2.nodeToIDMap.get(1));
+        System.out.println(testo2.decode(t));
     }
 
     //TODO: figure out output structure, from ml model
@@ -39,7 +38,7 @@ public class OrtTensorDecoder {
      * Decodes the output from a tree based NN model
      * @param mlOutput takes the out put from @
      */
-    void decode(Tuple<ArrayList<int[][]>,ArrayList<int[][]>> mlOutput){
+    Node<?> decode(Tuple<ArrayList<int[][]>,ArrayList<int[][]>> mlOutput){
         ArrayList<int[][]> valueStructure = mlOutput.field0;
         ArrayList<int[][]> indexStructure = mlOutput.field1;
 
@@ -73,5 +72,6 @@ public class OrtTensorDecoder {
                 nodeToIDMap.put(rID,r);
             }
         }
+        return this.nodeToIDMap.get(1);
     }
 }
