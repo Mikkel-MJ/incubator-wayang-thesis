@@ -119,7 +119,7 @@ public class OrtTensorEncoder {
      * @param idx needs to default to one.
      */
     private Node<Integer> preorderIndexes(Node<int[]> root, int idx){ //this method is very scary
-        System.out.println("Node: " + root + " id: " + idx);
+        //System.out.println("Node: " + root + " id: " + idx);
         orderedNodes.add(root);
         if (root.isLeaf()) {
             return new Node<>(idx,null,null);
