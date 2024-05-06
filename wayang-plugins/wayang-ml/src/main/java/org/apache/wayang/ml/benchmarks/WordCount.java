@@ -34,9 +34,15 @@ import org.apache.wayang.java.Java;
 import org.apache.wayang.java.platform.JavaPlatform;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.spark.platform.SparkPlatform;
+import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.ml.costs.MLCost;
-import org.apache.wayang.ml.util.CardinalitySampler;
+import org.apache.wayang.ml.costs.PairwiseCost;
+import org.apache.logging.log4j.Level;
+import org.apache.wayang.apps.util.Parameters;
+import org.apache.wayang.core.plugin.Plugin;
 
+import scala.collection.Seq;
+import scala.collection.JavaConversions;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -129,33 +135,27 @@ public class WordCount {
             WayangPlan wayangPlan = createWayangPlan(args[1], collector);
 
             Configuration config = new Configuration();
-            int hashCode = wayangPlan.hashCode();
-            String path = "/var/www/html/data/" + hashCode + "-cardinalities.json";
-            CardinalitySampler.configureWriteToFile(config, path);
-            //CardinalitySampler.readFromFile(path);
-            config.setCostModel(new MLCost());
-            WayangContext wayangContext = new WayangContext(config);
+            config.setProperty(
+                "wayang.ml.model.file",
+                "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/pairwise.onnx"
+            );
 
-            for (String platform : args[0].split(",")) {
-                switch (platform) {
-                    case "java":
-                        wayangContext.register(Java.basicPlugin());
-                        break;
-                    case "spark":
-                        wayangContext.register(Spark.basicPlugin());
-                        break;
-                    default:
-                        System.err.format("Unknown platform: \"%s\"\n", platform);
-                        System.exit(3);
-                        return;
-                }
-            }
+            config.setProperty(
+                "wayang.core.log.enabled",
+                "false"
+            );
+
+            config.setCostModel(new PairwiseCost());
+            final MLContext wayangContext = new MLContext(config);
+            //wayangContext.setLogLevel(Level.DEBUG);
+
+            List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
+            plugins.stream().forEach(plug -> wayangContext.register(plug));
 
             wayangContext.execute(wayangPlan, ReflectionUtils.getDeclaringJar(WordCount.class), ReflectionUtils.getDeclaringJar(JavaPlatform.class));
 
             collector.sort((t1, t2) -> Integer.compare(t2.field1, t1.field1));
-            System.out.printf("Found %d words:\n", collector.size());
-            //collector.forEach(wc -> System.out.printf("%dx %s\n", wc.field1, wc.field0));
+            System.out.printf("Found %d words:\n", collector.size()); //collector.forEach(wc -> System.out.printf("%dx %s\n", wc.field1, wc.field0));
         } catch (Exception e) {
             System.err.println("App failed.");
             e.printStackTrace();

@@ -661,6 +661,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
         }
         final ExecutionPlan executionPlan = new ExecutionPlan();
         finalStages.values().stream().filter(ExecutionStage::isStartingStage).forEach(executionPlan::addStartingStage);
+
         return executionPlan;
     }
 

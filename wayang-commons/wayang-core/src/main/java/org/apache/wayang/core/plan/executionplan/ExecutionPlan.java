@@ -92,6 +92,7 @@ public class ExecutionPlan {
                 }
             }
         }
+
         return sb.toString();
     }
 
@@ -253,5 +254,4 @@ public class ExecutionPlan {
                                            StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion) {
         return StageAssignmentTraversal.assignStages(executionTaskFlow, stageSplittingCriterion);
     }
-
 }
