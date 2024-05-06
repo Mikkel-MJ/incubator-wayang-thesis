@@ -22,11 +22,23 @@ import org.apache.wayang.ml.training.GeneratableJob;
 import org.reflections.*;
 
 import java.util.Set;
+import java.util.Comparator;
 
 public class Jobs {
     public static Set<Class<? extends GeneratableJob>> getJobs() {
         Reflections reflections = new Reflections("org.apache.wayang.ml.generatables");
         return reflections.getSubTypesOf(GeneratableJob.class);
+    }
+
+    public static Class<? extends GeneratableJob> getJob(int index) {
+
+        Set<Class<? extends GeneratableJob>> jobs = new Reflections("org.apache.wayang.ml.generatables").getSubTypesOf(GeneratableJob.class);
+
+        return jobs.stream()
+            .sorted(Comparator.comparing(c -> c.getName()))
+            .skip(index)
+            .findFirst()
+            .get();
     }
 }
 
