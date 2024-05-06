@@ -38,7 +38,6 @@ import org.apache.wayang.core.util.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,7 +56,7 @@ import java.util.stream.Collectors;
  * <p>Instances can be mutated and combined in algebraic manner. In particular, instances can be unioned if they implement
  * the same part of the {@link WayangPlan}, concatenated if there are contact points, and pruned.</p>
  */
-public class PlanEnumeration implements Serializable {
+public class PlanEnumeration {
 
     private static final Logger logger = LogManager.getLogger(PlanEnumeration.class);
 

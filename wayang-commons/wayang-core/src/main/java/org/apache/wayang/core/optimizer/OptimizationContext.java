@@ -48,7 +48,6 @@ import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,7 +63,7 @@ import java.util.stream.Stream;
  * <p>A single {@link Operator} can have multiple contexts in a {@link WayangPlan} - namely if it appears in a loop.
  * We manage these contexts in a hierarchical fashion.</p>
  */
-public abstract class OptimizationContext implements Serializable {
+public abstract class OptimizationContext {
 
     protected final Logger logger = LogManager.getLogger(this.getClass());
 

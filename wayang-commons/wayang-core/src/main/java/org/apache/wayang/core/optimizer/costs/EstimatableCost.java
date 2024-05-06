@@ -27,7 +27,6 @@ import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.util.Tuple;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.List;
 

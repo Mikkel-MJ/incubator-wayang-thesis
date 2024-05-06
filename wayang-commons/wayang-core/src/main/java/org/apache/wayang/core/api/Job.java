@@ -87,100 +87,100 @@ import java.util.stream.Collectors;
  */
 public class Job extends OneTimeExecutable {
 
-    protected final Logger logger = LogManager.getLogger(this.getClass());
+    private final Logger logger = LogManager.getLogger(this.getClass());
 
     /**
      * Guardian to avoid re-execution.
      */
-    protected final AtomicBoolean hasBeenExecuted = new AtomicBoolean(false);
+    private final AtomicBoolean hasBeenExecuted = new AtomicBoolean(false);
 
     /**
      * References the {@link WayangContext} that spawned this instance.
      */
-    protected final WayangContext wayangContext;
+    private final WayangContext wayangContext;
 
     /**
      * {@link Job}-level {@link Configuration} based on the {@link this.planImplementationWayangContext}-level configuration.
      */
-    protected final Configuration configuration;
+    private final Configuration configuration;
 
     /** * The {@link WayangPlan} to be executed by this instance. */
-    protected final WayangPlan wayangPlan;
+    private final WayangPlan wayangPlan;
 
     /**
      * {@link OptimizationContext} for the {@link #wayangPlan}.
      */
-    protected DefaultOptimizationContext optimizationContext;
+    private DefaultOptimizationContext optimizationContext;
 
     /**
      * General purpose cache.
      */
-    protected Map<String, Object> cache = new HashMap<>();
+    private Map<String, Object> cache = new HashMap<>();
 
     /**
      * Executes the optimized {@link ExecutionPlan}.
      */
-    protected CrossPlatformExecutor crossPlatformExecutor;
+    private CrossPlatformExecutor crossPlatformExecutor;
 
     /**
      * Manages the {@link CardinalityEstimate}s for the {@link #wayangPlan}.
      */
-    protected CardinalityEstimatorManager cardinalityEstimatorManager;
+    private CardinalityEstimatorManager cardinalityEstimatorManager;
 
     /**
      * Collects metadata w.r.t. the processing of this instance.
      */
-    protected final Experiment experiment;
+    private final Experiment experiment;
 
     /**
      * {@link StopWatch} to measure some key figures for the {@link #experiment}.
      */
-    protected final StopWatch stopWatch;
+    private final StopWatch stopWatch;
 
     /**
      * {@link TimeMeasurement}s for the optimization and the execution phases.
      */
-    protected final TimeMeasurement optimizationRound, executionRound;
+    private final TimeMeasurement optimizationRound, executionRound;
 
     /**
      * Collects the {@link TimeEstimate}s of all (partially) executed {@link PlanImplementation}s.
      */
-    protected List<TimeEstimate> timeEstimates = new LinkedList<>();
+    private List<TimeEstimate> timeEstimates = new LinkedList<>();
 
     /**
      * Collects the cost estimates of all (partially) executed {@link PlanImplementation}s.
      */
-    protected List<ProbabilisticDoubleInterval> costEstimates = new LinkedList<>();
+    private List<ProbabilisticDoubleInterval> costEstimates = new LinkedList<>();
 
     /**
      * JAR files that are needed to execute the UDFs.
      */
-    protected final Set<String> udfJarPaths = new HashSet<>();
+    private final Set<String> udfJarPaths = new HashSet<>();
 
-    protected Monitor monitor;
+    private Monitor monitor;
 
     /**
      * Name for this instance.
      */
-    protected final String name;
+    private final String name;
 
     /**
      * <i>Currently not used.</i>
      */
-    protected final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
+    private final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
             (producerTask, channel, consumerTask) -> false;
 
     /**
      * The {@link PlanImplementation} that is being executed.
      */
-    protected PlanImplementation planImplementation;
+    private PlanImplementation planImplementation;
 
     /**
      * Controls at which {@link CardinalityEstimate}s the execution should be interrupted.
      */
-    protected final CardinalityBreakpoint cardinalityBreakpoint;
+    private final CardinalityBreakpoint cardinalityBreakpoint;
 
-    protected final boolean isProactiveReoptimization;
+    private final boolean isProactiveReoptimization;
 
     /**
      * Creates a new instance.
@@ -189,7 +189,7 @@ public class Job extends OneTimeExecutable {
      * @param experiment an {@link Experiment} for that profiling entries will be created
      * @param udfJars    paths to JAR files needed to run the UDFs (see {@link ReflectionUtils#getDeclaringJar(Class)})
      */
-    public Job(WayangContext wayangContext, String name, Monitor monitor, WayangPlan wayangPlan, Experiment experiment, String... udfJars) {
+    Job(WayangContext wayangContext, String name, Monitor monitor, WayangPlan wayangPlan, Experiment experiment, String... udfJars) {
         this.wayangContext = wayangContext;
         this.name = name == null ? "Wayang app" : name;
         this.configuration = this.wayangContext.getConfiguration().fork(this.name);
@@ -402,7 +402,7 @@ public class Job extends OneTimeExecutable {
     /**
      * Determine a good/the best execution plan from a given {@link WayangPlan}.
      */
-    protected ExecutionPlan createInitialExecutionPlan() {
+    private ExecutionPlan createInitialExecutionPlan() {
         this.logger.info("Enumerating execution plans...");
 
         this.optimizationRound.start("Create Initial Execution Plan");
@@ -448,7 +448,7 @@ public class Job extends OneTimeExecutable {
     }
 
 
-    protected PlanImplementation pickBestExecutionPlan(Collection<PlanImplementation> executionPlans,
+    private PlanImplementation pickBestExecutionPlan(Collection<PlanImplementation> executionPlans,
                                                      ExecutionPlan existingPlan,
                                                      Set<Channel> openChannels,
                                                      Set<ExecutionStage> executedStages) {
@@ -471,21 +471,21 @@ public class Job extends OneTimeExecutable {
      *
      * @return whether any cardinalities have been updated
      */
-    protected boolean reestimateCardinalities(ExecutionState executionState) {
+    private boolean reestimateCardinalities(ExecutionState executionState) {
         return this.cardinalityEstimatorManager.pushCardinalityUpdates(executionState, this.planImplementation);
     }
 
     /**
      * Creates a new {@link PlanEnumerator} for the {@link #wayangPlan} and {@link #configuration}.
      */
-    protected PlanEnumerator createPlanEnumerator() {
+    private PlanEnumerator createPlanEnumerator() {
         return this.createPlanEnumerator(null, null);
     }
 
     /**
      * Creates a new {@link PlanEnumerator} for the {@link #wayangPlan} and {@link #configuration}.
      */
-    protected PlanEnumerator createPlanEnumerator(ExecutionPlan existingPlan, Set<Channel> openChannels) {
+    private PlanEnumerator createPlanEnumerator(ExecutionPlan existingPlan, Set<Channel> openChannels) {
         return existingPlan == null ?
                 new PlanEnumerator(this.wayangPlan, this.optimizationContext) :
                 new PlanEnumerator(this.wayangPlan, this.optimizationContext, existingPlan, openChannels);
@@ -499,7 +499,7 @@ public class Job extends OneTimeExecutable {
      * @param executionId   an identifier for the current execution
      * @return whether the execution of the {@link ExecutionPlan} is completed
      */
-    protected boolean execute(ExecutionPlan executionPlan, int executionId) {
+    private boolean execute(ExecutionPlan executionPlan, int executionId) {
         final TimeMeasurement currentExecutionRound = this.executionRound.start(String.format("Execution %d", executionId));
 
         // Ensure existence of the #crossPlatformExecutor.
@@ -535,7 +535,7 @@ public class Job extends OneTimeExecutable {
      * @param executionPlan for that the {@link Breakpoint} should be set
      * @param round         {@link TimeMeasurement} to be extended for any interesting time measurements
      */
-    protected void setUpBreakpoint(ExecutionPlan executionPlan, TimeMeasurement round) {
+    private void setUpBreakpoint(ExecutionPlan executionPlan, TimeMeasurement round) {
 
         // Set up appropriate Breakpoints.
         final TimeMeasurement breakpointRound = round.start("Configure Breakpoint");
@@ -557,7 +557,7 @@ public class Job extends OneTimeExecutable {
         breakpointRound.stop();
     }
 
-    protected void logStages(ExecutionPlan executionPlan) {
+    private void logStages(ExecutionPlan executionPlan) {
         if (this.logger.isInfoEnabled()) {
 
             StringBuilder sb = new StringBuilder();
@@ -582,7 +582,7 @@ public class Job extends OneTimeExecutable {
      *
      * @return whether the {@link ExecutionPlan} has been re-optimized
      */
-    protected boolean postProcess(ExecutionPlan executionPlan, int executionId) {
+    private boolean postProcess(ExecutionPlan executionPlan, int executionId) {
         if (this.crossPlatformExecutor.isVetoingPlanChanges()) {
             this.logger.info("The cross-platform executor is currently not allowing re-optimization.");
             return false;
@@ -614,7 +614,7 @@ public class Job extends OneTimeExecutable {
     /**
      * Enumerate possible execution plans from the given {@link WayangPlan} and determine the (seemingly) best one.
      */
-    protected void updateExecutionPlan(ExecutionPlan executionPlan) {
+    private void updateExecutionPlan(ExecutionPlan executionPlan) {
         // Defines the plan that we want to use in the end.
         // Find and copy the open Channels.
         final Set<ExecutionStage> completedStages = this.crossPlatformExecutor.getCompletedStages();
@@ -655,12 +655,12 @@ public class Job extends OneTimeExecutable {
      * Asks this instance to release its critical resources to avoid resource leaks and to enhance durability and
      * consistency of accessed resources.
      */
-    protected void releaseResources() {
+    private void releaseResources() {
         this.wayangContext.getCardinalityRepository().sleep();
         if (this.crossPlatformExecutor != null) this.crossPlatformExecutor.shutdown();
     }
 
-    protected void logExecution() {
+    private void logExecution() {
         this.stopWatch.start("Post-processing", "Log measurements");
 
         // For the last time, update the cardinalities and store them.
