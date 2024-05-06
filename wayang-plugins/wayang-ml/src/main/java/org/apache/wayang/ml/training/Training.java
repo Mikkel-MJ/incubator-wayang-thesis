@@ -50,83 +50,72 @@ public class Training {
      * 1: platforms, comma sep. (string)
      * 2: tpch file path
      * 3: encode to file path (string)
-     * 4: iteration index for picking jobs
-     * 5: iteration limit for picking jobs
-     * 6: overwrite cardinalities (boolean)
+     * 4: job index for the job to run (int)
+     * 5: overwrite skipConversions (boolean)
      **/
     public static void main(String[] args) {
-        int counter = 0;
-        Set<Class<? extends GeneratableJob>> jobs = Jobs.getJobs();
-        jobs = jobs.stream()
-            .sorted(Comparator.comparing(c -> c.getName()))
-            .skip(Integer.parseInt(args[3]) * 1000)
-            .limit(Integer.parseInt(args[4]))
-            .collect(Collectors.toSet());
+        Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[3]));
 
-        for (Class<? extends GeneratableJob> job : jobs) {
-            System.out.println("Running job " + (++counter) + "/" + jobs.size());
-            System.out.println(job);
-            try {
-                Constructor<?> cnstr = job.getDeclaredConstructors()[0];
-                GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
-                String[] jobArgs = {args[0], args[1]};
-                FileWriter fw = new FileWriter(args[2], true);
-                BufferedWriter writer = new BufferedWriter(fw);
+        System.out.println("Running job " + args[3] + " : " + job.getName());
+        try {
+            Constructor<?> cnstr = job.getDeclaredConstructors()[0];
+            GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
+            String[] jobArgs = {args[0], args[1]};
+            FileWriter fw = new FileWriter(args[2], true);
+            BufferedWriter writer = new BufferedWriter(fw);
 
-                boolean overwriteCardinalities = true;
+            boolean skipConversions = false;
 
-                if (args.length == 6) {
-                    overwriteCardinalities = Boolean.valueOf(args[5]);
-                }
-                /*
-                 * TODO:
-                 *  - Get DataQuanta's WayangPlan :done:
-                 *  - Encode WayangPlan and print/store :done:
-                 *  -- We need to run it once before, so that we can get card estimates :done:
-                 *  - Call .buildInitialExecutionPlan for the WayangPlan :done:
-                 *  - Encode the ExecutionPlan and print/store :done:
-                 *  - Make cardinalities configurable
-                 */
-
-                DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
-                PlanBuilder builder = quanta.getPlanBuilder();
-                WayangContext context = builder.getWayangContext();
-                Configuration config = context.getConfiguration();
-                WayangPlan plan = builder.build();
-
-                /*int hashCode = new HashCodeBuilder(17, 37).append(plan).toHashCode();
-                String path = "/var/www/html/data/" + hashCode + "-cardinalities.json";*/
-                long execTime = 0;
-
-                //if (overwriteCardinalities) {
-                    //CardinalitySampler.configureWriteToFile(config, path);
-                    //
-                Job wayangJob = context.createJob("", plan, "");
-                ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
-                OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
-                TreeNode wayangNode = TreeEncoder.encode(plan);
-                TreeNode execNode = TreeEncoder.encode(exPlan, false).withIdsFrom(wayangNode);
-                System.out.println(exPlan.toExtensiveString());
-
-                quanta = createdJob.buildPlan(jobArgs);
-                builder = quanta.getPlanBuilder();
-                context = builder.getWayangContext();
-                context.setLogLevel(Level.INFO);
-                plan = builder.build();
-                Instant start = Instant.now();
-                context.execute(plan, "");
-                Instant end = Instant.now();
-                execTime = Duration.between(start, end).toMillis();
-
-                //CardinalitySampler.readFromFile(path);
-
-                writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
-                writer.newLine();
-                writer.flush();
-            } catch(Exception e) {
-                e.printStackTrace();
-                continue;
+            if (args.length == 5) {
+                skipConversions = Boolean.valueOf(args[4]);
             }
-        }
+            /*
+            * TODO:
+            *  - Get DataQuanta's WayangPlan :done:
+            *  - Encode WayangPlan and print/store :done:
+            *  -- We need to run it once before, so that we can get card estimates :done:
+            *  - Call .buildInitialExecutionPlan for the WayangPlan :done:
+            *  - Encode the ExecutionPlan and print/store :done:
+            *  - Make cardinalities configurable
+            */
+
+            DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
+            PlanBuilder builder = quanta.getPlanBuilder();
+            WayangContext context = builder.getWayangContext();
+            Configuration config = context.getConfiguration();
+            WayangPlan plan = builder.build();
+
+            /*int hashCode = new HashCodeBuilder(17, 37).append(plan).toHashCode();
+            String path = "/var/www/html/data/" + hashCode + "-cardinalities.json";*/
+            long execTime = 0;
+
+            //if (overwriteCardinalities) {
+                //CardinalitySampler.configureWriteToFile(config, path);
+                //
+            Job wayangJob = context.createJob("", plan, "");
+            ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
+            OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+            TreeNode wayangNode = TreeEncoder.encode(plan);
+            TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
+            System.out.println(exPlan.toExtensiveString());
+
+            quanta = createdJob.buildPlan(jobArgs);
+            builder = quanta.getPlanBuilder();
+              context = builder.getWayangContext();
+              context.setLogLevel(Level.INFO);
+              plan = builder.build();
+              Instant start = Instant.now();
+              context.execute(plan, "");
+              Instant end = Instant.now();
+              execTime = Duration.between(start, end).toMillis();
+
+              //CardinalitySampler.readFromFile(path);
+
+              writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
+              writer.newLine();
+              writer.flush();
+          } catch(Exception e) {
+              e.printStackTrace();
+          }
     }
 }
