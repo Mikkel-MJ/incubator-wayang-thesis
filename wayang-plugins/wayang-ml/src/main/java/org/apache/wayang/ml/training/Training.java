@@ -51,7 +51,7 @@ public class Training {
      * 2: tpch file path
      * 3: encode to file path (string)
      * 4: job index for the job to run (int)
-     * 5: overwrite cardinalities (boolean)
+     * 5: overwrite skipConversions (boolean)
      **/
     public static void main(String[] args) {
         Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[3]));
@@ -64,10 +64,10 @@ public class Training {
             FileWriter fw = new FileWriter(args[2], true);
             BufferedWriter writer = new BufferedWriter(fw);
 
-            boolean overwriteCardinalities = true;
+            boolean skipConversions = false;
 
-            if (args.length == 6) {
-                overwriteCardinalities = Boolean.valueOf(args[4]);
+            if (args.length == 5) {
+                skipConversions = Boolean.valueOf(args[4]);
             }
             /*
             * TODO:
@@ -96,7 +96,7 @@ public class Training {
             ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
             OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
             TreeNode wayangNode = TreeEncoder.encode(plan);
-            TreeNode execNode = TreeEncoder.encode(exPlan, false).withIdsFrom(wayangNode);
+            TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
             System.out.println(exPlan.toExtensiveString());
 
             quanta = createdJob.buildPlan(jobArgs);
