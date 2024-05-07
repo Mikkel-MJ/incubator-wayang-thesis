@@ -26,7 +26,6 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.util.ReflectionUtils;
-import org.apache.wayang.ml.costs.ListwiseCost;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.encoding.OneHotMappings;
 import org.apache.wayang.ml.encoding.TreeEncoder;
@@ -77,9 +76,6 @@ public class MLContext extends WayangContext {
         switch(this.enumerationStrategy) {
             case PAIRWISE:
                 this.getConfiguration().setCostModel(new PairwiseCost());
-                break;
-            case LISTWISE:
-                this.getConfiguration().setCostModel(new ListwiseCost());
                 break;
             default:
                 break;
