@@ -37,6 +37,7 @@ import org.apache.wayang.spark.platform.SparkPlatform;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.ml.costs.MLCost;
 import org.apache.wayang.ml.costs.PairwiseCost;
+import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.logging.log4j.Level;
 import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
@@ -135,9 +136,15 @@ public class WordCount {
             WayangPlan wayangPlan = createWayangPlan(args[1], collector);
 
             Configuration config = new Configuration();
+            /*
             config.setProperty(
                 "wayang.ml.model.file",
                 "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/pairwise.onnx"
+            );*/
+
+            config.setProperty(
+                "wayang.ml.model.file",
+                "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/cost.onnx"
             );
 
             config.setProperty(
@@ -145,7 +152,8 @@ public class WordCount {
                 "false"
             );
 
-            config.setCostModel(new PairwiseCost());
+            //config.setCostModel(new PairwiseCost());
+            config.setCostModel(new PointwiseCost());
             final MLContext wayangContext = new MLContext(config);
             //wayangContext.setLogLevel(Level.DEBUG);
 

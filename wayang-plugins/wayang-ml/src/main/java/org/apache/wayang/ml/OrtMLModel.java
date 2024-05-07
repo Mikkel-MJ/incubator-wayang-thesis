@@ -71,17 +71,48 @@ public class OrtMLModel {
         }
     }
 
+    // Just here as placeholder
+    public double runModel(long[] encoded) {
+        return 0;
+    }
+
     /**
      * Close the session after running, {@link #closeSession()}
      * @param encodedVector
      * @return NaN on error, and a predicted cost on any other value.
      * @throws OrtException
      */
-    public double runModel(long[] encodedVector) throws OrtException {
+    public double runModel(
+        Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input1
+    ) throws OrtException {
         double costPrediction;
 
-        OnnxTensor tensor = OnnxTensor.createTensor(env, encodedVector);
-        this.inputMap.put("input", tensor);
+        Map<String, NodeInfo> inputInfoList = this.session.getInputInfo();
+        long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
+        long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+
+        float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
+        long[][][] input1Right = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
+
+        //input1Left = input1.field0.toArray(input1Left);
+        for (int i = 0; i < input1.field0.get(0).length; i++) {
+            for (int j = 0; j < input1.field0.get(0)[i].length; j++) {
+                input1Left[0][i][j] = Long.valueOf(
+                    input1.field0.get(0)[i][j]
+                ).floatValue();
+            }
+        }
+
+        for (int i = 0; i < input1.field1.get(0).length; i++) {
+            input1Right[0][i]  = input1.field1.get(0)[i];
+        }
+
+        OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
+        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, input1Right);
+
+        this.inputMap.put("input1", tensorOneLeft);
+        this.inputMap.put("input2", tensorOneRight);
+
         this.requestedOutputs.add("output");
 
         BiFunction<Result, String, Float> unwrapFunc = (r, s) -> {
@@ -98,7 +129,6 @@ public class OrtMLModel {
             inputMap.clear();
             requestedOutputs.clear();
         }
-
 
         return costPrediction;
     }

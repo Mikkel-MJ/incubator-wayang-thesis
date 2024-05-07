@@ -63,41 +63,33 @@ public class Encode {
      * 1: platforms, comma sep. (string)
      * 2: tpch file path
      * 3: encode to file path (string)
-     * 4: iteration index for picking jobs
-     * 5: iteration limit for picking jobs
-     * 6: overwrite cardinalities (boolean)
+     * 4: job index for the job to run (int)
+     * 5: overwrite cardinalities (boolean)
      **/
     public static void main(String[] args) {
         int counter = 0;
-        Set<Class<? extends GeneratableJob>> jobs = Jobs.getJobs();
-        jobs = jobs.stream()
-            .sorted(Comparator.comparing(c -> c.getName()))
-            .skip(Integer.parseInt(args[3]) * 1000)
-            .limit(Integer.parseInt(args[4]))
-            .collect(Collectors.toSet());
+        Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[3]));
+
 
         try {
             FileWriter fw = new FileWriter(args[2], true);
             BufferedWriter writer = new BufferedWriter(fw);
 
-            for (Class<? extends GeneratableJob> job : jobs) {
-                System.out.println("Running job " + (++counter) + "/" + jobs.size());
-                System.out.println(job);
+            System.out.println(job);
 
-                Constructor<?> cnstr = job.getDeclaredConstructors()[0];
-                GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
-                String[] jobArgs = {args[0], args[1]};
+            Constructor<?> cnstr = job.getDeclaredConstructors()[0];
+            GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
+            String[] jobArgs = {args[0], args[1]};
 
-                DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
-                PlanBuilder builder = quanta.getPlanBuilder();
-                WayangContext context = builder.getWayangContext();
-                Configuration config = context.getConfiguration();
-                WayangPlan plan = builder.build();
-                Job wayangJob = context.createJob("", plan, "");
-                context.setLogLevel(Level.ERROR);
-                buildPlanImplementations(wayangJob, plan, context, writer);
+            DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
+            PlanBuilder builder = quanta.getPlanBuilder();
+            WayangContext context = builder.getWayangContext();
+            Configuration config = context.getConfiguration();
+            WayangPlan plan = builder.build();
+            Job wayangJob = context.createJob("", plan, "");
+            context.setLogLevel(Level.ERROR);
+            buildPlanImplementations(wayangJob, plan, context, writer);
                 //CardinalitySampler.readFromFile(path);
-            }
         }catch(Exception e) {
             e.printStackTrace();
         }
