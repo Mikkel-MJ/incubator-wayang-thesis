@@ -20,10 +20,15 @@ package org.apache.wayang.apps.tpch.queries;
 
 import org.apache.wayang.apps.tpch.data.LineItemTuple;
 import org.apache.wayang.apps.tpch.data.OrderTuple;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.wayang.apps.tpch.data.CustomerTuple;
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.java.platform.JavaPlatform;
@@ -87,7 +92,11 @@ public class Query6 {
         lineFilter.connectTo(0, lineProjection, 0);
 
        // Print the results.
-        LocalCallbackSink<Double> sink = LocalCallbackSink.createStdoutSink(Double.class);
+        List<Double> collector = new ArrayList<>();
+        LocalCallbackSink<Double> sink = LocalCallbackSink.createCollectingSink(
+            collector,
+            DataSetType.createDefaultUnchecked(Double.class)
+        );
         lineProjection.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

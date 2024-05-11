@@ -140,6 +140,7 @@ public class CardinalityRepository {
                        long outputCardinality,
                        Operator operator) {
 
+        /*
         WayangJsonArray jsonInputCardinalities = new WayangJsonArray();
         for (int inputIndex = 0; inputIndex < operator.getNumInputs(); inputIndex++) {
             final InputSlot<?> input = operator.getInput(inputIndex);
@@ -170,6 +171,7 @@ public class CardinalityRepository {
         jsonMeasurement.put("output", jsonOutput);
 
         this.write(jsonMeasurement);
+        */
     }
 
     /**

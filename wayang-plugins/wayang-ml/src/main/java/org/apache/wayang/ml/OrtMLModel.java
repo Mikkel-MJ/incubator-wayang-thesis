@@ -283,7 +283,7 @@ public class OrtMLModel {
             for (int i = 0; i < resultTensor[0].length; i++)  {
                 for (int j = 0; j < resultTensor[0][i].length; j++) {
                     // Just shift the decimal point
-                    longResult[0][i][j] = (long) (resultTensor[0][i][j] * 10_000);
+                    longResult[0][i][j] = (long) (resultTensor[0][i][j] * 1_000_000_000);
                 }
             }
 
@@ -291,18 +291,17 @@ public class OrtMLModel {
             mlResult.add(longResult[0]);
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
             TreeNode decoded = decoder.decode(decoderInput);
+            System.out.println("[DECODED BEFORE SOFTMAX]: " + decoded);
             decoded.softmax();
+            System.out.println("[DECODED AFTER SOFTMAX]: " + decoded);
 
             // Now set the platforms on the wayangPlan
-            System.out.println("[DECODER RESULT]: " + decoded);
-            System.out.println("[BEFORE]: " + encoded);
             encoded = encoded.withPlatformChoicesFrom(decoded);
-            System.out.println("[AFTER]: " + encoded);
 
             WayangPlan decodedPlan = TreeDecoder.decode(encoded);
             System.out.println(decodedPlan);
-            return decodedPlan;
 
+            return decodedPlan;
         } catch(Exception e) {
             e.printStackTrace();
             return plan;
