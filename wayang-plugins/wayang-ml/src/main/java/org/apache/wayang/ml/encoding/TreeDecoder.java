@@ -67,6 +67,24 @@ public class TreeDecoder {
         }
     }
 
+    public static WayangPlan decode(TreeNode node) {
+        updateOperatorPlatforms(node);
+
+        final Operator sink = OneHotMappings.getOperatorFromEncoding(node.encoded).orElseThrow(
+            () -> new WayangException("Couldnt recover sink operator during decoding")
+        );
+
+        Operator definitiveSink = sink;
+        System.out.println(definitiveSink);
+
+        if (definitiveSink.isSink()) {
+            return new WayangPlan(definitiveSink);
+        } else {
+            throw new WayangException("Recovered sink operator is not a sink");
+        }
+    }
+
+
     private static void updateOperatorPlatforms(TreeNode node) {
         if (Arrays.equals(node.encoded, OneHotEncoder.encodeNullOperator())) {
             return;

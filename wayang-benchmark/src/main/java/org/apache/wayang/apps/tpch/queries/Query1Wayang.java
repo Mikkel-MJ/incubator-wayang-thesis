@@ -20,6 +20,10 @@ package org.apache.wayang.apps.tpch.queries;
 
 import org.apache.wayang.apps.tpch.data.LineItemTuple;
 import org.apache.wayang.apps.tpch.data.OrderTuple;
+
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.wayang.apps.tpch.data.CustomerTuple;
 import org.apache.wayang.apps.tpch.data.q1.GroupKey;
 import org.apache.wayang.apps.tpch.data.q1.ReturnTuple;

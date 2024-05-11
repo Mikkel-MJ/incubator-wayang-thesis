@@ -102,7 +102,7 @@ public class OneHotMappings {
         }
 
         int platformIndex = -1;
-        int offset = operatorsCount + 1;
+        int offset = operatorsCount;
         for (int i = offset; i < platformsCount + offset && platformIndex == -1; i++) {
             if(encoded[i] == 1)  {
                 platformIndex = i;
@@ -131,7 +131,12 @@ public class OneHotMappings {
         final long hashCode = encoded[0];
 
         Optional<Operator> original = originalOperators.stream()
-            .filter(op -> (long) new HashCodeBuilder(17, 37).append(op.toString()).toHashCode() == hashCode)
+            .filter(op -> (long) new HashCodeBuilder(17, 37)
+                .append(op.toString())
+                .append(op.getAllInputs())
+                .append(op.getAllOutputs())
+                .toHashCode() == hashCode
+            )
             .findAny();
 
         if (original.isPresent()) {

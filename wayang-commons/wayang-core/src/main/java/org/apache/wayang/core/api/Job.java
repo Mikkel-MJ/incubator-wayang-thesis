@@ -434,6 +434,8 @@ public class Job extends OneTimeExecutable {
         this.optimizationRound.start("Create Initial Execution Plan", "Split Stages");
         final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(this.planImplementation);
         final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, this.stageSplittingCriterion);
+
+        System.out.println(executionPlan.toExtensiveString());
         this.optimizationRound.stop("Create Initial Execution Plan", "Split Stages");
 
         this.planImplementation.mergeJunctionOptimizationContexts();

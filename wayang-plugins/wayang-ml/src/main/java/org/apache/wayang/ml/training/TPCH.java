@@ -65,13 +65,12 @@ public class TPCH {
         HashMap<String, WayangPlan> tpchPlans = new HashMap<>();
         tpchPlans.put("query1", org.apache.wayang.apps.tpch.queries.Query1Wayang.createPlan(lineItemUrl, 1));
         tpchPlans.put("query3", org.apache.wayang.apps.tpch.queries.Query3.createPlan(customerUrl, orderUrl, lineItemUrl, 1));
-        //tpchPlans.put("query5", org.apache.wayang.apps.tpch.queries.Query5.createPlan(customerUrl, orderUrl, lineItemUrl, supplierUrl, nationUrl, regionUrl, 1));
+        tpchPlans.put("query5", org.apache.wayang.apps.tpch.queries.Query5.createPlan(customerUrl, orderUrl, lineItemUrl, supplierUrl, nationUrl, regionUrl, 1));
         tpchPlans.put("query6", org.apache.wayang.apps.tpch.queries.Query6.createPlan(lineItemUrl, 1));
         tpchPlans.put("query10", org.apache.wayang.apps.tpch.queries.Query10.createPlan(customerUrl, orderUrl, lineItemUrl, nationUrl, 1));
         tpchPlans.put("query12", org.apache.wayang.apps.tpch.queries.Query12.createPlan(orderUrl, lineItemUrl, 1));
         tpchPlans.put("query14", org.apache.wayang.apps.tpch.queries.Query14.createPlan(lineItemUrl, partUrl, 1));
         tpchPlans.put("query19", org.apache.wayang.apps.tpch.queries.Query19.createPlan(lineItemUrl, partUrl, 1));
-        tpchPlans.put("query42", org.apache.wayang.apps.tpch.queries.Query42.createPlan(lineItemUrl, partSuppUrl, 1));
 
         return tpchPlans;
       }

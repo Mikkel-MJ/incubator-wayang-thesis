@@ -19,6 +19,7 @@
 package org.apache.wayang.ml;
 
 import org.apache.wayang.core.api.WayangContext;
+import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.commons.util.profiledb.model.Experiment;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
@@ -28,11 +29,14 @@ import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.encoding.OneHotMappings;
+import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.EnumerationStrategy;
 import org.apache.wayang.commons.util.profiledb.model.Subject;
+import org.apache.wayang.core.util.Tuple;
 
+import java.util.ArrayList;
 
 /**
  * This is the entry point for users to work with Wayang ML.
@@ -66,19 +70,25 @@ public class MLContext extends WayangContext {
         wayangJob.execute();
     }
 
-    public void setModel(OrtMLModel model) {
-        this.model = model;
+    public void executeVAE(WayangPlan wayangPlan, String ...udfJars) {
+        try {
+            Job job = this.createJob("", wayangPlan, udfJars);
+            job.estimateKeyFigures();
+            OneHotMappings.setOptimizationContext(job.getOptimizationContext());
+            TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
+            System.out.println(wayangNode);
+
+            OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
+
+            WayangPlan platformPlan = model.runVAE(wayangPlan, wayangNode);
+            this.execute(platformPlan, udfJars);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WayangException("Executing WayangPlan with VAE model failed");
+        }
     }
 
-    public void setEnumerationStrategy(EnumerationStrategy strat) {
-        this.enumerationStrategy = strat;
-
-        switch(this.enumerationStrategy) {
-            case PAIRWISE:
-                this.getConfiguration().setCostModel(new PairwiseCost());
-                break;
-            default:
-                break;
-        }
+    public void setModel(OrtMLModel model) {
+        this.model = model;
     }
 }
