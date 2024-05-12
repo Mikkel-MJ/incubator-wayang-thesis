@@ -157,6 +157,31 @@ public class TreeNode {
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
 
+        // TODO: Find out why the model thinks Giraph is neccessary?
+        if (values[1] == 1) {
+            this.encoded[1] = 0;
+            this.softmax();
+            return;
+        }
+
+        if (values[6] == 1) {
+            this.encoded[6] = 0;
+            this.softmax();
+            return;
+        }
+
+        if (values[4] == 1) {
+            this.encoded[4] = 0;
+            this.softmax();
+            return;
+        }
+
+        if (values[3] == 1) {
+            this.encoded[3] = 0;
+            this.softmax();
+            return;
+        }
+
         this.encoded = values;
 
         if (this.left != null) {

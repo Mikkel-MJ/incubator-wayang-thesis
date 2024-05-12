@@ -25,6 +25,7 @@ import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
+import org.apache.wayang.core.optimizer.DefaultOptimizationContext;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.ml.costs.PairwiseCost;
@@ -73,10 +74,10 @@ public class MLContext extends WayangContext {
     public void executeVAE(WayangPlan wayangPlan, String ...udfJars) {
         try {
             Job job = this.createJob("", wayangPlan, udfJars);
+            //job.prepareWayangPlan();
             job.estimateKeyFigures();
             OneHotMappings.setOptimizationContext(job.getOptimizationContext());
             TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
-            System.out.println(wayangNode);
 
             OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
 

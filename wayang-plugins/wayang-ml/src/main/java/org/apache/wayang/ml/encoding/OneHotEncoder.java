@@ -4,6 +4,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.optimizer.OptimizationContext;
+import org.apache.wayang.core.optimizer.ProbabilisticDoubleInterval;
+import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimate;
 import org.apache.wayang.core.optimizer.enumeration.PlanImplementation;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
@@ -353,12 +355,22 @@ public class OneHotEncoder implements Encoder {
         long outputCardinality = 0;
 
         if (operatorSamples.size() == 0) {
-            for (InputSlot<?> input: operator.getAllInputs()) {
-                inputCardinality += optimizationContext.getOperatorContext(operator).getInputCardinality(input.getIndex()).getLowerEstimate();
-            }
+            OptimizationContext.OperatorContext operatorContext = optimizationContext.getOperatorContext(operator);
 
-            for (OutputSlot<?> output: operator.getAllOutputs()) {
-                outputCardinality += optimizationContext.getOperatorContext(operator).getOutputCardinality(output.getIndex()).getLowerEstimate();
+            if (operatorContext != null) {
+                for (InputSlot<?> input: operator.getAllInputs()) {
+                    CardinalityEstimate card = operatorContext.getInputCardinality(input.getIndex());
+                    if (card != null) {
+                        inputCardinality += card.getLowerEstimate();
+                    }
+                }
+
+                for (OutputSlot<?> output: operator.getAllOutputs()) {
+                    CardinalityEstimate card = operatorContext.getOutputCardinality(output.getIndex());
+                    if (card != null) {
+                        outputCardinality += card.getLowerEstimate();
+                    }
+                }
             }
         } else {
             inputCardinality = operatorSamples.stream()
@@ -449,8 +461,6 @@ public class OneHotEncoder implements Encoder {
             .append(operator.getAllInputs())
             .append(operator.getAllOutputs())
             .toHashCode();
-        System.out.println("OPERATORS COUNT: " + operatorsCount);
-        System.out.println("PLATFORMS COUNT: " + platformsCount);
 
         result[operatorsCount + platformsCount] = Udf.getComplexity(operator).ordinal();
         result[operatorsCount + platformsCount + 1] = inputCardinality;

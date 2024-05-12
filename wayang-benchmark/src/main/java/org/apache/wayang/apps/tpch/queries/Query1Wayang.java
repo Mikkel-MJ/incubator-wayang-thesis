@@ -145,8 +145,8 @@ public class Query1Wayang {
         // TODO: Implement sorting (as of now not possible with Wayang's basic operators).
 
         // Print the results.
-        List<Double> collector = new ArrayList<>();
-        LocalCallbackSink<Double> sink = LocalCallbackSink.createCollectingSink(
+        List<ReturnTuple> collector = new ArrayList<>();
+        LocalCallbackSink<ReturnTuple> sink = LocalCallbackSink.createCollectingSink(
             collector,
             DataSetType.createDefaultUnchecked(ReturnTuple.class)
         );

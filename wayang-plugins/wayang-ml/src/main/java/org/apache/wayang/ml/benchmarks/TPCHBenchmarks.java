@@ -122,7 +122,7 @@ public class TPCHBenchmarks {
             case "vae":
                 config.setProperty(
                     "wayang.ml.model.file",
-                    "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/vae.onnx"
+                    "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/vae-full.onnx"
                 );
                 System.out.println("Using vae ML Model");
                 break;

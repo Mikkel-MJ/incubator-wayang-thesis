@@ -45,7 +45,6 @@ public class OrtTensorDecoder {
             long[][] values      = valueStructure.get(i);
             long[][] indexedTree = indexStructure.get(i);
             long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
-
             for (int j = 0; j < flatIndexTree.length; j+=3) {
                 final long curID = flatIndexTree[j];
                 long lID   = flatIndexTree[j+1];

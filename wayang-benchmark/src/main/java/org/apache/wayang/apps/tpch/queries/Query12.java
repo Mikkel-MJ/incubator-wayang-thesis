@@ -32,6 +32,11 @@ import org.apache.wayang.spark.platform.SparkPlatform;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.core.util.ReflectionUtils;
+import org.apache.wayang.core.types.DataSetType;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import java.util.Arrays;
 
@@ -166,7 +171,11 @@ public class Query12 {
         );
         aggregation.connectTo(0, sort, 0);
 
-        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createStdoutSink(QueryResultTuple.class);
+        List<QueryResultTuple> collector = new ArrayList<>();
+        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createCollectingSink(
+            collector,
+            DataSetType.createDefaultUnchecked(QueryResultTuple.class)
+        );
         sort.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

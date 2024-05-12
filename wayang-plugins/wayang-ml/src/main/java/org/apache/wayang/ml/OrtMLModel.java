@@ -68,11 +68,12 @@ public class OrtMLModel {
 
     private void loadModel(String filePath) throws OrtException {
         if (this.env == null) {
-            this.env = OrtEnvironment.getEnvironment();
+            this.env = OrtEnvironment.getEnvironment("org.apache.wayang.ml");
         }
 
         if (this.session == null) {
-            this.session = env.createSession(filePath, new OrtSession.SessionOptions());
+            OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+            this.session = env.createSession(filePath, options);
         }
     }
 
@@ -130,7 +131,6 @@ public class OrtMLModel {
 
         try (Result r = session.run(inputMap, requestedOutputs)) {
             costPrediction = unwrapFunc.apply(r, "output");
-            System.out.println("[ML PREDICTION]: " + costPrediction);
         } catch(Exception e) {
             e.printStackTrace();
             return 0;
@@ -159,7 +159,6 @@ public class OrtMLModel {
         float[][][] input2Left = new float[1][(int) input3Dims[1]][(int) input3Dims[2]];
         long[][][] input2Right = new long[1][(int) input4Dims[1]][(int) input4Dims[2]];
 
-        //input1Left = input1.field0.toArray(input1Left);
         for (int i = 0; i < input1.field0.get(0).length; i++) {
             for (int j = 0; j < input1.field0.get(0)[i].length; j++) {
                 input1Left[0][i][j] = Long.valueOf(
@@ -171,9 +170,6 @@ public class OrtMLModel {
         for (int i = 0; i < input1.field1.get(0).length; i++) {
             input1Right[0][i]  = input1.field1.get(0)[i];
         }
-        //input1Right = input1.field1.toArray(input1Right);
-        System.out.println(Arrays.deepToString(input1Right));
-        //input2Left = input2.field0.toArray(input2Left);
 
         for (int i = 0; i < input2.field0.get(0).length; i++) {
             for (int j = 0; j < input2.field0.get(0)[i].length; j++) {
@@ -182,13 +178,10 @@ public class OrtMLModel {
                 ).floatValue();
             }
         }
-        //input2Right = input2.field1.toArray(input2Right);
 
         for (int i = 0; i < input2.field1.get(0).length; i++) {
             input2Right[0][i]  = input2.field1.get(0)[i];
         }
-
-        System.out.println(Arrays.deepToString(input2Right));
 
         OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
         OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, input1Right);
@@ -221,7 +214,6 @@ public class OrtMLModel {
         try (Result r = session.run(this.inputMap, this.requestedOutputs)) {
             Float[] result = unwrapFunc.apply(r, "output");
 
-            System.out.println("[ORT] result:" + Arrays.toString(result));
             return Math.round(result[0]);
         } catch (OrtException e) {
             e.printStackTrace();
@@ -278,7 +270,6 @@ public class OrtMLModel {
 
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
-
             long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
             for (int i = 0; i < resultTensor[0].length; i++)  {
                 for (int j = 0; j < resultTensor[0][i].length; j++) {
@@ -291,15 +282,12 @@ public class OrtMLModel {
             mlResult.add(longResult[0]);
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
             TreeNode decoded = decoder.decode(decoderInput);
-            System.out.println("[DECODED BEFORE SOFTMAX]: " + decoded);
             decoded.softmax();
-            System.out.println("[DECODED AFTER SOFTMAX]: " + decoded);
 
             // Now set the platforms on the wayangPlan
             encoded = encoded.withPlatformChoicesFrom(decoded);
 
             WayangPlan decodedPlan = TreeDecoder.decode(encoded);
-            System.out.println(decodedPlan);
 
             return decodedPlan;
         } catch(Exception e) {

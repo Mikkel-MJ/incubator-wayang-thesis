@@ -75,7 +75,6 @@ public class TreeDecoder {
         );
 
         Operator definitiveSink = sink;
-        System.out.println(definitiveSink);
 
         if (definitiveSink.isSink()) {
             return new WayangPlan(definitiveSink);
