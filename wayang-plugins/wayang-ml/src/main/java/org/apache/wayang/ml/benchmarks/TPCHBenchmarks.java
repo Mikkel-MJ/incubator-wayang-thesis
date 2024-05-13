@@ -48,6 +48,7 @@ public class TPCHBenchmarks {
      * 2: Filepath to write timings to
      * 3: query number
      * 4: model type
+     * 5: model path
      */
     public static void main(String[] args) {
         try {
@@ -61,7 +62,10 @@ public class TPCHBenchmarks {
                 modelType = args[4];
             }
 
-            TPCHBenchmarks.setMLModel(config, modelType);
+            if (args.length > 5) {
+                TPCHBenchmarks.setMLModel(config, modelType, args[5]);
+            }
+
             final MLContext wayangContext = new MLContext(config);
             plugins.stream().forEach(plug -> wayangContext.register(plug));
 
@@ -99,31 +103,24 @@ public class TPCHBenchmarks {
         }
     }
 
-    private static void setMLModel(Configuration config, String modelType) {
+    private static void setMLModel(Configuration config, String modelType, String path) {
+        config.setProperty(
+            "wayang.ml.model.file",
+            path
+        );
+
         switch(modelType) {
             case "cost":
-                config.setProperty(
-                    "wayang.ml.model.file",
-                    "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/cost.onnx"
-                );
                 config.setCostModel(new PointwiseCost());
                 System.out.println("Using cost ML Model");
 
                 break;
             case "pairwise":
-                config.setProperty(
-                    "wayang.ml.model.file",
-                    "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/pairwise.onnx"
-                );
                 config.setCostModel(new PairwiseCost());
 
                 System.out.println("Using pairwise ML Model");
                 break;
             case "vae":
-                config.setProperty(
-                    "wayang.ml.model.file",
-                    "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/vae-full.onnx"
-                );
                 System.out.println("Using vae ML Model");
                 break;
             default:

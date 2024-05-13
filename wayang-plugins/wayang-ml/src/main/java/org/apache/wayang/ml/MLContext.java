@@ -77,6 +77,7 @@ public class MLContext extends WayangContext {
             //job.prepareWayangPlan();
             job.estimateKeyFigures();
             OneHotMappings.setOptimizationContext(job.getOptimizationContext());
+            OneHotMappings.encodeIds = true;
             TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
 
             OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());

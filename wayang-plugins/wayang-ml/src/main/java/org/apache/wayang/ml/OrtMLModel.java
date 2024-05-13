@@ -69,10 +69,13 @@ public class OrtMLModel {
     private void loadModel(String filePath) throws OrtException {
         if (this.env == null) {
             this.env = OrtEnvironment.getEnvironment("org.apache.wayang.ml");
+            this.env.setTelemetry(false);
         }
 
         if (this.session == null) {
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+            options.setInterOpNumThreads(16);
+            options.setIntraOpNumThreads(16);
             this.session = env.createSession(filePath, options);
         }
     }
@@ -125,6 +128,9 @@ public class OrtMLModel {
             try {
                 return ((float[]) r.get(s).get().getValue())[0];
             } catch (OrtException e) {
+                this.inputMap.clear();
+                this.requestedOutputs.clear();
+
                 return Float.NaN;
             }
         };
@@ -135,8 +141,8 @@ public class OrtMLModel {
             e.printStackTrace();
             return 0;
         } finally {
-            inputMap.clear();
-            requestedOutputs.clear();
+            this.inputMap.clear();
+            this.requestedOutputs.clear();
         }
 
         return costPrediction;
@@ -206,6 +212,9 @@ public class OrtMLModel {
 
                 return convResult;
             } catch (OrtException e) {
+                this.inputMap.clear();
+                this.requestedOutputs.clear();
+
                 e.printStackTrace();
                 return new Float[]{Float.NaN};
             }
@@ -220,8 +229,8 @@ public class OrtMLModel {
 
             return 0;
         } finally {
-            inputMap.clear();
-            requestedOutputs.clear();
+            this.inputMap.clear();
+            this.requestedOutputs.clear();
         }
     }
 
@@ -264,6 +273,9 @@ public class OrtMLModel {
                 return ((float[][][]) r.get(s).get().getValue());
             } catch (OrtException e) {
                 e.printStackTrace();
+                this.inputMap.clear();
+                this.requestedOutputs.clear();
+
                 return null;
             }
         };
@@ -294,8 +306,9 @@ public class OrtMLModel {
             e.printStackTrace();
             return plan;
         } finally {
-            inputMap.clear();
-            requestedOutputs.clear();
+            this.inputMap.clear();
+            this.requestedOutputs.clear();
+            this.closeSession();
         }
     }
 
