@@ -35,17 +35,13 @@ import java.util.HashMap;
 import java.util.List;
 import scala.collection.Seq;
 import scala.collection.JavaConversions;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.time.Instant;
-import java.time.Duration;
 
 public class TPCHBenchmarks {
 
     /**
      * 0: platforms
      * 1: TPCH data set directory path
-     * 2: Filepath to write timings to
+     * 2: Directory to write timings to
      * 3: query number
      * 4: model type
      * 5: model path
@@ -55,8 +51,6 @@ public class TPCHBenchmarks {
             List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
             Configuration config = new Configuration();
             String modelType = "";
-            FileWriter fw = new FileWriter(args[2], true);
-            BufferedWriter writer = new BufferedWriter(fw);
 
             if (args.length > 4) {
                 modelType = args[4];
@@ -65,6 +59,24 @@ public class TPCHBenchmarks {
             if (args.length > 5) {
                 TPCHBenchmarks.setMLModel(config, modelType, args[5]);
             }
+
+            String executionTimeFile = args[2] + "query" + args[3] + "-executions";
+            String optimizationTimeFile = args[2] + "query" + args[3] + "-optimizations";
+
+            if (!"".equals(modelType)) {
+                executionTimeFile += "-" + modelType;
+                optimizationTimeFile += "-" + modelType;
+            }
+
+            config.setProperty(
+                "wayang.ml.executions.file",
+                executionTimeFile + ".txt"
+            );
+
+            config.setProperty(
+                "wayang.ml.optimizations.file",
+                optimizationTimeFile + ".txt"
+            );
 
             final MLContext wayangContext = new MLContext(config);
             plugins.stream().forEach(plug -> wayangContext.register(plug));
@@ -75,28 +87,14 @@ public class TPCHBenchmarks {
             System.out.println(modelType);
             if (!"vae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);
-                Instant start = Instant.now();
                 wayangContext.execute(plan, "");
-                Instant end = Instant.now();
-
-                long execTime = Duration.between(start, end).toMillis();
                 System.out.println("Finished execution");
-
-                writer.write(String.format("%d", execTime));
-                writer.newLine();
-                writer.flush();
             } else {
                 System.out.println("Using vae cost model");
                 System.out.println("Executing query " + args[3]);
-                Instant start = Instant.now();
                 wayangContext.executeVAE(plan, "");
-                Instant end = Instant.now();
-                long execTime = Duration.between(start, end).toMillis();
                 System.out.println("Finished execution");
 
-                writer.write(String.format("%d", execTime));
-                writer.newLine();
-                writer.flush();
             }
         } catch (Exception e) {
             e.printStackTrace();

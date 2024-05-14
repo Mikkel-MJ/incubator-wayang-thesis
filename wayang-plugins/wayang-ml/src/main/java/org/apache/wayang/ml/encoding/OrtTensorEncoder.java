@@ -220,7 +220,10 @@ public class OrtTensorEncoder {
             return;
         }
 
-        acc.add(v.encoded);
+        // Remove the 0th item - its the Id
+        long[] values = Arrays.copyOf(v.encoded, v.encoded.length);
+        values[0] = 0;
+        acc.add(values);
 
         if (v.isLeaf()) {
             return;

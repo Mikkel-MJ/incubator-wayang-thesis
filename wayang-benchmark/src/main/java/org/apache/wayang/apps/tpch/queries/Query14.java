@@ -155,9 +155,14 @@ public class Query14 {
 
         sumReduction.connectTo(0, resultSum, 0);
 
+        /*
         List<Double> collector = new ArrayList<>();
         LocalCallbackSink<Double> sink = LocalCallbackSink.createCollectingSink(
             collector,
+            DataSetType.createDefaultUnchecked(Double.class)
+        );*/
+
+        LocalCallbackSink<Double> sink = LocalCallbackSink.createNoOutSink(
             DataSetType.createDefaultUnchecked(Double.class)
         );
         resultSum.connectTo(0, sink, 0);
