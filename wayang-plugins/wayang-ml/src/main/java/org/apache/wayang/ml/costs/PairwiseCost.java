@@ -40,9 +40,11 @@ import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -112,7 +114,6 @@ public class PairwiseCost implements EstimatableCost {
             Set<ExecutionStage> executedStages) {
 
         final PlanImplementation bestPlanImplementation = executionPlans.stream()
-                .filter(plan -> plan.getOperators().stream().filter(Operator::isSink).count() > 0 && plan.getOperators().stream().filter(Operator::isSource).count() > 0)
                 .reduce((p1, p2) -> {
                     try {
                         Configuration config = p1

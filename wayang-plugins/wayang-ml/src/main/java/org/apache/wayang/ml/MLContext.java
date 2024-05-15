@@ -21,7 +21,6 @@ package org.apache.wayang.ml;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.logging.log4j.Level;
-import org.apache.wayang.commons.util.profiledb.model.Experiment;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
@@ -35,8 +34,13 @@ import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.EnumerationStrategy;
-import org.apache.wayang.commons.util.profiledb.model.Subject;
 import org.apache.wayang.core.util.Tuple;
+
+import java.io.IOException;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.time.Instant;
+import java.time.Duration;
 
 import java.util.ArrayList;
 
@@ -81,7 +85,23 @@ public class MLContext extends WayangContext {
             OneHotMappings.encodeIds = true;
             TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
 
+            Instant start = Instant.now();
             OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
+            Instant end = Instant.now();
+            long execTime = Duration.between(start, end).toMillis();
+
+            try {
+                FileWriter fw = new FileWriter(
+                    this.getConfiguration().getStringProperty("wayang.ml.optimizations.file"),
+                    true
+                );
+                BufferedWriter writer = new BufferedWriter(fw);
+                writer.write(String.format("%d", execTime));
+                writer.newLine();
+                writer.flush();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
 
             WayangPlan platformPlan = model.runVAE(wayangPlan, wayangNode);
             this.execute(platformPlan, udfJars);

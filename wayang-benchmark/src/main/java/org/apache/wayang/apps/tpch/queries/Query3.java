@@ -202,16 +202,16 @@ public class Query3 {
         // Print the results.
         joinProjection.connectTo(0, aggregation, 0);
 
-        /*
         List<QueryResultTuple> collector = new ArrayList<>();
         LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createCollectingSink(
             collector,
             DataSetType.createDefaultUnchecked(QueryResultTuple.class)
-        );*/
-
-        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createNoOutSink(
-            DataSetType.createDefaultUnchecked(QueryResultTuple.class)
         );
+
+        /*
+        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createStdoutSink(
+            DataSetType.createDefaultUnchecked(QueryResultTuple.class)
+        );*/
         aggregation.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

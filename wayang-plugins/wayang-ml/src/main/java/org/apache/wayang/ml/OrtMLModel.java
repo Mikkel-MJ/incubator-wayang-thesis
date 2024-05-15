@@ -223,6 +223,7 @@ public class OrtMLModel {
         try (Result r = session.run(this.inputMap, this.requestedOutputs)) {
             Float[] result = unwrapFunc.apply(r, "output");
 
+            System.out.println("[ML FLOAT RESULT]: " + result[0]);
             return Math.round(result[0]);
         } catch (OrtException e) {
             e.printStackTrace();

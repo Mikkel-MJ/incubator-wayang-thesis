@@ -92,16 +92,16 @@ public class Query6 {
         lineFilter.connectTo(0, lineProjection, 0);
 
        // Print the results.
-        /*
         List<Double> collector = new ArrayList<>();
         LocalCallbackSink<Double> sink = LocalCallbackSink.createCollectingSink(
             collector,
             DataSetType.createDefaultUnchecked(Double.class)
-        );*/
+        );
 
+        /*
         LocalCallbackSink<Double> sink = LocalCallbackSink.createNoOutSink(
             DataSetType.createDefaultUnchecked(Double.class)
-        );
+        );*/
         lineProjection.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

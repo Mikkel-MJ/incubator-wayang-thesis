@@ -171,15 +171,15 @@ public class Query12 {
         );
         aggregation.connectTo(0, sort, 0);
 
-        /*
         List<QueryResultTuple> collector = new ArrayList<>();
         LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createCollectingSink(
             collector,
             DataSetType.createDefaultUnchecked(QueryResultTuple.class)
-        );*/
+        );
+        /*
         LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createNoOutSink(
             DataSetType.createDefaultUnchecked(QueryResultTuple.class)
-        );
+        );*/
         sort.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

@@ -145,16 +145,16 @@ public class Query1Wayang {
         // TODO: Implement sorting (as of now not possible with Wayang's basic operators).
 
         // Print the results.
-        /*
         List<ReturnTuple> collector = new ArrayList<>();
         LocalCallbackSink<ReturnTuple> sink = LocalCallbackSink.createCollectingSink(
             collector,
             DataSetType.createDefaultUnchecked(ReturnTuple.class)
-        );*/
+        );
 
+        /*
         LocalCallbackSink<ReturnTuple> sink = LocalCallbackSink.createNoOutSink(
             DataSetType.createDefaultUnchecked(ReturnTuple.class)
-        );
+        );*/
         aggregationFinalization.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);
