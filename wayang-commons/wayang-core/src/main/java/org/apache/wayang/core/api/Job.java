@@ -324,6 +324,14 @@ public class Job extends OneTimeExecutable {
             }
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
+
+            if (this.getConfiguration().getBooleanProperty("wayang.ml.experience.enabled")) {
+                this.getConfiguration().setProperty(
+                    "wayang.ml.experience.exec-time",
+                    String.valueOf(execTime)
+                );
+            }
+
             try {
                 FileWriter fw = new FileWriter(
                     this.configuration.getStringProperty("wayang.ml.executions.file"),

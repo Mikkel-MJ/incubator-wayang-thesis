@@ -235,7 +235,7 @@ public class OrtMLModel {
         }
     }
 
-    public WayangPlan runVAE(
+    public Tuple<WayangPlan, TreeNode> runVAE(
         WayangPlan plan,
         TreeNode encoded
     ) throws OrtException {
@@ -302,10 +302,10 @@ public class OrtMLModel {
 
             WayangPlan decodedPlan = TreeDecoder.decode(encoded);
 
-            return decodedPlan;
+            return new Tuple<WayangPlan, TreeNode>(decodedPlan, encoded);
         } catch(Exception e) {
             e.printStackTrace();
-            return plan;
+            return new Tuple<WayangPlan, TreeNode>(plan, encoded);
         } finally {
             this.inputMap.clear();
             this.requestedOutputs.clear();

@@ -52,6 +52,8 @@ public class TPCHBenchmarks {
             Configuration config = new Configuration();
             String modelType = "";
 
+            config.setProperty("wayang.ml.experience.enabled", "false");
+
             if (args.length > 4) {
                 modelType = args[4];
             }
@@ -109,16 +111,24 @@ public class TPCHBenchmarks {
 
         switch(modelType) {
             case "cost":
+                config.setProperty("wayang.ml.experience.enabled", "true");
+                config.setProperty("wayang.ml.experience.file", "/var/www/html/data/experience/experience-cost.txt");
+
                 config.setCostModel(new PointwiseCost());
                 System.out.println("Using cost ML Model");
 
                 break;
             case "pairwise":
+                config.setProperty("wayang.ml.experience.enabled", "true");
+                config.setProperty("wayang.ml.experience.file", "/var/www/html/data/experience/experience-pairwise.txt");
                 config.setCostModel(new PairwiseCost());
 
                 System.out.println("Using pairwise ML Model");
                 break;
             case "vae":
+                config.setProperty("wayang.ml.experience.enabled", "true");
+                config.setProperty("wayang.ml.experience.file", "/var/www/html/data/experience/experience-vae.txt");
+
                 System.out.println("Using vae ML Model");
                 break;
             default:

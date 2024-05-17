@@ -142,6 +142,20 @@ public class PairwiseCost implements EstimatableCost {
                     }
                 })
                 .orElseThrow(() -> new WayangException("Could not find an execution plan."));
+
+
+        Configuration config = bestPlanImplementation
+            .getOptimizationContext()
+            .getConfiguration();
+
+        if (config.getBooleanProperty("wayang.ml.experience.enabled")) {
+            TreeNode encodedPlan = TreeEncoder.encode(bestPlanImplementation);
+            config.setProperty(
+                "wayang.ml.experience.with-platforms",
+                encodedPlan.toString()
+            );
+        }
+
         return bestPlanImplementation;
     }
 }
