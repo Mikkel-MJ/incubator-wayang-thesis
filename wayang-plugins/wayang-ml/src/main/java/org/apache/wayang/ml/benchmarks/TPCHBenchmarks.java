@@ -45,6 +45,7 @@ public class TPCHBenchmarks {
      * 3: query number
      * 4: model type
      * 5: model path
+     * 6: experience path
      */
     public static void main(String[] args) {
         try {
@@ -58,8 +59,8 @@ public class TPCHBenchmarks {
                 modelType = args[4];
             }
 
-            if (args.length > 5) {
-                TPCHBenchmarks.setMLModel(config, modelType, args[5]);
+            if (args.length > 6) {
+                TPCHBenchmarks.setMLModel(config, modelType, args[5], args[6]);
             }
 
             String executionTimeFile = args[2] + "query" + args[3] + "-executions";
@@ -87,7 +88,7 @@ public class TPCHBenchmarks {
             WayangPlan plan = plans.get("query" + args[3]);
 
             System.out.println(modelType);
-            if (!"vae".equals(modelType)) {
+            if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);
                 wayangContext.execute(plan, "");
                 System.out.println("Finished execution");
@@ -96,14 +97,13 @@ public class TPCHBenchmarks {
                 System.out.println("Executing query " + args[3]);
                 wayangContext.executeVAE(plan, "");
                 System.out.println("Finished execution");
-
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void setMLModel(Configuration config, String modelType, String path) {
+    private static void setMLModel(Configuration config, String modelType, String path, String experiencePath) {
         config.setProperty(
             "wayang.ml.model.file",
             path
@@ -112,7 +112,7 @@ public class TPCHBenchmarks {
         switch(modelType) {
             case "cost":
                 config.setProperty("wayang.ml.experience.enabled", "true");
-                config.setProperty("wayang.ml.experience.file", "/var/www/html/data/experience/experience-cost.txt");
+                config.setProperty("wayang.ml.experience.file", experiencePath + "experience-cost.txt");
 
                 config.setCostModel(new PointwiseCost());
                 System.out.println("Using cost ML Model");
@@ -120,14 +120,20 @@ public class TPCHBenchmarks {
                 break;
             case "pairwise":
                 config.setProperty("wayang.ml.experience.enabled", "true");
-                config.setProperty("wayang.ml.experience.file", "/var/www/html/data/experience/experience-pairwise.txt");
+                config.setProperty("wayang.ml.experience.file", experiencePath + "experience-pairwise.txt");
                 config.setCostModel(new PairwiseCost());
 
                 System.out.println("Using pairwise ML Model");
                 break;
+            case "bvae":
+                config.setProperty("wayang.ml.experience.enabled", "true");
+                config.setProperty("wayang.ml.experience.file", experiencePath + "experience-bvae.txt");
+
+                System.out.println("Using bvae ML Model");
+                break;
             case "vae":
                 config.setProperty("wayang.ml.experience.enabled", "true");
-                config.setProperty("wayang.ml.experience.file", "/var/www/html/data/experience/experience-vae.txt");
+                config.setProperty("wayang.ml.experience.file", experiencePath + "experience-vae.txt");
 
                 System.out.println("Using vae ML Model");
                 break;

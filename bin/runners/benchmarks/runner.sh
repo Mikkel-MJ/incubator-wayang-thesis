@@ -80,25 +80,33 @@ export OMP_NUM_THREADS=16 # or adjust to however many threads
 
 queries=(1 3 6 10 12 14 19)
 
-vae_path=/work/thesis/data/models/vae-full.onnx
-cost_path=/work/thesis/data/models/cost.onnx
+vae_path=/work/thesis/data/models/vae.onnx
+bvae_path=/work/thesis/data/models/bvae.onnx
+cost_path=/work/thesis/data/models/cost-0_1.onnx
 pairwise_path=/work/thesis/data/models/pairwise.onnx
+
+data_path=/work/thesis/data/
+experience_path=/work/thesis/data/experience/
 
 for query in ${queries[@]}; do
     for i in {0..10}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph /work/thesis/data/ /work/thesis/data/benchmarks/query-$query-timings-default.txt $query
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query
     done
 
     for i in {0..10}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph /work/thesis/data/ /work/thesis/data/benchmarks/query-$query-timings-cost.txt $query cost $cost_path
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query cost $cost_path $experience_path
     done
 
     for i in {0..10}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph /work/thesis/data/ /work/thesis/data/benchmarks/query-$query-timings-pairwise.txt $query pairwise $pairwise_path
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query pairwise $pairwise_path $experience_path
     done
 
     for i in {0..10}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph /work/thesis/data/ /work/thesis/data/benchmarks/query-$query-timings-vae.txt $query vae $vae_path
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query vae $vae_path $experience_path
+    done
+
+    for i in {0..10}; do
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query bvae $bvae_path $experience_path
     done
 done
 
