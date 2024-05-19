@@ -20,12 +20,18 @@ package org.apache.wayang.apps.tpch.queries;
 
 import org.apache.wayang.apps.tpch.data.LineItemTuple;
 import org.apache.wayang.apps.tpch.data.OrderTuple;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.wayang.apps.tpch.data.CustomerTuple;
 import org.apache.wayang.apps.tpch.data.q1.GroupKey;
 import org.apache.wayang.apps.tpch.data.q1.ReturnTuple;
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.java.platform.JavaPlatform;
@@ -139,7 +145,16 @@ public class Query1Wayang {
         // TODO: Implement sorting (as of now not possible with Wayang's basic operators).
 
         // Print the results.
-        LocalCallbackSink<ReturnTuple> sink = LocalCallbackSink.createStdoutSink(ReturnTuple.class);
+        List<ReturnTuple> collector = new ArrayList<>();
+        LocalCallbackSink<ReturnTuple> sink = LocalCallbackSink.createCollectingSink(
+            collector,
+            DataSetType.createDefaultUnchecked(ReturnTuple.class)
+        );
+
+        /*
+        LocalCallbackSink<ReturnTuple> sink = LocalCallbackSink.createNoOutSink(
+            DataSetType.createDefaultUnchecked(ReturnTuple.class)
+        );*/
         aggregationFinalization.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

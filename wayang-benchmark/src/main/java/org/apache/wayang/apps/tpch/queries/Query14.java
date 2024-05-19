@@ -36,6 +36,11 @@ import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.basic.operators.GlobalReduceOperator;
+import org.apache.wayang.core.types.DataSetType;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Main class for the TPC-H app based on Apache Wayang (incubating).
@@ -150,7 +155,16 @@ public class Query14 {
 
         sumReduction.connectTo(0, resultSum, 0);
 
-        LocalCallbackSink<Double> sink = LocalCallbackSink.createStdoutSink(Double.class);
+        List<Double> collector = new ArrayList<>();
+        LocalCallbackSink<Double> sink = LocalCallbackSink.createCollectingSink(
+            collector,
+            DataSetType.createDefaultUnchecked(Double.class)
+        );
+
+        /*
+        LocalCallbackSink<Double> sink = LocalCallbackSink.createNoOutSink(
+            DataSetType.createDefaultUnchecked(Double.class)
+        );*/
         resultSum.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

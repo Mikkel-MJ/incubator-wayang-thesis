@@ -110,7 +110,6 @@ public class OrtTensorEncoder {
      * @param idx needs to default to one.
      */
     private TreeNode preorderIndexes(TreeNode root, long idx){ //this method is very scary
-        //System.out.println("Node: " + root + " id: " + idx);
         if (root == null) {
             return null;
         }
@@ -121,19 +120,33 @@ public class OrtTensorEncoder {
             return new TreeNode(new long[]{idx},null,null);
         }
 
-        TreeNode leftSubTree = preorderIndexes(root.left, idx+1);
+        TreeNode leftSubTree = null;
+        TreeNode rightSubTree = null;
 
-        long maxIndexInLeftSubTree = rightMost(leftSubTree);
+        if (root.left != null) {
+            leftSubTree = preorderIndexes(root.left, idx+1);
+        }
 
-        TreeNode rightSubTree = preorderIndexes(root.right, maxIndexInLeftSubTree + 1);
+        if (root.right != null) {
+            long maxIndexInLeftSubTree = rightMost(leftSubTree);
+            rightSubTree = preorderIndexes(root.right, maxIndexInLeftSubTree + 1);
+        }
 
         return new TreeNode(new long[]{idx}, leftSubTree, rightSubTree);
     }
 
     private long rightMost(TreeNode root){
         if (root == null) return 0;
-        if (!root.isLeaf()) return rightMost(root.right);
-        return root.encoded[0];
+
+        if (root.isLeaf()) {
+            return root.encoded[0];
+        }
+
+        if (root.right == null) {
+            return root.left.encoded[0];
+        }
+
+        return rightMost(root.right);
     }
 
     /**
@@ -207,12 +220,15 @@ public class OrtTensorEncoder {
             return;
         }
 
+        // Remove the 0th item - its the Id
+        long[] values = Arrays.copyOf(v.encoded, v.encoded.length);
+        values[0] = 0;
+        acc.add(values);
+
         if (v.isLeaf()) {
-            acc.add(v.encoded);
             return;
         }
 
-        acc.add(v.encoded);
         flattenStep(v.left, acc);
         flattenStep(v.right, acc);
     }

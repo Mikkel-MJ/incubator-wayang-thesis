@@ -35,7 +35,12 @@ import org.apache.wayang.spark.Spark;
 import org.apache.wayang.spark.platform.SparkPlatform;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.ReflectionUtils;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 /**
  * Main class for the TPC-H app based on Apache Wayang (incubating).
  */
@@ -197,7 +202,16 @@ public class Query3 {
         // Print the results.
         joinProjection.connectTo(0, aggregation, 0);
 
-        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createStdoutSink(QueryResultTuple.class);
+        List<QueryResultTuple> collector = new ArrayList<>();
+        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createCollectingSink(
+            collector,
+            DataSetType.createDefaultUnchecked(QueryResultTuple.class)
+        );
+
+        /*
+        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createStdoutSink(
+            DataSetType.createDefaultUnchecked(QueryResultTuple.class)
+        );*/
         aggregation.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

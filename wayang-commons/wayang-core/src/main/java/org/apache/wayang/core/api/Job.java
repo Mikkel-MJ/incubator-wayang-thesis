@@ -71,6 +71,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.time.Instant;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -304,6 +308,7 @@ public class Job extends OneTimeExecutable {
 
 
             // Take care of the execution.
+            Instant start = Instant.now();
             while (!this.execute(executionPlan, executionId)) {
                 this.optimizationRound.start();
                 if (this.postProcess(executionPlan, executionId)) {
@@ -316,6 +321,28 @@ public class Job extends OneTimeExecutable {
                     }
                 }
                 this.optimizationRound.stop();
+            }
+            Instant end = Instant.now();
+            long execTime = Duration.between(start, end).toMillis();
+
+            if (this.getConfiguration().getBooleanProperty("wayang.ml.experience.enabled")) {
+                this.getConfiguration().setProperty(
+                    "wayang.ml.experience.exec-time",
+                    String.valueOf(execTime)
+                );
+            }
+
+            try {
+                FileWriter fw = new FileWriter(
+                    this.configuration.getStringProperty("wayang.ml.executions.file"),
+                    true
+                );
+                BufferedWriter writer = new BufferedWriter(fw);
+                writer.write(String.format("%d", execTime));
+                writer.newLine();
+                writer.flush();
+            } catch(Exception e) {
+                e.printStackTrace();
             }
 
             this.stopWatch.start("Post-processing");
@@ -422,6 +449,8 @@ public class Job extends OneTimeExecutable {
             this.logger.debug("Plan with operators: {}", planImplementation.getOperators());
         }
 
+
+        Instant start = Instant.now();
         // Pick an execution plan.
         // Make sure that an execution plan can be created.
         this.optimizationRound.start("Create Initial Execution Plan", "Pick Best Plan");
@@ -434,6 +463,7 @@ public class Job extends OneTimeExecutable {
         this.optimizationRound.start("Create Initial Execution Plan", "Split Stages");
         final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(this.planImplementation);
         final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, this.stageSplittingCriterion);
+        System.out.println(executionPlan.toExtensiveString());
         this.optimizationRound.stop("Create Initial Execution Plan", "Split Stages");
 
         this.planImplementation.mergeJunctionOptimizationContexts();
@@ -442,8 +472,23 @@ public class Job extends OneTimeExecutable {
 
         //assert executionPlan.isSane();
 
-
         this.optimizationRound.stop("Create Initial Execution Plan");
+
+        Instant end = Instant.now();
+        long execTime = Duration.between(start, end).toMillis();
+
+        try {
+            FileWriter fw = new FileWriter(
+                this.configuration.getStringProperty("wayang.ml.optimizations.file"),
+                true
+            );
+            BufferedWriter writer = new BufferedWriter(fw);
+            writer.write(String.format("%d", execTime));
+            writer.newLine();
+            writer.flush();
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
         return executionPlan;
     }
 

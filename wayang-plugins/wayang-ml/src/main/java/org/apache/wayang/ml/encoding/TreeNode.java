@@ -19,7 +19,9 @@
 package org.apache.wayang.ml.encoding;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.regex.Matcher;
@@ -108,6 +110,87 @@ public class TreeNode {
         }
 
         return this;
+    }
+
+    public TreeNode withPlatformChoicesFrom(TreeNode node) {
+        if (this.encoded == null || node.encoded == null) {
+            return this;
+        }
+
+        HashMap<String, Integer> platformMappings = OneHotMappings.getInstance().getPlatformsMapping();
+        HashMap<String, Integer> operatorMappings = OneHotMappings.getInstance().getOperatorMapping();
+        int platformPosition = -1;
+        platformPosition = ArrayUtils.indexOf(node.encoded, 1);
+        String platform = "";
+
+        assert platformPosition >= 0;
+
+        for (Map.Entry<String, Integer> pair : platformMappings.entrySet()) {
+            if (pair.getValue() == platformPosition) {
+                platform = pair.getKey();
+            }
+        }
+
+        assert platform != "";
+
+        System.out.println("Chose platform: " + platform);
+
+        int operatorsCount = operatorMappings.size();
+        this.encoded[operatorsCount + platformPosition] = 1;
+
+        if (this.left != null && node.left != null) {
+            this.left = left.withPlatformChoicesFrom(node.left);
+        }
+
+        if (this.right != null && node.right != null) {
+            this.right = right.withPlatformChoicesFrom(node.right);
+        }
+
+        return this;
+    }
+
+    public void softmax() {
+        if (this.encoded == null) {
+            return;
+        }
+
+        final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
+        long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
+
+        // TODO: Find out why the model thinks Giraph is neccessary?
+        if (values[1] == 1) {
+            this.encoded[1] = 0;
+            this.softmax();
+            return;
+        }
+
+        if (values[6] == 1) {
+            this.encoded[6] = 0;
+            this.softmax();
+            return;
+        }
+
+        if (values[4] == 1) {
+            this.encoded[4] = 0;
+            this.softmax();
+            return;
+        }
+
+        if (values[3] == 1) {
+            this.encoded[3] = 0;
+            this.softmax();
+            return;
+        }
+
+        this.encoded = values;
+
+        if (this.left != null) {
+            left.softmax();
+        }
+
+        if (this.right != null) {
+            right.softmax();
+        }
     }
 
     public boolean isLeaf() {

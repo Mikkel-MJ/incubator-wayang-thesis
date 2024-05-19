@@ -20,6 +20,10 @@ package org.apache.wayang.apps.tpch.queries;
 
 import org.apache.wayang.apps.tpch.data.LineItemTuple;
 import org.apache.wayang.apps.tpch.data.OrderTuple;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.wayang.apps.tpch.data.CustomerTuple;
 import org.apache.wayang.apps.tpch.data.SupplierTuple;
 import org.apache.wayang.apps.tpch.data.NationTuple;
@@ -29,6 +33,7 @@ import org.apache.wayang.apps.tpch.data.q5.QueryResultTuple;
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.java.platform.JavaPlatform;
@@ -266,7 +271,17 @@ public class Query5 {
         );
         aggregation.connectTo(0, sort, 0);
 
-        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createStdoutSink(QueryResultTuple.class);
+        List<QueryResultTuple> collector = new ArrayList<>();
+        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createCollectingSink(
+            collector,
+            DataSetType.createDefaultUnchecked(QueryResultTuple.class)
+        );
+
+        /*
+        LocalCallbackSink<QueryResultTuple> sink = LocalCallbackSink.createNoOutSink(
+            DataSetType.createDefaultUnchecked(QueryResultTuple.class)
+        );*/
+
         sort.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);

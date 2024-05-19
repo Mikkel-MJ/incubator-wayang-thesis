@@ -33,6 +33,8 @@ public class OneHotMappings {
 
     private static OptimizationContext optimizationContext;
 
+    public static boolean encodeIds = false;
+
     private OneHotMappings() {}
 
     public static OneHotMappings getInstance() {
@@ -102,7 +104,7 @@ public class OneHotMappings {
         }
 
         int platformIndex = -1;
-        int offset = operatorsCount + 1;
+        int offset = operatorsCount;
         for (int i = offset; i < platformsCount + offset && platformIndex == -1; i++) {
             if(encoded[i] == 1)  {
                 platformIndex = i;
@@ -131,7 +133,13 @@ public class OneHotMappings {
         final long hashCode = encoded[0];
 
         Optional<Operator> original = originalOperators.stream()
-            .filter(op -> (long) new HashCodeBuilder(17, 37).append(op.toString()).toHashCode() == hashCode)
+            .filter(op -> (long) new HashCodeBuilder(17, 37)
+                .append(op.toString())
+                .append(op.getName())
+                .append(op.getAllInputs().length)
+                .append(op.getAllOutputs().length)
+                .toHashCode() == hashCode
+            )
             .findAny();
 
         if (original.isPresent()) {

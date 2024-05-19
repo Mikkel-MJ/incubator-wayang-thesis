@@ -32,28 +32,6 @@ import java.util.stream.LongStream;
 public class OrtTensorDecoder {
     private HashMap<Long, TreeNode> nodeToIDMap = new HashMap<>();
 
-    public static void main(String[] args) {
-        OrtTensorEncoder testo = new OrtTensorEncoder();
-
-        TreeNode n1 = new TreeNode(new long[]{2, 3},null,null);
-        TreeNode n2 = new TreeNode(new long[]{1, 2},null,null);
-        TreeNode n3 = new TreeNode(new long[]{-3,0},n1,n2);
-
-        TreeNode n4 = new TreeNode(new long[]{0, 1},null,null);
-        TreeNode n5 = new TreeNode(new long[]{-1, 0},null,null);
-        TreeNode n6 = new TreeNode(new long[]{1,2},n4,n5);
-
-        TreeNode n7 = new TreeNode(new long[]{0,1},n6,n3);
-
-        ArrayList<TreeNode> testArr = new ArrayList<>();
-        testArr.add(n7);
-
-        Tuple<ArrayList<long[][]>, ArrayList<long[][]>> t = testo.prepareTrees(testArr);
-
-        OrtTensorDecoder testo2 = new OrtTensorDecoder();
-        System.out.println(testo2.decode(t));
-    }
-
     //TODO: figure out output structure, from ml model
     /**
      * Decodes the output from a tree based NN model
@@ -67,7 +45,6 @@ public class OrtTensorDecoder {
             long[][] values      = valueStructure.get(i);
             long[][] indexedTree = indexStructure.get(i);
             long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
-
             for (int j = 0; j < flatIndexTree.length; j+=3) {
                 final long curID = flatIndexTree[j];
                 long lID   = flatIndexTree[j+1];

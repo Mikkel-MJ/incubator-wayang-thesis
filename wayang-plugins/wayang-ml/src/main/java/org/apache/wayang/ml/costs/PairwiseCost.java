@@ -40,9 +40,11 @@ import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -140,6 +142,20 @@ public class PairwiseCost implements EstimatableCost {
                     }
                 })
                 .orElseThrow(() -> new WayangException("Could not find an execution plan."));
+
+
+        Configuration config = bestPlanImplementation
+            .getOptimizationContext()
+            .getConfiguration();
+
+        if (config.getBooleanProperty("wayang.ml.experience.enabled")) {
+            TreeNode encodedPlan = TreeEncoder.encode(bestPlanImplementation);
+            config.setProperty(
+                "wayang.ml.experience.with-platforms",
+                encodedPlan.toString()
+            );
+        }
+
         return bestPlanImplementation;
     }
 }

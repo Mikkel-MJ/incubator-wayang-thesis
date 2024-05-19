@@ -205,15 +205,27 @@ public class TreeEncoder implements Encoder {
 
         ExecutionTask currentTask = conversions.poll();
         ExecutionOperator current = currentTask.getOperator();
-
         TreeNode currentNode = new TreeNode();
 
-        OneHotMappings.addOriginalOperator(current);
+        if (current.isAlternative()) {
+            Operator original = ((OperatorAlternative) current)
+                .getAlternatives()
+                .get(0)
+                .getContainedOperators()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new WayangException("Operator could not be retrieved from Alternatives"));
+            OneHotMappings.addOriginalOperator(original);
 
-        if (current.isExecutionOperator()) {
-            currentNode.encoded = OneHotEncoder.encodeOperator((ExecutionOperator) current);
-        } else {
             currentNode.encoded = OneHotEncoder.encodeOperator(current);
+        } else {
+            OneHotMappings.addOriginalOperator(current);
+
+            if (current.isExecutionOperator()) {
+                currentNode.encoded = OneHotEncoder.encodeOperator((ExecutionOperator) current);
+            } else {
+                currentNode.encoded = OneHotEncoder.encodeOperator(current);
+            }
         }
 
         TreeNode nextNode = traverseWithNext(conversions, junctions, visited, next);
