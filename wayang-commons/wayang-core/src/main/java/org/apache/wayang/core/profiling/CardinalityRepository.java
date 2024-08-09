@@ -113,7 +113,6 @@ public class CardinalityRepository {
                         }
                     }
                 });
-        //this.logger.warn("Cardinality repository currently disabled.");
     }
 
     /**
@@ -127,12 +126,16 @@ public class CardinalityRepository {
             Operator operator) {
         assert output.getOwner() == operator :
                 String.format("Owner of %s is not %s.", output, operatorContext.getOperator());
-        if (!operatorContext.getOutputCardinality(output.getIndex()).isExactly(cardinality)) {
-            this.logger.error("Expected a measured cardinality of {} for {}; found {}.",
-                    cardinality, output, operatorContext.getOutputCardinality(output.getIndex()));
+        try {
+            CardinalityEstimate outputCardinality = operatorContext.getOutputCardinality(output.getIndex());
+            if (!outputCardinality.isExactly(cardinality)) {
+                this.logger.error("Expected a measured cardinality of {} for {}; found {}.",
+                        cardinality, output, operatorContext.getOutputCardinality(output.getIndex()));
+            }
+            this.write(operatorContext, output, cardinality, operator);
+        } catch(Exception e) {
+            return;
         }
-
-        this.write(operatorContext, output, cardinality, operator);
     }
 
     private void write(OptimizationContext.OperatorContext operatorContext,
@@ -143,17 +146,21 @@ public class CardinalityRepository {
         /*
         WayangJsonArray jsonInputCardinalities = new WayangJsonArray();
         for (int inputIndex = 0; inputIndex < operator.getNumInputs(); inputIndex++) {
-            final InputSlot<?> input = operator.getInput(inputIndex);
-            final CardinalityEstimate inputEstimate = operatorContext.getInputCardinality(inputIndex);
+            try {
+                final InputSlot<?> input = operator.getInput(inputIndex);
+                final CardinalityEstimate inputEstimate = operatorContext.getInputCardinality(inputIndex);
 
-            WayangJsonObj jsonInputCardinality = new WayangJsonObj();
-            jsonInputCardinality.put("name", input.getName());
-            jsonInputCardinality.put("index", input.getIndex());
-            jsonInputCardinality.put("isBroadcast", (Boolean) input.isBroadcast());
-            jsonInputCardinality.put("lowerBound", inputEstimate.getLowerEstimate());
-            jsonInputCardinality.put("upperBound", inputEstimate.getUpperEstimate());
-            jsonInputCardinality.put("confidence", inputEstimate.getCorrectnessProbability());
-            jsonInputCardinalities.put(jsonInputCardinality);
+                WayangJsonObj jsonInputCardinality = new WayangJsonObj();
+                jsonInputCardinality.put("name", input.getName());
+                jsonInputCardinality.put("index", input.getIndex());
+                jsonInputCardinality.put("isBroadcast", (Boolean) input.isBroadcast());
+                jsonInputCardinality.put("lowerBound", inputEstimate.getLowerEstimate());
+                jsonInputCardinality.put("upperBound", inputEstimate.getUpperEstimate());
+                jsonInputCardinality.put("confidence", inputEstimate.getCorrectnessProbability());
+                jsonInputCardinalities.put(jsonInputCardinality);
+            } catch(Exception e) {
+                continue;
+            }
         }
 
         WayangJsonObj jsonOperator = new WayangJsonObj();

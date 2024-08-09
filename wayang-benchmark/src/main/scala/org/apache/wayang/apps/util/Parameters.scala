@@ -25,6 +25,7 @@ import org.apache.wayang.core.plugin.{DynamicPlugin, Plugin}
 import org.apache.wayang.flink.Flink
 import org.apache.wayang.giraph.Giraph
 import org.apache.wayang.java.Java
+import org.apache.wayang.tensorflow.Tensorflow
 import org.apache.wayang.postgres.Postgres
 import org.apache.wayang.spark.Spark
 import org.apache.wayang.sqlite3.Sqlite3
@@ -73,6 +74,8 @@ object Parameters {
     case "postgres-conversions" => Postgres.conversionPlugin
     case "sqlite3" => Sqlite3.plugin
     case "sqlite3-conversions" => Sqlite3.conversionPlugin
+    case "tensorflow" => Tensorflow.plugin
+    case "tensorflow-conversions" => Tensorflow.channelConversionPlugin
     case yamlId(url) => DynamicPlugin.loadYaml(url)
     case other => throw new IllegalArgumentException(s"Could not load platform '$other'.")
   }

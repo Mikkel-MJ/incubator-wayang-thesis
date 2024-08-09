@@ -207,7 +207,7 @@ public class Configuration {
             this.properties = new MapBasedKeyValueProvider<>(this.parent.properties, this);
 
             // Cost model
-            this.costModel = parent.getCostModel();
+            this.costModel = this.parent.getCostModel();
         }
     }
 
