@@ -435,6 +435,7 @@ public class Job extends OneTimeExecutable {
         this.optimizationRound.start("Create Initial Execution Plan");
 
         // Enumerate all possible plan.
+        Instant start = Instant.now();
         final PlanEnumerator planEnumerator = this.createPlanEnumerator();
 
         final TimeMeasurement enumerateMeasurment = this.optimizationRound.start("Create Initial Execution Plan", "Enumerate");
@@ -450,7 +451,6 @@ public class Job extends OneTimeExecutable {
         }
 
 
-        Instant start = Instant.now();
         // Pick an execution plan.
         // Make sure that an execution plan can be created.
         this.optimizationRound.start("Create Initial Execution Plan", "Pick Best Plan");
