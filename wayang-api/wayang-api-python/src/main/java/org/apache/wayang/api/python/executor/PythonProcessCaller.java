@@ -44,11 +44,10 @@ public class PythonProcessCaller {
     //TODO How to get the config
     private Configuration configuration;
 
-    public PythonProcessCaller(ByteString serializedUDF){
+    public PythonProcessCaller(ByteString serializedUDF, Configuration configuration){
 
         //TODO create documentation to how to the configuration in the code
-        this.configuration = new Configuration();
-        this.configuration.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
+        this.configuration = configuration;
         this.ready = false;
         byte[] addr = new byte[4];
         addr[0] = 127; addr[1] = 0; addr[2] = 0; addr[3] = 1;
