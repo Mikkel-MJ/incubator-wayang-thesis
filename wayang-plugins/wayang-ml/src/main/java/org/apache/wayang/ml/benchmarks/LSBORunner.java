@@ -33,6 +33,7 @@ import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
+import org.apache.wayang.ml.training.LSBO;
 import org.apache.wayang.ml.training.TPCH;
 
 import java.util.HashMap;
@@ -42,8 +43,19 @@ import scala.collection.Seq;
 import scala.collection.JavaConversions;
 import com.google.protobuf.ByteString;
 
-public class LSBO {
+/**
+ * TODO:
+ *  - Move this to a class so that LSBO is a utility function
+ *  -- Takes wayang plan as input
+ *  -- Encodes it and sends it to python
+ *  -- Receives set of encoded strings from latent space
+ *  -- Executes each of those on the original plan
+ *  -- Samples each runtime and saves the best
+ *  -- Starts the retraining and replaces model
+ */
+public class LSBORunner {
     public static void main(String[] args) {
+        List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
         Configuration config = new Configuration();
         config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
 
@@ -52,15 +64,10 @@ public class LSBO {
             "/var/www/html/wayang-plugins/wayang-ml/src/main/python/worker.py"
         );
 
-        final ArrayList<String> input = new ArrayList<>();
-        input.add("INPUT1");
-        input.add("INPUT2");
+        HashMap<String, WayangPlan> plans = TPCH.createPlans("/var/www/html/data");
+        WayangPlan plan = plans.get("query1");
+        List<String> sampledPlans = LSBO.process(plan, config, plugins);
 
-        final PythonWorkerManager<String, String> manager = new PythonWorkerManager<>(ByteString.copyFromUtf8(""), input, config);
-        final Iterable<String> output = manager.execute();
-
-        if (output.iterator().hasNext()) {
-            System.out.println("Python worker output: " + output.iterator().next());
-        }
+        System.out.println(sampledPlans);
     }
 }
