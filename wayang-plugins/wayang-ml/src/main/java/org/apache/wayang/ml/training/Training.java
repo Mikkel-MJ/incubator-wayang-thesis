@@ -83,6 +83,7 @@ public class Training {
             PlanBuilder builder = quanta.getPlanBuilder();
             WayangContext context = builder.getWayangContext();
             Configuration config = context.getConfiguration();
+            config.setProperty("wayang.ml.experience.enabled", "false");
             WayangPlan plan = builder.build();
 
             /*int hashCode = new HashCodeBuilder(17, 37).append(plan).toHashCode();
@@ -101,19 +102,21 @@ public class Training {
 
             quanta = createdJob.buildPlan(jobArgs);
             builder = quanta.getPlanBuilder();
-              context = builder.getWayangContext();
-              context.setLogLevel(Level.INFO);
-              plan = builder.build();
-              Instant start = Instant.now();
-              context.execute(plan, "");
-              Instant end = Instant.now();
-              execTime = Duration.between(start, end).toMillis();
+            context = builder.getWayangContext();
+            context.setLogLevel(Level.INFO);
+            config = context.getConfiguration();
+            config.setProperty("wayang.ml.experience.enabled", "false");
+            plan = builder.build();
+            Instant start = Instant.now();
+            context.execute(plan, "");
+            Instant end = Instant.now();
+            execTime = Duration.between(start, end).toMillis();
 
-              //CardinalitySampler.readFromFile(path);
+            //CardinalitySampler.readFromFile(path);
 
-              writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
-              writer.newLine();
-              writer.flush();
+            writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
+            writer.newLine();
+            writer.flush();
           } catch(Exception e) {
               e.printStackTrace();
           }

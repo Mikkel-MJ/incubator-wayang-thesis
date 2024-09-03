@@ -23,10 +23,12 @@ import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.util.ReflectionUtils;
+import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
-
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.apache.wayang.api.python.executor.PythonWorkerManager;
 
 import org.apache.wayang.apps.util.Parameters;
@@ -34,6 +36,8 @@ import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.wayang.ml.encoding.OneHotMappings;
+import org.apache.wayang.ml.encoding.OrtTensorDecoder;
+import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.training.TPCH;
@@ -63,7 +67,7 @@ public class LSBO {
      * - Create Job for optimization context and mappings
      * - Encode and sample
      */
-    public static List<String> process(
+    public static Tuple<TreeNode, List<String>> process(
         WayangPlan inputPlan,
         Configuration config,
         List<Plugin> plugins
@@ -72,55 +76,89 @@ public class LSBO {
         final MLContext wayangContext = new MLContext(config);
         plugins.stream().forEach(plug -> wayangContext.register(plug));
 
-        final String encoded = encode(inputPlan, wayangContext);
+        final TreeNode encoded = encode(inputPlan, wayangContext);
 
-        Iterator<String> sampled = sample(encoded, config);
+        String encodedInput = encoded.toString() + ":" + encoded.toString() + ":1";
+        ArrayList<String> input = new ArrayList<>();
+        input.add(encodedInput);
+
+        Iterator<String> sampled = sample(input, config);
         sampled.forEachRemaining(results::add);
 
-        return results;
+        return new Tuple<>(encoded, results);
+    }
+
+    public static List<WayangPlan> decodePlans(List<String> plans, TreeNode encoded) {
+        ArrayList<WayangPlan> resultPlans = new ArrayList<>();
+        for (String plan: plans) {
+            try {
+                JSONObject jsonData = new JSONObject(plan);
+                JSONArray jsonArray = jsonData.getJSONArray("data");
+                JSONArray jsonChoices = jsonArray.getJSONArray(0);
+                JSONArray jsonIndexes = jsonArray.getJSONArray(1);
+                float[][][] choices = new float[1][jsonChoices.getJSONArray(0).length()][jsonChoices.getJSONArray(0).getJSONArray(0).length()];
+                long[][][] indexes = new long[1][jsonIndexes.getJSONArray(1).length()][jsonIndexes.getJSONArray(1).getJSONArray(0).length()];
+
+                for (int i = 0; i < jsonChoices.getJSONArray(0).length(); i++) {
+                    for (int j = 0; j < jsonChoices.getJSONArray(0).getJSONArray(i).length(); j++) {
+                        System.out.println(jsonChoices.getJSONArray(0).getJSONArray(i).get(j));
+                        choices[0][i][j] = ((Double) (jsonChoices.getJSONArray(0).getJSONArray(i).get(j))).floatValue();
+                    }
+                }
+
+                for (int i = 0; i < jsonIndexes.getJSONArray(1).length(); i++) {
+                    for (int j = 0; j < jsonIndexes.getJSONArray(1).getJSONArray(i).length(); j++) {
+                        indexes[0][i][j] = ((Integer) jsonIndexes.getJSONArray(1).getJSONArray(i).get(j)).longValue();
+                    }
+                }
+
+                long[][][] longResult = new long[1][(int) choices[0].length][(int) choices[0][0].length];
+                for (int i = 0; i < choices[0].length; i++)  {
+                    for (int j = 0; j < choices[0][i].length; j++) {
+                        // Just shift the decimal point
+                        longResult[0][i][j] = (long) (choices[0][i][j] * 1_000_000_000);
+                    }
+                }
+
+                OrtTensorDecoder decoder = new OrtTensorDecoder();
+                ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
+                mlResult.add(longResult[0]);
+                ArrayList<long[][]> indexList = new ArrayList<long[][]>();
+                indexList.add(indexes[0]);
+                Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, indexList);
+                TreeNode decoded = decoder.decode(decoderInput);
+                decoded.softmax();
+
+                // Now set the platforms on the wayangPlan
+                encoded = encoded.withPlatformChoicesFrom(decoded);
+
+                WayangPlan decodedPlan = TreeDecoder.decode(encoded);
+                resultPlans.add(decodedPlan);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return resultPlans;
     }
 
     private static Iterator<String> sample(
-        String encoded,
+        List<String> input,
         Configuration config
     ) {
-        final ArrayList<String> input = new ArrayList<>();
-        input.add(encoded);
-
         final PythonWorkerManager<String, String> manager = new PythonWorkerManager<>(ByteString.copyFromUtf8(""), input, config);
         final Iterable<String> output = manager.execute();
 
         return output.iterator();
     }
 
-    private static String encode(WayangPlan plan, MLContext context) {
+    public static TreeNode encode(WayangPlan plan, MLContext context) {
         Job wayangJob = context.createJob("", plan, "");
         wayangJob.estimateKeyFigures();
         OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
         OneHotMappings.encodeIds = true;
         TreeNode wayangNode = TreeEncoder.encode(plan);
 
-        return wayangNode.toString();
-    }
-
-    public static void main(String[] args) {
-        Configuration config = new Configuration();
-        config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
-
-        config.setProperty(
-            "wayang.api.python.worker",
-            "/var/www/html/wayang-plugins/wayang-ml/src/main/python/worker.py"
-        );
-
-        final ArrayList<String> input = new ArrayList<>();
-        input.add("INPUT1");
-        input.add("INPUT2");
-
-        final PythonWorkerManager<String, String> manager = new PythonWorkerManager<>(ByteString.copyFromUtf8(""), input, config);
-        final Iterable<String> output = manager.execute();
-
-        if (output.iterator().hasNext()) {
-            System.out.println("Python worker output: " + output.iterator().next());
-        }
+        return wayangNode;
     }
 }

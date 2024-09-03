@@ -9,6 +9,7 @@ java -version
 
 echo "Installing Spark"
 SHELL_PROFILE="$HOME/.bashrc"
+export WORKDIR=/work/lsbo-paper
 
 wget https://dlcdn.apache.org/spark/spark-3.5.1/spark-3.5.1-bin-hadoop3.tgz
 
@@ -32,7 +33,7 @@ export HADOOP_HOME=/opt/hadoop
 echo "Installing Flink"
 
 # "Installing Flink"
-export FLINK_VERSION=1.17.2
+export FLINK_VERSION=1.20.0
 export FLINK_HOME=/opt/flink
 export PATH="$PATH:${FLINK_HOME}/bin"
 
@@ -52,12 +53,12 @@ curl https://archive.apache.org/dist/giraph/giraph-${GIRAPH_VERSION}/giraph-dist
         rm giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz &&
         mv giraph-${GIRAPH_VERSION}-hadoop1-for-hadoop-1.2.1 ${GIRAPH_HOME}
 
-cd ../work/thesis
+cd ..${WORKDIR}
 #cp spark-defaults.conf /opt/spark/conf
-tar -xvf apache-wayang-assembly-0.7.1-SNAPSHOT-incubating-dist.tar.gz
+tar -xvf apache-wayang-assembly-0.7.1-incubating-dist.tar.gz
 
-cd wayang-0.7.1-SNAPSHOT
+cd wayang-0.7.1
 
 for i in {2001..3000}; do
-    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.training.Training java,spark,flink,giraph file:///work/thesis/data/ /work/thesis/data/no-co-encodings-2.txt $i true
+    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.training.Training java,spark,flink,giraph file://${WORKDIR}/data/ ${WORKDIR}/data/no-co-encodings-2.txt $i true
 done
