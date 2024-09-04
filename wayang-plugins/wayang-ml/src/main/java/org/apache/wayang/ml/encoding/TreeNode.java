@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.regex.Matcher;
@@ -150,6 +151,8 @@ public class TreeNode {
     }
 
     public void softmax() {
+        Set<Integer> disallowed = Set.of(1, 2, 4, 6, 8);
+
         if (this.encoded == null) {
             return;
         }
@@ -157,29 +160,13 @@ public class TreeNode {
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
 
-        // TODO: Find out why the model thinks Giraph is neccessary?
-        if (values[1] == 1) {
-            this.encoded[1] = 0;
-            this.softmax();
-            return;
-        }
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == 1 && disallowed.contains(i)) {
+                this.encoded[i] = 0;
+                this.softmax();
 
-        if (values[6] == 1) {
-            this.encoded[6] = 0;
-            this.softmax();
-            return;
-        }
-
-        if (values[4] == 1) {
-            this.encoded[4] = 0;
-            this.softmax();
-            return;
-        }
-
-        if (values[3] == 1) {
-            this.encoded[3] = 0;
-            this.softmax();
-            return;
+                return;
+            }
         }
 
         this.encoded = values;

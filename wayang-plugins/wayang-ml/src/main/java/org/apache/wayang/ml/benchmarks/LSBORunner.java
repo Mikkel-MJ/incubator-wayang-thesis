@@ -32,6 +32,7 @@ import org.apache.wayang.spark.Spark;
 import org.apache.wayang.api.python.executor.PythonWorkerManager;
 
 import org.apache.wayang.apps.util.Parameters;
+import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
@@ -44,6 +45,10 @@ import org.apache.wayang.ml.encoding.TreeNode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.io.File;
+import java.time.Instant;
+import java.time.Duration;
 import scala.collection.Seq;
 import scala.collection.JavaConversions;
 import com.google.protobuf.ByteString;
@@ -59,6 +64,9 @@ import com.google.protobuf.ByteString;
  *  -- Starts the retraining and replaces model
  */
 public class LSBORunner {
+    private static int RETRIES = 10;
+    private static final double IMPROVEMENT_THRESSHOLD = 0.05;
+
     public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
         Configuration config = new Configuration();
@@ -81,30 +89,61 @@ public class LSBORunner {
         OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
         OneHotMappings.encodeIds = true;
         TreeNode wayangNode = TreeEncoder.encode(plan);
+        HashMap<WayangPlan, Long> latencyMap = new HashMap<>();
+        long lowestLatency = Long.MAX_VALUE;
 
-        Tuple<TreeNode, List<String>> sampled = LSBO.process(plan, config, plugins);
+        while(RETRIES > 0) {
+            Tuple<TreeNode, List<String>> sampled = LSBO.process(plan, config, plugins);
 
-        // reconstruct tensors from the json sampled plans
-        List<WayangPlan> decodedPlans = LSBO.decodePlans(sampled.field1, sampled.field0);
+            // reconstruct tensors from the json sampled plans
+            List<WayangPlan> decodedPlans = LSBO.decodePlans(sampled.field1, sampled.field0);
 
-        // execute each WayangPlan and sample latency
-        // encode the best one
-        WayangContext executionContext = new WayangContext(config);
+            // execute each WayangPlan and sample latency
+            // encode the best one
+            WayangContext executionContext = new WayangContext(config);
 
-        ArrayList<String> resampleEncodings = new ArrayList<>();
+            ArrayList<String> resampleEncodings = new ArrayList<>();
 
-        for (WayangPlan sampledPlan: decodedPlans) {
-            TreeNode encoded = TreeEncoder.encode(sampledPlan);
-            executionContext.execute(sampledPlan, "");
+            // Get the initial plan created by the LSBO loop
+            for (WayangPlan sampledPlan: decodedPlans) {
+                System.out.println("WayangPlan: " + sampledPlan);
+                ExplainUtils.parsePlan(sampledPlan, false);
+                TreeNode encoded = TreeEncoder.encode(sampledPlan);
+                long execTime = Long.MAX_VALUE;
+                try {
+                    Instant start = Instant.now();
+                    executionContext.execute(sampledPlan, "");
+                    Instant end = Instant.now();
+                    execTime = Duration.between(start, end).toMillis();
 
-            resampleEncodings.add(wayangNode.toString() + ":" + encoded.toString() + ":3000");
+                    resampleEncodings.add(wayangNode.toString() + ":" + encoded.toString() + ":3000");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    latencyMap.put(sampledPlan, execTime);
+                }
+            }
+
+            // Check if we saw any improvement
+            Long currentLowest = Collections.min(latencyMap.values());
+            if (currentLowest < lowestLatency) {
+                lowestLatency = currentLowest;
+                System.out.println("Saw improvement in latency from LSBO sampled plans");
+            } else {
+                RETRIES--;
+                System.out.println("Saw no improvement from LSBO samples, " + RETRIES + " retries left");
+            }
         }
 
-        config.setProperty(
-            "wayang.api.python.worker",
-            "/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/lsbo_resampler.py"
-        );
+        //TODO:
+        // Read the best_parameters file and parse the batch_size
+        // Create a dataset of the best plan N * batch_size, with some arbitrary N
+        // Feed the dataset to a new training_worker.py over the socket and train the model
+        // Delete the surrogate model, as the new model has been trained on the LSBO plan
+        File surrogate = new File("/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/Models/vae-surrogate.onnx");
 
-        Tuple<TreeNode, List<String>> useless = LSBO.process(plan, config, plugins);
+        if (surrogate.delete()) {
+            System.out.println("Deleted surrogate model file");
+        }
     }
 }

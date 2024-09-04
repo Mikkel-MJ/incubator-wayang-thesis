@@ -101,7 +101,6 @@ public class LSBO {
 
                 for (int i = 0; i < jsonChoices.getJSONArray(0).length(); i++) {
                     for (int j = 0; j < jsonChoices.getJSONArray(0).getJSONArray(i).length(); j++) {
-                        System.out.println(jsonChoices.getJSONArray(0).getJSONArray(i).get(j));
                         choices[0][i][j] = ((Double) (jsonChoices.getJSONArray(0).getJSONArray(i).get(j))).floatValue();
                     }
                 }

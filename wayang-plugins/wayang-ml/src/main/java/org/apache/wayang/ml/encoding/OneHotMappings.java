@@ -105,6 +105,7 @@ public class OneHotMappings {
 
         int platformIndex = -1;
         int offset = operatorsCount;
+
         for (int i = offset; i < platformsCount + offset && platformIndex == -1; i++) {
             if(encoded[i] == 1)  {
                 platformIndex = i;
@@ -114,6 +115,8 @@ public class OneHotMappings {
         if (platformIndex == -1) {
             return Optional.empty();
         }
+
+
 
         for (final Object entry : platformsMapping.keySet()) {
             if (platformsMapping.get(entry).equals(platformIndex - operatorsCount)) {
