@@ -3,7 +3,7 @@
     "defaultSchema": "wayang",
     "schemas": [
         {
-            "name": "job",
+            "name": "postgres",
             "type": "custom",
             "factory": "org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory",
             "operand": {
