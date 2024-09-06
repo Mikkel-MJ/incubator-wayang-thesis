@@ -92,36 +92,37 @@ public class LSBORunner {
         HashMap<WayangPlan, Long> latencyMap = new HashMap<>();
         long lowestLatency = Long.MAX_VALUE;
 
-        while(RETRIES > 0) {
+        // while(RETRIES > 0) {
             Tuple<TreeNode, List<String>> sampled = LSBO.process(plan, config, plugins);
 
             // reconstruct tensors from the json sampled plans
+            System.out.println("Sampled: " + sampled.field1);
             List<WayangPlan> decodedPlans = LSBO.decodePlans(sampled.field1, sampled.field0);
 
             // execute each WayangPlan and sample latency
             // encode the best one
-            WayangContext executionContext = new WayangContext(config);
-
             ArrayList<String> resampleEncodings = new ArrayList<>();
 
+            WayangPlan sampledPlan = decodedPlans.get(0);
             // Get the initial plan created by the LSBO loop
-            for (WayangPlan sampledPlan: decodedPlans) {
-                System.out.println("WayangPlan: " + sampledPlan);
-                ExplainUtils.parsePlan(sampledPlan, false);
-                TreeNode encoded = TreeEncoder.encode(sampledPlan);
-                long execTime = Long.MAX_VALUE;
-                try {
-                    Instant start = Instant.now();
-                    executionContext.execute(sampledPlan, "");
-                    Instant end = Instant.now();
-                    execTime = Duration.between(start, end).toMillis();
+            WayangContext executionContext = new WayangContext(config);
+            plugins.stream().forEach(plug -> executionContext.register(plug));
 
-                    resampleEncodings.add(wayangNode.toString() + ":" + encoded.toString() + ":3000");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    latencyMap.put(sampledPlan, execTime);
-                }
+            ExplainUtils.parsePlan(sampledPlan, false);
+            TreeNode encoded = TreeEncoder.encode(sampledPlan);
+            long execTime = Long.MAX_VALUE;
+
+            try {
+                Instant start = Instant.now();
+                executionContext.execute(sampledPlan, "");
+                Instant end = Instant.now();
+                execTime = Duration.between(start, end).toMillis();
+
+                resampleEncodings.add(wayangNode.toString() + ":" + encoded.toString() + ":3000");
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                latencyMap.put(sampledPlan, execTime);
             }
 
             // Check if we saw any improvement
@@ -133,7 +134,7 @@ public class LSBORunner {
                 RETRIES--;
                 System.out.println("Saw no improvement from LSBO samples, " + RETRIES + " retries left");
             }
-        }
+        //}
 
         //TODO:
         // Read the best_parameters file and parse the batch_size

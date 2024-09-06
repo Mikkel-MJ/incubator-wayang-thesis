@@ -83,6 +83,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -325,24 +326,30 @@ public class Job extends OneTimeExecutable {
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
 
-            if (this.getConfiguration().getBooleanProperty("wayang.ml.experience.enabled")) {
+            boolean experienceEnabled = this.getConfiguration().getOptionalBooleanProperty("wayang.ml.experience.enabled").orElse(false);
+
+            if (experienceEnabled) {
                 this.getConfiguration().setProperty(
                     "wayang.ml.experience.exec-time",
                     String.valueOf(execTime)
                 );
             }
 
-            try {
-                FileWriter fw = new FileWriter(
-                    this.configuration.getStringProperty("wayang.ml.executions.file"),
-                    true
-                );
-                BufferedWriter writer = new BufferedWriter(fw);
-                writer.write(String.format("%d", execTime));
-                writer.newLine();
-                writer.flush();
-            } catch(Exception e) {
-                e.printStackTrace();
+            Optional<String> executionsFile = this.getConfiguration().getOptionalStringProperty("wayang.ml.executions.file");
+
+            if (executionsFile.isPresent()) {
+                try {
+                    FileWriter fw = new FileWriter(
+                        executionsFile.get(),
+                        true
+                    );
+                    BufferedWriter writer = new BufferedWriter(fw);
+                    writer.write(String.format("%d", execTime));
+                    writer.newLine();
+                    writer.flush();
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             this.stopWatch.start("Post-processing");
@@ -477,18 +484,22 @@ public class Job extends OneTimeExecutable {
         Instant end = Instant.now();
         long execTime = Duration.between(start, end).toMillis();
 
-        try {
-            FileWriter fw = new FileWriter(
-                this.configuration.getStringProperty("wayang.ml.optimizations.file"),
-                true
-            );
-            BufferedWriter writer = new BufferedWriter(fw);
-            writer.write(String.format("%d", execTime));
-            writer.newLine();
-            writer.flush();
-        } catch(Exception e) {
-            e.printStackTrace();
+        Optional<String> optimizationsFile = this.getConfiguration().getOptionalStringProperty("wayang.ml.optimizations.file");
+        if (optimizationsFile.isPresent()) {
+            try {
+                FileWriter fw = new FileWriter(
+                    optimizationsFile.get(),
+                    true
+                );
+                BufferedWriter writer = new BufferedWriter(fw);
+                writer.write(String.format("%d", execTime));
+                writer.newLine();
+                writer.flush();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
         }
+
         return executionPlan;
     }
 

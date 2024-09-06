@@ -1051,7 +1051,7 @@
             <plugin>
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
-                <version>0.13</version>
+                <version>0.14</version>
                 <executions>
                     <execution>
                         <id>license-check</id>
@@ -1087,7 +1087,7 @@
                         <exclude>**/.factorypath</exclude>
 
                         <!--RAT files-->
-                        <exclude>**/apache-rat-0.13/**</exclude>
+                        <exclude>**/apache-rat-0.14/**</exclude>
 
                         <!-- IntelliJ related files -->
                         <exclude>**/.idea/**</exclude>
