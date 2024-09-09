@@ -24,14 +24,26 @@ public class IMDBJOBenchmark {
         try {
             Configuration configuration = new Configuration();
 
+            String calciteModel = Resources.toString(
+                IMDBJOBenchmark.class.getResource("/calcite-model.json"),
+                Charset.defaultCharset());
+
+            configuration.setProperty("wayang.calcite.model", calciteModel);
             configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://host.docker.internal:5432/job");
             configuration.setProperty("wayang.postgres.jdbc.user", "postgres");
             configuration.setProperty("wayang.postgres.jdbc.password", "postgres");
 
-            String calciteModel = Resources.toString(
-                    IMDBJOBenchmark.class.getResource("/calcite-model.json"),
-                    Charset.defaultCharset());
-            configuration.setProperty("wayang.calcite.model", calciteModel);
+            configuration.setProperty(
+                "wayang.ml.executions.file",
+                "mle" + ".txt"
+            );
+
+            configuration.setProperty(
+                "wayang.ml.optimizations.file",
+                "mlo" + ".txt"
+            );
+
+
 
             SqlContext sqlContext = new SqlContext(configuration);
 
