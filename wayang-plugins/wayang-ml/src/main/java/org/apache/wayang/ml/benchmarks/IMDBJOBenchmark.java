@@ -24,7 +24,7 @@ public class IMDBJOBenchmark {
         try {
             Configuration configuration = new Configuration();
 
-            configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://localhost:5432/job");
+            configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://host.docker.internal:5432/job");
             configuration.setProperty("wayang.postgres.jdbc.user", "postgres");
             configuration.setProperty("wayang.postgres.jdbc.password", "postgres");
 
