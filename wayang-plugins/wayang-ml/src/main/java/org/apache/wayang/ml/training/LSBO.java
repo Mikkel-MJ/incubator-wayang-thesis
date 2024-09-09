@@ -92,22 +92,21 @@ public class LSBO {
         ArrayList<WayangPlan> resultPlans = new ArrayList<>();
         for (String plan: plans) {
             try {
-                JSONObject jsonData = new JSONObject(plan);
-                JSONArray jsonArray = jsonData.getJSONArray("data");
+                JSONArray jsonArray = new JSONArray(plan);
                 JSONArray jsonChoices = jsonArray.getJSONArray(0);
                 JSONArray jsonIndexes = jsonArray.getJSONArray(1);
-                float[][][] choices = new float[1][jsonChoices.getJSONArray(0).length()][jsonChoices.getJSONArray(0).getJSONArray(0).length()];
-                long[][][] indexes = new long[1][jsonIndexes.getJSONArray(1).length()][jsonIndexes.getJSONArray(1).getJSONArray(0).length()];
+                float[][][] choices = new float[1][jsonChoices.length()][jsonChoices.getJSONArray(0).length()];
+                long[][][] indexes = new long[1][jsonIndexes.length()][jsonIndexes.getJSONArray(1).length()];
 
-                for (int i = 0; i < jsonChoices.getJSONArray(0).length(); i++) {
-                    for (int j = 0; j < jsonChoices.getJSONArray(0).getJSONArray(i).length(); j++) {
-                        choices[0][i][j] = ((Double) (jsonChoices.getJSONArray(0).getJSONArray(i).get(j))).floatValue();
+                for (int i = 0; i < jsonChoices.length(); i++) {
+                    for (int j = 0; j < jsonChoices.getJSONArray(i).length(); j++) {
+                        choices[0][i][j] = ((Double) (jsonChoices.getJSONArray(i).get(j))).floatValue();
                     }
                 }
 
-                for (int i = 0; i < jsonIndexes.getJSONArray(1).length(); i++) {
-                    for (int j = 0; j < jsonIndexes.getJSONArray(1).getJSONArray(i).length(); j++) {
-                        indexes[0][i][j] = ((Integer) jsonIndexes.getJSONArray(1).getJSONArray(i).get(j)).longValue();
+                for (int i = 0; i < jsonIndexes.length(); i++) {
+                    for (int j = 0; j < jsonIndexes.getJSONArray(i).length(); j++) {
+                        indexes[0][i][j] = ((Integer) jsonIndexes.getJSONArray(i).get(j)).longValue();
                     }
                 }
 

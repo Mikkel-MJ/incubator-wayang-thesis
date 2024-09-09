@@ -30,6 +30,7 @@ import org.apache.wayang.spark.Spark;
 
 import org.apache.wayang.api.python.executor.PythonWorkerManager;
 import org.apache.wayang.api.python.executor.ProcessFeeder;
+import org.apache.wayang.api.python.executor.ProcessReceiver;
 
 import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.util.ExplainUtils;
@@ -46,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
@@ -98,8 +100,55 @@ public class LSBOSampler {
             );
 
             feed.send();
+
+            // Wait for a sampled plan
+            ProcessReceiver<String> r = new ProcessReceiver<>(socket);
+            List<String> lsboSamples = new ArrayList<>();
+            r.getIterable().iterator().forEachRemaining(lsboSamples::add);
+            List<WayangPlan> decodedPlans = LSBO.decodePlans(lsboSamples, wayangNode);
+            WayangPlan sampledPlan = decodedPlans.get(0);
+
+            // execute each WayangPlan and sample latency
+            // encode the best one
+            ArrayList<String> resampleEncodings = new ArrayList<>();
+
+            // Get the initial plan created by the LSBO loop
+            WayangContext executionContext = new WayangContext(config);
+            plugins.stream().forEach(plug -> executionContext.register(plug));
+
+            ExplainUtils.parsePlan(sampledPlan, false);
+            TreeNode encoded = TreeEncoder.encode(sampledPlan);
+            long execTime = Long.MAX_VALUE;
+
+            try {
+                Instant start = Instant.now();
+                executionContext.execute(sampledPlan, "");
+                Instant end = Instant.now();
+                execTime = Duration.between(start, end).toMillis();
+
+                encodedInput = wayangNode.toString() + ":" + encoded.toString() + ":" + execTime;
+                System.out.println(encodedInput);
+
+                ArrayList<String> latency = new ArrayList<>();
+                latency.add(encodedInput);
+
+                System.out.println(input);
+
+                ProcessFeeder<String, String> latencyFeed = new ProcessFeeder<>(
+                    socket,
+                    ByteString.copyFromUtf8(""),
+                    latency
+                );
+
+                latencyFeed.send();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println(e);
+            }
+
         } catch(Exception e) {
             e.printStackTrace();
+            System.out.println(e);
         }
 
         //TODO:
