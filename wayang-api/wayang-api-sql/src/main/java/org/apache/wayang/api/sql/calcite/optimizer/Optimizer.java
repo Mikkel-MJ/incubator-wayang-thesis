@@ -30,6 +30,9 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.rules.FilterJoinRule;
+import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule.FilterIntoJoinRuleConfig;
+import org.apache.calcite.rel.rules.FilterJoinRule.JoinConditionPushRule.JoinConditionPushRuleConfig;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlNode;
@@ -104,7 +107,7 @@ public class Optimizer {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
         RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
-
+        
         SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
                 .withExpand(false);
@@ -156,6 +159,7 @@ public class Optimizer {
 
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        planner.addRule(FilterIntoJoinRuleConfig.DEFAULT.toRule())
 
         RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
