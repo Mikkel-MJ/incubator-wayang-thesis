@@ -159,7 +159,7 @@ public class Optimizer {
 
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-        planner.addRule(FilterIntoJoinRuleConfig.DEFAULT.toRule())
+        planner.addRule(FilterIntoJoinRuleConfig.DEFAULT.toRule());
 
         RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
