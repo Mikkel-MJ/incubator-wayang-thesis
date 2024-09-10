@@ -95,7 +95,7 @@ public class LSBOSampler {
 
             ProcessFeeder<String, String> feed = new ProcessFeeder<>(
                 socket,
-                ByteString.copyFromUtf8(""),
+                ByteString.copyFromUtf8("lambda x: x"),
                 input
             );
 
@@ -136,7 +136,7 @@ public class LSBOSampler {
 
                 ProcessFeeder<String, String> latencyFeed = new ProcessFeeder<>(
                     socket,
-                    ByteString.copyFromUtf8(""),
+                    ByteString.copyFromUtf8("lambda x: x"),
                     latency
                 );
 
