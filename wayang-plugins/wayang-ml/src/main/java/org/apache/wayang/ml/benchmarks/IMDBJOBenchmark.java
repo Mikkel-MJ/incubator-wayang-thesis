@@ -43,6 +43,7 @@ public class IMDBJOBenchmark {
                 "mlo" + ".txt"
             );
 
+            configuration.setProperty("wayang.ml.experience.enabled", "false");
 
 
             SqlContext sqlContext = new SqlContext(configuration);
