@@ -18,22 +18,21 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rex.*;
+import java.util.Optional;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
-import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
 
 public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
     WayangFilterVisitor(WayangRelConverter wayangRelConverter) {
@@ -57,7 +56,6 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
         return filter;
     }
 
-
     private class FilterPredicateImpl implements FunctionDescriptor.SerializablePredicate<Record> {
 
         private final RexNode condition;
@@ -72,7 +70,6 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
         }
     }
 
-
     private class EvaluateFilterCondition extends RexVisitorImpl<Boolean> {
 
         final Record record;
@@ -84,6 +81,7 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
         @Override
         public Boolean visitCall(RexCall call) {
             SqlKind kind = call.getKind();
+
             if(!kind.belongsTo(SUPPORTED_OPS)) {
                 throw new IllegalStateException("Cannot handle this filter predicate yet");
             }
@@ -101,12 +99,12 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
         }
 
         public boolean eval(Record record, SqlKind kind, RexNode leftOperand, RexNode rightOperand) {
-
             if(leftOperand instanceof RexInputRef && rightOperand instanceof RexLiteral) {
-                RexInputRef rexInputRef = (RexInputRef)leftOperand;
+                RexInputRef rexInputRef = (RexInputRef) leftOperand;
                 int index = rexInputRef.getIndex();
-                Object field = record.getField(index);
+                Optional<?> field = Optional.ofNullable(record.getField(index));
                 RexLiteral rexLiteral = (RexLiteral) rightOperand;
+
                 switch (kind) {
                     case GREATER_THAN:
                         return isGreaterThan(field, rexLiteral);
@@ -120,30 +118,29 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                         return isLessThan(field, rexLiteral) || isEqualTo(field, rexLiteral);
                     default:
                         throw new IllegalStateException("Predicate not supported yet");
-
                 }
-
             } else {
                 throw new IllegalStateException("Predicate not supported yet");
             }
-
         }
 
-        private boolean isGreaterThan(Object o, RexLiteral rexLiteral) {
-//            return rexLiteral.getValue().compareTo(o)< 0;
-            return ((Comparable)o).compareTo(rexLiteral.getValueAs(o.getClass())) > 0;
-
+        private boolean isGreaterThan(Optional<?> o, RexLiteral rexLiteral) {
+            Object unwrapped = o.orElseThrow(() -> new IllegalStateException("isGreaterThan not supported for null objects, object was: " + o + ", rexLiteral was: " + rexLiteral));
+            return ((Comparable) unwrapped).compareTo(rexLiteral.getValueAs(unwrapped.getClass())) > 0;
         }
 
-        private boolean isLessThan(Object o, RexLiteral rexLiteral) {
-            return ((Comparable)o).compareTo(rexLiteral.getValueAs(o.getClass())) < 0;
+        private boolean isLessThan(Optional<?> o, RexLiteral rexLiteral) {
+            Object unwrapped = o.orElseThrow(() -> new IllegalStateException("isLessThan not supported for null objects, object was: " + o + ", rexLiteral was: " + rexLiteral));
+            return ((Comparable) unwrapped).compareTo(rexLiteral.getValueAs(unwrapped.getClass())) < 0;
         }
 
-        private boolean isEqualTo(Object o, RexLiteral rexLiteral) {
+        private boolean isEqualTo(Optional<?> o, RexLiteral rexLiteral) {
             try {
-                return ((Comparable)o).compareTo(rexLiteral.getValueAs(o.getClass())) == 0;
+                if(o.isEmpty() && rexLiteral.isNull()) return true;
+                if(o.isPresent()) return ((Comparable) o.get()).compareTo(rexLiteral.getValueAs(o.get().getClass())) == 0;
+                return false;
             } catch (Exception e) {
-                throw new IllegalStateException("Predicate not supported yet");
+                throw new IllegalStateException("Predicate not supported yet, something went wrong when computing an isEqualTo predicate, object: " + o + " rexLiteral: " + rexLiteral + " rexLiteral kind: " + rexLiteral.getKind() + " rexLiteral type: " + rexLiteral.getType());
             }
         }
     }
@@ -154,12 +151,4 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                     SqlKind.EQUALS, SqlKind.NOT_EQUALS,
                     SqlKind.LESS_THAN, SqlKind.GREATER_THAN,
                     SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL);
-
-
-
-
-
-
-
-
 }
