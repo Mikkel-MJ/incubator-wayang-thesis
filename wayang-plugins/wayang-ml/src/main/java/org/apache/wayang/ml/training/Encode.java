@@ -70,7 +70,6 @@ public class Encode {
         int counter = 0;
         Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[3]));
 
-
         try {
             FileWriter fw = new FileWriter(args[2], true);
             BufferedWriter writer = new BufferedWriter(fw);
