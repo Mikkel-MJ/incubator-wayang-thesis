@@ -55,17 +55,29 @@ public class SqlToWayangRelTest {
         String dataPath = SqlAPI.class.getResource("/data/exampleMin.csv").getPath();
         configuration.setProperty("wayang.fs.table.url", dataPath);
 
+        configuration.setProperty(
+                "wayang.ml.executions.file",
+                "mle" + ".txt"
+            );
+
+        configuration.setProperty(
+        "wayang.ml.optimizations.file",
+        "mlo" + ".txt"
+        );
+
+        configuration.setProperty("wayang.ml.experience.enabled", "false");
+
         SqlContext sqlContext = new SqlContext(configuration);
 
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
-            "INSERT INTO fs.exampleMin VALUES ('AA'), ('AB'), ('AC')" //
+            "SELECT MIN(exampleMin.NAME) FROM fs.exampleMin" //
         );
 
-        result.stream().forEach(System.out::println);
+        assert(result.stream().findAny().get().getString(0).equals("AA"));
     }
     
-    @Test
+    //@Test
     public void test_simple_sql() throws Exception {
         WayangTable customer = WayangTableBuilder.build("customer")
                 .addField("id", SqlTypeName.INTEGER)

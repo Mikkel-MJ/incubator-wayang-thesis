@@ -8,7 +8,7 @@
           "type": "custom",
           "factory": "org.apache.calcite.adapter.file.FileSchemaFactory",
           "operand": {
-            "directory": "/var/www/html/wayang-api/wayang-api-sql/src/test/resources/data"
+            "directory": "//var/www/html/wayang-api/wayang-api-sql/src/test/resources/data"
           }
         }
       ]

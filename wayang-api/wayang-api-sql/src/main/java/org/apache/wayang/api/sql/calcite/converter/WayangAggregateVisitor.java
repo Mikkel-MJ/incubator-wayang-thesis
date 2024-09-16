@@ -18,6 +18,7 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
+
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
@@ -28,10 +29,14 @@ import org.apache.wayang.basic.operators.ReduceByOperator;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.ReduceDescriptor;
 import org.apache.wayang.core.function.TransformationDescriptor;
+import org.apache.wayang.core.plan.wayangplan.BinaryToUnaryOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.types.DataUnitType;
 
-import java.util.*;
+import java.util.function.BiFunction;
+import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
@@ -184,31 +189,57 @@ class aggregateFunction implements FunctionDescriptor.SerializableBinaryOperator
         Object[] resValues = new Object[l];
         int i;
         boolean countDone = false;
+
         for(i=0; i<l-aggregateCallList.size() -1; i++){
             resValues[i] = record.getField(i);
         }
+        
         for(AggregateCall aggregateCall : aggregateCallList) {
             String name = aggregateCall.getAggregation().getName();
-            double val1 = record.getDouble(i);
-            double val2 = record2.getDouble(i);
-            if (name.equals("SUM")) {
-                resValues[i] = val1 + val2;
-            }
-            else if (name.equals("MIN")) {
-                resValues[i] = Math.min(val1, val2);
-            }
-            else if (name.equals("MAX")) {
-                resValues[i] = Math.max(val1, val2);
-            }
-            else if (name.equals("COUNT")){
-                resValues[i] = val1 + val2;
-            }
-            else if (name.equals("AVG")){
-                resValues[i] = val1 + val2;
-                if(!countDone) {
-                    resValues[l-1] = record.getInt(l-1) + record2.getInt(l-1);
-                    countDone = true;
+            Object field = record.getField(i);
+            Object field2 = record2.getField(i);
+            //resValues need to be filled with something resValues[i] = (record1, record2) -> record3
+            System.out.println(String.format(name, field, field2));
+            //map from name & type -> lambda? 
+            if (field instanceof Double && field2 instanceof Double){
+                if (name.equals("SUM")) {
+                    resValues[i] = record.getDouble(i) + record2.getDouble(i);
                 }
+                else if (name.equals("MIN")) {
+                    resValues[i] = Math.min(record.getDouble(i), record2.getDouble(i));
+                }
+                else if (name.equals("MAX")) {
+                    resValues[i] = Math.max(record.getDouble(i), record2.getDouble(i));
+                }
+                else if (name.equals("COUNT")){
+                    resValues[i] = record.getDouble(i) + record2.getDouble(i);
+                }
+                else if (name.equals("AVG")){
+                    resValues[i] = record.getDouble(i) + record.getDouble(i);
+                    if(!countDone) {
+                        resValues[l-1] = record.getInt(l-1) + record2.getInt(l-1);
+                        countDone = true;
+                    }
+                }
+            } 
+            else if (record.getField(i) instanceof String && record2.getField(i) instanceof String) {
+                if (name.equals("MIN")) {
+                    //TODO: Implement with Collator java.util
+                    int compare = record.getString(i).compareTo(record2.getString(i));
+                    if (compare < 0) {  
+                        resValues[i] = record.getString(i);
+                    }
+                    else if (compare > 0) {
+                        resValues[i] = record2.getString(i);
+                    }
+                    else {  
+                        resValues[i] = record.getString(i);
+                    } 
+                } else {
+                    throw new IllegalStateException("Operation unsupported, operation: " + name + " record1: " + record + " record2:" + record2);
+                }
+            } else {
+                throw new IllegalStateException("Operation unsupported, operation: " + name + " record1: " + record + " record2:" + record2);
             }
             i++;
         }
