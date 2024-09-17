@@ -46,6 +46,39 @@ import java.util.Collection;
 
 public class SqlToWayangRelTest {
     @Test
+    public void joinWithLargeLeftTableIndex() throws Exception {
+        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
+        
+        System.out.println("loading calcite model: " + calciteModelPath);
+        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
+
+        String dataPath = SqlAPI.class.getResource("/data/largeLeftTableIndex.csv").getPath();
+        configuration.setProperty("wayang.fs.table.url", dataPath);
+
+        configuration.setProperty(
+                "wayang.ml.executions.file",
+                "mle" + ".txt"
+            );
+
+        configuration.setProperty(
+        "wayang.ml.optimizations.file",
+        "mlo" + ".txt"
+        );
+
+        configuration.setProperty("wayang.ml.experience.enabled", "false");
+
+        SqlContext sqlContext = new SqlContext(configuration);
+
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT MIN(nb.NAMEA) FROM fs.largeLeftTableIndex AS na INNER JOIN fs.largeLeftTableIndex AS nb ON nb.NAMEB = na.NAMEA " //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+    }
+
+    //@Test
     public void exampleFilterTableRefToTableRef() throws Exception {
         String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
         
