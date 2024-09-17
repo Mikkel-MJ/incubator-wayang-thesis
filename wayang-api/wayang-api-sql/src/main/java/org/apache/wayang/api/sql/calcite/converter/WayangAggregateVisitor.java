@@ -198,9 +198,7 @@ class aggregateFunction implements FunctionDescriptor.SerializableBinaryOperator
             String name = aggregateCall.getAggregation().getName();
             Object field = record.getField(i);
             Object field2 = record2.getField(i);
-            //resValues need to be filled with something resValues[i] = (record1, record2) -> record3
-            System.out.println(String.format(name, field, field2));
-            //map from name & type -> lambda? 
+
             if (field instanceof Double && field2 instanceof Double){
                 if (name.equals("SUM")) {
                     resValues[i] = record.getDouble(i) + record2.getDouble(i);

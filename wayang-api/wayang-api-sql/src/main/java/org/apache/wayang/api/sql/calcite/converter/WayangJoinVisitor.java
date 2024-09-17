@@ -56,6 +56,23 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
         int leftKeyIndex = condition.accept(new KeyIndex(false, Child.LEFT));
         int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT)) - offset;
 
+        System.out.println("condition: " + condition + " offset: " + offset);
+
+        if(rightKeyIndex < 0) { 
+            System.out.println("\n rki was negative");
+            System.out.println("wayang rel node: " +wayangRelNode);
+            System.out.println("col: " + childOpLeft);
+            System.out.println("cor: " + childOpRight);
+            System.out.println("condition: " + condition);
+            System.out.println("offset: " + offset);
+            System.out.println("left key index: " + leftKeyIndex);
+            System.out.println("right key index: " + rightKeyIndex);
+            System.out.println("rki b4 offset: " + (rightKeyIndex+offset));
+
+            rightKeyIndex += offset;
+            leftKeyIndex -= wayangRelNode.getRowType().getFieldCount();
+        }
+
         JoinOperator<Record, Record, Object> join = new JoinOperator<>(
                 new TransformationDescriptor<>(new KeyExtractor(leftKeyIndex), Record.class, Object.class),
                 new TransformationDescriptor<>(new KeyExtractor(rightKeyIndex), Record.class, Object.class)
@@ -71,6 +88,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
                 Tuple2.class,
                 Record.class
         );
+
         join.connectTo(0, mapOperator, 0);
 
         return mapOperator;

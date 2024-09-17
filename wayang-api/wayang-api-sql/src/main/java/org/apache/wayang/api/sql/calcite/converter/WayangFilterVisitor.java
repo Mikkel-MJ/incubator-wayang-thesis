@@ -99,18 +99,12 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
         }
 
         public boolean eval(Record record, SqlKind kind, RexNode leftOperand, RexNode rightOperand) {
-            System.out.println(leftOperand + " " + (leftOperand instanceof RexInputRef));
-            System.out.println(rightOperand + " " + (rightOperand instanceof RexLiteral));
-            System.out.println(record);
-            System.out.println(kind);
-
             if(leftOperand instanceof RexInputRef && rightOperand instanceof RexLiteral) {
                 RexInputRef rexInputRef = (RexInputRef) leftOperand;
                 int index = rexInputRef.getIndex();
                 Optional<?> field = Optional.ofNullable(record.getField(index));
                 RexLiteral rexLiteral = (RexLiteral) rightOperand;
-                System.out.println(kind);
-                System.out.println(rexLiteral);
+                
                 switch (kind) {
                     case GREATER_THAN:
                         return isGreaterThan(field, rexLiteral);
