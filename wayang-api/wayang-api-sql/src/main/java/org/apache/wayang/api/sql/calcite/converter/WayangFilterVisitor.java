@@ -99,12 +99,18 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
         }
 
         public boolean eval(Record record, SqlKind kind, RexNode leftOperand, RexNode rightOperand) {
+            System.out.println(leftOperand + " " + (leftOperand instanceof RexInputRef));
+            System.out.println(rightOperand + " " + (rightOperand instanceof RexLiteral));
+            System.out.println(record);
+            System.out.println(kind);
+
             if(leftOperand instanceof RexInputRef && rightOperand instanceof RexLiteral) {
                 RexInputRef rexInputRef = (RexInputRef) leftOperand;
                 int index = rexInputRef.getIndex();
                 Optional<?> field = Optional.ofNullable(record.getField(index));
                 RexLiteral rexLiteral = (RexLiteral) rightOperand;
-
+                System.out.println(kind);
+                System.out.println(rexLiteral);
                 switch (kind) {
                     case GREATER_THAN:
                         return isGreaterThan(field, rexLiteral);
@@ -119,7 +125,23 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                     default:
                         throw new IllegalStateException("Predicate not supported yet");
                 }
-            } else {
+            } else if (leftOperand instanceof RexInputRef && rightOperand instanceof RexInputRef) {  //filters with column a = column b
+                RexInputRef leftRexInputRef = (RexInputRef) leftOperand;
+                int leftIndex = leftRexInputRef.getIndex();
+                RexInputRef righRexInputRef = (RexInputRef) rightOperand;
+                int rightIndex = righRexInputRef.getIndex();
+
+                Optional<?> leftField = Optional.ofNullable(record.getField(leftIndex));
+                Optional<?> rightField = Optional.ofNullable(record.getField(rightIndex));
+
+                switch (kind) {
+                    case EQUALS:
+                        return isEqualTo(leftField, rightField);
+                    default:
+                        throw new IllegalStateException("Predicate not supported yet");
+                }
+            }
+            else {
                 throw new IllegalStateException("Predicate not supported yet");
             }
         }
@@ -141,6 +163,16 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 return false;
             } catch (Exception e) {
                 throw new IllegalStateException("Predicate not supported yet, something went wrong when computing an isEqualTo predicate, object: " + o + " rexLiteral: " + rexLiteral + " rexLiteral kind: " + rexLiteral.getKind() + " rexLiteral type: " + rexLiteral.getType());
+            }
+        }
+
+        private boolean isEqualTo(Optional<?> o, Optional<?> o2) {
+            try {
+                if(o.isEmpty() && o2.isEmpty()) return true;
+                if(o.isPresent() && o2.isPresent()) return ((Comparable) o.get()).compareTo(o2.get()) == 0;
+                return false;
+            } catch (Exception e) {
+                throw new IllegalStateException("Predicate not supported yet, something went wrong when computing an isEqualTo predicate, object: " + o + " object2: " + o2);
             }
         }
     }
