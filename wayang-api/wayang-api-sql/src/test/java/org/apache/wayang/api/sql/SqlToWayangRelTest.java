@@ -52,7 +52,7 @@ public class SqlToWayangRelTest {
         System.out.println("loading calcite model: " + calciteModelPath);
         Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
 
-        String dataPath = SqlAPI.class.getResource("/data/exampleNull.csv").getPath();
+        String dataPath = SqlAPI.class.getResource("/data/exampleRefToRef.csv").getPath();
         configuration.setProperty("wayang.fs.table.url", dataPath);
 
         configuration.setProperty(
@@ -71,7 +71,7 @@ public class SqlToWayangRelTest {
 
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
-            "SELECT * FROM fs.exampleNull WHERE exampleNull.NAMEA = exampleNull.NAMEB" //
+            "SELECT * FROM fs.exampleRefToRef WHERE exampleRefToRef.NAMEA = exampleRefToRef.NAMEB" //
         );
 
         System.out.println("Printing results");
