@@ -66,22 +66,29 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
         System.out.println("offsetr: " + wayangRelNode.getInput(0).getRowType().getFieldCount());
 
 
+        //init join
+        JoinOperator<Record, Record, Object> join;
         //calculate offsets
         if (leftKeyIndex > rightKeyIndex) { //if the table index on the left is larger than the right
             leftKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
             System.out.println("lki after offset: " + leftKeyIndex);
 
+            join = new JoinOperator<>(
+                new TransformationDescriptor<>(new KeyExtractor(rightKeyIndex), Record.class, Object.class),
+                new TransformationDescriptor<>(new KeyExtractor(leftKeyIndex), Record.class, Object.class)
+            );
+
         } else if (rightKeyIndex > leftKeyIndex) {//standard case 
             rightKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
             System.out.println("rki after offset: " + rightKeyIndex);
+
+            join = new JoinOperator<>(
+                new TransformationDescriptor<>(new KeyExtractor(leftKeyIndex), Record.class, Object.class),
+                new TransformationDescriptor<>(new KeyExtractor(rightKeyIndex), Record.class, Object.class)
+            );
         } else {
             throw new UnsupportedOperationException("Could not compute offset for condition: " + condition + " left key index: " + leftKeyIndex + " right key index: " + rightKeyIndex);
         }
-
-        JoinOperator<Record, Record, Object> join = new JoinOperator<>(
-                new TransformationDescriptor<>(new KeyExtractor(leftKeyIndex), Record.class, Object.class),
-                new TransformationDescriptor<>(new KeyExtractor(rightKeyIndex), Record.class, Object.class)
-        );
 
         //call connectTo on both operators (left and right)
         childOpLeft.connectTo(0, join, 0);
