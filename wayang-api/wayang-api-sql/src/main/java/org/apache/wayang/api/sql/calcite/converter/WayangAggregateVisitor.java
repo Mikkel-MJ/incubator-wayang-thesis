@@ -21,6 +21,7 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.GlobalReduceOperator;
@@ -219,23 +220,13 @@ class aggregateFunction implements FunctionDescriptor.SerializableBinaryOperator
                         countDone = true;
                     }
                 }
-            } 
-            else if (record.getField(i) instanceof String && record2.getField(i) instanceof String) {
+            } else if (record.getField(i) instanceof String && record2.getField(i) instanceof String) {
                 if (name.equals("MIN")) {
-                    //TODO: Implement with Collator java.util
-                    int compare = record.getString(i).compareTo(record2.getString(i));
-                    if (compare < 0) {  
-                        resValues[i] = record.getString(i);
-                    }
-                    else if (compare > 0) {
-                        resValues[i] = record2.getString(i);
-                    }
-                    else {  
-                        resValues[i] = record.getString(i);
-                    } 
-                } else {
-                    throw new IllegalStateException("Operation unsupported, operation: " + name + " record1: " + record + " record2:" + record2);
-                }
+                //TODO: Implement with Collator java.util
+                resValues[i] = SqlFunctions.lesser(record.getString(i), record2.getString(i));
+            } else {
+                throw new IllegalStateException("Operation unsupported, operation: " + name + " record1: " + record + " record2:" + record2);
+            }
             } else {
                 throw new IllegalStateException("Operation unsupported, operation: " + name + " record1: " + record + " record2:" + record2);
             }
