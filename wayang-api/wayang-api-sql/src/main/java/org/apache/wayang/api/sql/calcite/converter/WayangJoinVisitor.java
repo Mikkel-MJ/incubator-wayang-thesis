@@ -50,27 +50,32 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
             throw new UnsupportedOperationException("Only equality joins supported");
         }
 
-        //offset of the index in the right child
-        int offset = wayangRelNode.getInput(0).getRowType().getFieldCount();
-
         int leftKeyIndex = condition.accept(new KeyIndex(false, Child.LEFT));
-        int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT)) - offset;
+        int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT));
 
-        System.out.println("condition: " + condition + " offset: " + offset);
+        System.out.println("\ncondition: " + condition);
+        System.out.println("right key index: " + rightKeyIndex);
+        System.out.println("left key index: " + leftKeyIndex);
+        System.out.println("left child: " + wayangRelNode.getInput(1));
+        System.out.println("type: " + wayangRelNode.getInput(1).getRowType());
+        System.out.println("right child: " + wayangRelNode.getInput(0));
+        System.out.println("type: " + wayangRelNode.getInput(0).getRowType());
+        System.out.println("inputs: " + wayangRelNode.getInputs());
+        System.out.println("offset1: " + wayangRelNode.getRowType().getFieldCount());
+        System.out.println("offsetl: " + wayangRelNode.getInput(1).getRowType().getFieldCount());
+        System.out.println("offsetr: " + wayangRelNode.getInput(0).getRowType().getFieldCount());
 
-        if(rightKeyIndex < 0) { 
-            System.out.println("\n rki was negative");
-            System.out.println("wayang rel node: " +wayangRelNode);
-            System.out.println("col: " + childOpLeft);
-            System.out.println("cor: " + childOpRight);
-            System.out.println("condition: " + condition);
-            System.out.println("offset: " + offset);
-            System.out.println("left key index: " + leftKeyIndex);
-            System.out.println("right key index: " + rightKeyIndex);
-            System.out.println("rki b4 offset: " + (rightKeyIndex+offset));
 
-            rightKeyIndex += offset;
-            leftKeyIndex -= wayangRelNode.getRowType().getFieldCount();
+        //calculate offsets
+        if (leftKeyIndex > rightKeyIndex) { //if the table index on the left is larger than the right
+            leftKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
+            System.out.println("lki after offset: " + leftKeyIndex);
+
+        } else if (rightKeyIndex > leftKeyIndex) {//standard case 
+            rightKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
+            System.out.println("rki after offset: " + rightKeyIndex);
+        } else {
+            throw new UnsupportedOperationException("Could not compute offset for condition: " + condition + " left key index: " + leftKeyIndex + " right key index: " + rightKeyIndex);
         }
 
         JoinOperator<Record, Record, Object> join = new JoinOperator<>(

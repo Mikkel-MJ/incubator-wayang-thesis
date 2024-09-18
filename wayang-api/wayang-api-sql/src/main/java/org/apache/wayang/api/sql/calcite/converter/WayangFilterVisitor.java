@@ -82,6 +82,7 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
         public Boolean visitCall(RexCall call) {
             SqlKind kind = call.getKind();
 
+            System.out.println(kind);
             if(!kind.belongsTo(SUPPORTED_OPS)) {
                 throw new IllegalStateException("Cannot handle this filter predicate yet");
             }
