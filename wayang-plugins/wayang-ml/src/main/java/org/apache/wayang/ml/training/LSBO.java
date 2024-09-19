@@ -111,6 +111,11 @@ public class LSBO {
             List<WayangPlan> decodedPlans = LSBO.decodePlans(lsboSamples, wayangNode);
             WayangPlan sampledPlan = decodedPlans.get(0);
 
+            OneHotMappings
+                .getInstance()
+                .getPlatformsMapping()
+                .forEach((key, value) -> System.out.println(key + ": " + value));
+
             // execute each WayangPlan and sample latency
             // encode the best one
             ArrayList<String> resampleEncodings = new ArrayList<>();
