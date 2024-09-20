@@ -88,11 +88,6 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 throw new IllegalStateException("Cannot handle this filter predicate yet: " + kind + " during RexCall: " + call);
             }
 
-            //if(call.getOperands().size() < 2) throw new IllegalStateException("Call operand list was smaller than suspected: " + call + " operands: " + call.getOperands() + " expected size 2");
-            
-
-
-            //System.out.println(call);
             switch(kind){
                 case NOT:
                     assert(call.getOperands().size() == 1);
@@ -161,8 +156,6 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 .toString()
                 .replace("'", "") //the calcite sqlToRegex api needs input w/o 's
             );
-
-            System.out.println("is match: " + isMatch + " unwrapped: " + unwrapped + " toCompare: " + toCompare);
 
             return isMatch;
         }

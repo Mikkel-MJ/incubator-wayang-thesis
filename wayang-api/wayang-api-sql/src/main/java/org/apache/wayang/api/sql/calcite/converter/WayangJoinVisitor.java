@@ -53,25 +53,11 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
         int leftKeyIndex = condition.accept(new KeyIndex(false, Child.LEFT));
         int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT));
 
-        System.out.println("\ncondition: " + condition);
-        System.out.println("right key index: " + rightKeyIndex);
-        System.out.println("left key index: " + leftKeyIndex);
-        System.out.println("left child: " + wayangRelNode.getInput(1));
-        System.out.println("type: " + wayangRelNode.getInput(1).getRowType());
-        System.out.println("right child: " + wayangRelNode.getInput(0));
-        System.out.println("type: " + wayangRelNode.getInput(0).getRowType());
-        System.out.println("inputs: " + wayangRelNode.getInputs());
-        System.out.println("offset1: " + wayangRelNode.getRowType().getFieldCount());
-        System.out.println("offsetl: " + wayangRelNode.getInput(1).getRowType().getFieldCount());
-        System.out.println("offsetr: " + wayangRelNode.getInput(0).getRowType().getFieldCount());
-
-
         //init join
         JoinOperator<Record, Record, Object> join;
         //calculate offsets
         if (leftKeyIndex > rightKeyIndex) { //if the table index on the left is larger than the right
             leftKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
-            System.out.println("lki after offset: " + leftKeyIndex);
 
             join = new JoinOperator<>(
                 new TransformationDescriptor<>(new KeyExtractor(rightKeyIndex), Record.class, Object.class),
@@ -80,7 +66,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
 
         } else if (rightKeyIndex > leftKeyIndex) {//standard case 
             rightKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
-            System.out.println("rki after offset: " + rightKeyIndex);
 
             join = new JoinOperator<>(
                 new TransformationDescriptor<>(new KeyExtractor(leftKeyIndex), Record.class, Object.class),
