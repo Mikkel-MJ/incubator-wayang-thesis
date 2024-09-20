@@ -198,13 +198,6 @@ class aggregateFunction implements FunctionDescriptor.SerializableBinaryOperator
             Object field1 = record1.getField(i);
             Object field2 = record2.getField(i);
             
-            //func(a : null, b : string)  func(b,a)
-            //need to handle doubles, longs, ints, strings and nulls
-            //
-
-            System.out.println("op: " + name);
-            System.out.println("rec1: " + record1);
-            System.out.println("rec2: " + record2);
             switch (name) {
                 case "SUM":
                     resValues[i] = this.castAndMap(field1, field2, null, Long::sum, Integer::sum, Double::sum);
