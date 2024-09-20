@@ -85,19 +85,25 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
             SqlKind kind = call.getKind();
 
             if(!kind.belongsTo(SUPPORTED_OPS)) {
-                throw new IllegalStateException("Cannot handle this filter predicate yet");
+                throw new IllegalStateException("Cannot handle this filter predicate yet: " + kind + " during RexCall: " + call);
             }
 
-            RexNode leftOperand = call.getOperands().get(0);
-            RexNode rightOperand = call.getOperands().get(1);
+            //if(call.getOperands().size() < 2) throw new IllegalStateException("Call operand list was smaller than suspected: " + call + " operands: " + call.getOperands() + " expected size 2");
+            
 
+
+            //System.out.println(call);
             switch(kind){
+                case NOT:
+                    assert(call.getOperands().size() == 1);
+                    return !(call.getOperands().get(0).accept(this)); //Since NOT captures only one operand we just get the first
                 case AND:
-                    return leftOperand.accept(this) && rightOperand.accept(this);
+                    return call.getOperands().stream().allMatch(operator -> operator.accept(this));
                 case OR:
-                    return leftOperand.accept(this) || rightOperand.accept(this);
+                    return call.getOperands().stream().anyMatch(operator -> operator.accept(this));
                 default:
-                    return eval(record, kind, leftOperand, rightOperand);
+                    assert(call.getOperands().size() == 2);
+                    return eval(record, kind, call.getOperands().get(0), call.getOperands().get(1));
             }
         }
 
@@ -107,7 +113,9 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 int index = rexInputRef.getIndex();
                 Optional<?> field = Optional.ofNullable(record.getField(index));
                 RexLiteral rexLiteral = (RexLiteral) rightOperand;
-                
+
+               
+
                 switch (kind) {
                     case LIKE:
                         return this.like(field, rexLiteral);
@@ -137,7 +145,7 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                     case EQUALS:
                         return isEqualTo(leftField, rightField);
                     default:
-                        throw new IllegalStateException("Predicate not supported yet");
+                        throw new IllegalStateException("Predicate not supported yet, kind: " + kind + " left field: " + leftField + " right field: " + rightField);
                 }
             }
             else {
@@ -147,10 +155,14 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
 
         private boolean like(Optional<?> o, RexLiteral toCompare) {       
             String unwrapped = o.map(s -> (String) s).orElse("");
+
+            
             boolean isMatch = SqlFunctions.like(unwrapped, toCompare
                 .toString()
                 .replace("'", "") //the calcite sqlToRegex api needs input w/o 's
             );
+
+            System.out.println("is match: " + isMatch + " unwrapped: " + unwrapped + " toCompare: " + toCompare);
 
             return isMatch;
         }
@@ -191,5 +203,5 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
             EnumSet.of(SqlKind.AND, SqlKind.OR,
                     SqlKind.EQUALS, SqlKind.NOT_EQUALS,
                     SqlKind.LESS_THAN, SqlKind.GREATER_THAN,
-                    SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, SqlKind.LIKE);
+                    SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, SqlKind.NOT, SqlKind.LIKE);
 }
