@@ -32,8 +32,6 @@ import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
-
-import java.lang.StackWalker.Option;
 import java.util.EnumSet;
 
 public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
@@ -109,8 +107,6 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 Optional<?> field = Optional.ofNullable(record.getField(index));
                 RexLiteral rexLiteral = (RexLiteral) rightOperand;
 
-               
-
                 switch (kind) {
                     case LIKE:
                         return this.like(field, rexLiteral);
@@ -160,14 +156,38 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
             return isMatch;
         }
 
+        /***
+         * Checks if object o is greater than the rex literal
+         * @param o object of any type including null
+         * @param rexLiteral contains value of any type including null
+         * @return boolean, where if both items are null, it picks the object over the rex literal
+         */
         private boolean isGreaterThan(Optional<?> o, RexLiteral rexLiteral) {
-            Object unwrapped = o.orElseThrow(() -> new IllegalStateException("isGreaterThan not supported for null objects, object was: " + o + ", rexLiteral was: " + rexLiteral));
-            return ((Comparable) unwrapped).compareTo(rexLiteral.getValueAs(unwrapped.getClass())) > 0;
+           if(o.isPresent() && !rexLiteral.isNull()) { //if o is any and rex is any 
+                Object comparator = rexLiteral.getValueAs(o.get().getClass());
+                return ((Comparable) o.get()).compareTo(comparator) > 0;
+            } else if (rexLiteral.isNull()){
+                return true; //if o is any and rex is null
+            } else {
+                return false; //is o is null and rex any other value
+            }
         }
 
+        /**
+         * Checks if object o is less than the rex literal
+         * @param o object of any type including null
+         * @param rexLiteral contains value of any type including null
+         * @return boolean, where if both items are null, it picks the object over the rex literal
+         */
         private boolean isLessThan(Optional<?> o, RexLiteral rexLiteral) {
-            Object unwrapped = o.orElseThrow(() -> new IllegalStateException("isLessThan not supported for null objects, object was: " + o + ", rexLiteral was: " + rexLiteral));
-            return ((Comparable) unwrapped).compareTo(rexLiteral.getValueAs(unwrapped.getClass())) < 0;
+            if(o.isPresent() && !rexLiteral.isNull()) { //if o is any and rex is any 
+                Object comparator = rexLiteral.getValueAs(o.get().getClass());
+                return ((Comparable) o.get()).compareTo(comparator) < 0;
+            } else if (rexLiteral.isNull()){
+                return true; //if o is any and rex is null
+            } else {
+                return false; //is o is null and rex any other value
+            }
         }
 
         private boolean isEqualTo(Optional<?> o, RexLiteral rexLiteral) {
@@ -182,7 +202,7 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
 
         private boolean isEqualTo(Optional<?> o, Optional<?> o2) {
             try {
-                if(o.isEmpty() && o2.isEmpty()) return true;
+                if(o.isEmpty() && o2.isEmpty()) return false;
                 if(o.isPresent() && o2.isPresent()) return ((Comparable) o.get()).compareTo(o2.get()) == 0;
                 return false;
             } catch (Exception e) {

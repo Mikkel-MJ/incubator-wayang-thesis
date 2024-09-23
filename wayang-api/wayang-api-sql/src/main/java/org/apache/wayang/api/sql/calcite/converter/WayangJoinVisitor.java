@@ -47,8 +47,9 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
         RexNode condition = ((Join) wayangRelNode).getCondition();
 
         if (!condition.isA(SqlKind.EQUALS)) {
-            throw new UnsupportedOperationException("Only equality joins supported");
-        }
+            throw new UnsupportedOperationException("Only equality joins supported but got: " + condition.getKind() + " from relNode: " + wayangRelNode + ", with inputs: " + wayangRelNode.getInputs());
+        } if (condition.isA(SqlKind.AND)); 
+        
 
         int leftKeyIndex = condition.accept(new KeyIndex(false, Child.LEFT));
         int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT));
