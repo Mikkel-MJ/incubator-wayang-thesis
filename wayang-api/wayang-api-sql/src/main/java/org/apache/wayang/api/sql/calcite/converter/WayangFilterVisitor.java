@@ -202,7 +202,7 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
 
         private boolean isEqualTo(Optional<?> o, Optional<?> o2) {
             try {
-                if(o.isEmpty() && o2.isEmpty()) return false;
+                if(o.isEmpty() && o2.isEmpty()) return true;
                 if(o.isPresent() && o2.isPresent()) return ((Comparable) o.get()).compareTo(o2.get()) == 0;
                 return false;
             } catch (Exception e) {
