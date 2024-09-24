@@ -112,6 +112,8 @@ public class OneHotMappings {
             }
         }
 
+        System.out.println("Platform index: " + (platformIndex - operatorsCount));
+
         if (platformIndex == -1) {
             return Optional.empty();
         }
