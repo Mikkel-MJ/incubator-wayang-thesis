@@ -40,6 +40,7 @@ import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.wayang.ml.encoding.OneHotMappings;
 import org.apache.wayang.ml.encoding.OrtTensorDecoder;
+import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
@@ -83,13 +84,14 @@ public class LSBO {
     ) {
         try {
             Socket socket = setupSocket();
-            List<String> testMessage = new ArrayList<String>();
-            testMessage.add("Hello from Wayang!");
             config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
 
-            Job wayangJob = new WayangContext(config).createJob("", plan, "");
-            wayangJob.estimateKeyFigures();
-            OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+            WayangContext context = new WayangContext(config);
+            plugins.stream().forEach(plug -> context.register(plug));
+            Job samplingJob = context.createJob("sampling", plan, "");
+            ExplainUtils.parsePlan(plan, false);
+            samplingJob.estimateKeyFigures();
+            OneHotMappings.setOptimizationContext(samplingJob.getOptimizationContext());
             OneHotMappings.encodeIds = true;
             TreeNode wayangNode = TreeEncoder.encode(plan);
             String encodedInput = wayangNode.toString() + ":" + wayangNode.toString() + ":1";
@@ -111,18 +113,15 @@ public class LSBO {
             List<WayangPlan> decodedPlans = LSBO.decodePlans(lsboSamples, wayangNode);
             WayangPlan sampledPlan = decodedPlans.get(0);
 
-            OneHotMappings
+            /*OneHotMappings
                 .getInstance()
                 .getPlatformsMapping()
-                .forEach((key, value) -> System.out.println(key + ": " + value));
+                .forEach((key, value) -> System.out.println(key + ": " + value));*/
 
             // execute each WayangPlan and sample latency
             // encode the best one
-            ArrayList<String> resampleEncodings = new ArrayList<>();
-
             // Get the initial plan created by the LSBO loop
-            WayangContext executionContext = new WayangContext(config);
-            plugins.stream().forEach(plug -> executionContext.register(plug));
+            Job executionJob = context.createJob("executing", sampledPlan, "");
 
             ExplainUtils.parsePlan(sampledPlan, false);
             TreeNode encoded = TreeEncoder.encode(sampledPlan);
@@ -130,17 +129,17 @@ public class LSBO {
 
             try {
                 Instant start = Instant.now();
-                executionContext.execute(sampledPlan, "");
+                executionJob.execute();
                 Instant end = Instant.now();
                 execTime = Duration.between(start, end).toMillis();
 
                 encodedInput = wayangNode.toString() + ":" + encoded.toString() + ":" + execTime;
-                System.out.println(encodedInput);
+                //System.out.println(encodedInput);
 
                 ArrayList<String> latency = new ArrayList<>();
                 latency.add(encodedInput);
 
-                System.out.println(input);
+                //System.out.println(input);
 
                 ProcessFeeder<String, String> latencyFeed = new ProcessFeeder<>(
                     socket,
@@ -149,6 +148,8 @@ public class LSBO {
                 );
 
                 latencyFeed.send();
+
+                System.gc();
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println(e);
@@ -161,6 +162,7 @@ public class LSBO {
     }
 
     public static List<WayangPlan> decodePlans(List<String> plans, TreeNode encoded) {
+        Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input = OrtTensorEncoder.encode(encoded);
         ArrayList<WayangPlan> resultPlans = new ArrayList<>();
         for (String plan: plans) {
             try {
@@ -195,14 +197,14 @@ public class LSBO {
                 mlResult.add(longResult[0]);
                 ArrayList<long[][]> indexList = new ArrayList<long[][]>();
                 indexList.add(indexes[0]);
-                Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, indexList);
+                Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
                 TreeNode decoded = decoder.decode(decoderInput);
                 decoded.softmax();
 
                 // Now set the platforms on the wayangPlan
                 encoded = encoded.withPlatformChoicesFrom(decoded);
-
                 WayangPlan decodedPlan = TreeDecoder.decode(encoded);
+
                 resultPlans.add(decodedPlan);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -210,16 +212,6 @@ public class LSBO {
         }
 
         return resultPlans;
-    }
-
-    private static Iterator<String> sample(
-        List<String> input,
-        Configuration config
-    ) {
-        final PythonWorkerManager<String, String> manager = new PythonWorkerManager<>(ByteString.copyFromUtf8(""), input, config);
-        final Iterable<String> output = manager.execute();
-
-        return output.iterator();
     }
 
     private static Socket setupSocket() throws IOException {
@@ -240,15 +232,5 @@ public class LSBO {
         serverSocket.setSoTimeout(0);
 
         return socket;
-    }
-
-    public static TreeNode encode(WayangPlan plan, MLContext context) {
-        Job wayangJob = context.createJob("", plan, "");
-        wayangJob.estimateKeyFigures();
-        OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
-        OneHotMappings.encodeIds = true;
-        TreeNode wayangNode = TreeEncoder.encode(plan);
-
-        return wayangNode;
     }
 }

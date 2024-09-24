@@ -121,6 +121,7 @@ public class TreeNode {
         HashMap<String, Integer> platformMappings = OneHotMappings.getInstance().getPlatformsMapping();
         HashMap<String, Integer> operatorMappings = OneHotMappings.getInstance().getOperatorMapping();
         int platformPosition = -1;
+        System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
         platformPosition = ArrayUtils.indexOf(node.encoded, 1);
         String platform = "";
 
@@ -134,7 +135,7 @@ public class TreeNode {
 
         assert platform != "";
 
-        System.out.println("Chose platform: " + platform);
+        //System.out.println("Chose platform: " + platform);
 
         int operatorsCount = operatorMappings.size();
         this.encoded[operatorsCount + platformPosition] = 1;
@@ -157,7 +158,6 @@ public class TreeNode {
             return;
         }
 
-        System.out.println("Choices: " + Arrays.toString(this.encoded));
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
 
