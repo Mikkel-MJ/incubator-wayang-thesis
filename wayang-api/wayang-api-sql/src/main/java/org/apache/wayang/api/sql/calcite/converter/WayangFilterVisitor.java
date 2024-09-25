@@ -86,13 +86,10 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 throw new IllegalStateException("Cannot handle this filter predicate yet: " + kind + " during RexCall: " + call);
             }
 
-            System.out.println(call);
-
             switch(kind){
                 case IS_NOT_NULL:
                     return eval(record, kind, call.getOperands().get(0), null);
                 case NOT:
-                    System.out.println("not: " + call);
                     assert(call.getOperands().size() == 1);
                     return !(call.getOperands().get(0).accept(this)); //Since NOT captures only one operand we just get the first
                 case AND:
@@ -121,12 +118,14 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                         return isLessThan(field, rexLiteral);
                     case EQUALS:
                         return isEqualTo(field, rexLiteral);
+                    case NOT_EQUALS:
+                        return !isEqualTo(field, rexLiteral);
                     case GREATER_THAN_OR_EQUAL:
                         return isGreaterThan(field, rexLiteral) || isEqualTo(field, rexLiteral);
                     case LESS_THAN_OR_EQUAL:
                         return isLessThan(field, rexLiteral) || isEqualTo(field, rexLiteral);
                     default:
-                        throw new IllegalStateException("Predicate not supported yet");
+                        throw new IllegalStateException("Predicate not supported yet, record: " + record + ", SqlKind:" + kind + ", left operand: " + leftOperand + ", right operand: " + rightOperand);
                 }
             } else if (leftOperand instanceof RexInputRef && rightOperand instanceof RexInputRef) {  //filters with column a = column b
                 RexInputRef leftRexInputRef = (RexInputRef) leftOperand;
