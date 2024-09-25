@@ -50,7 +50,7 @@ import java.util.Collection;
 public class SqlToWayangRelTest {
     @Test
     public void filterIsNull() throws Exception {
-        SqlContext sqlContext = createSqlContext();
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA IS NULL)" //
@@ -63,7 +63,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void filterIsNotValue() throws Exception {
-        SqlContext sqlContext = createSqlContext();
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA <> 'test1')" //
@@ -74,13 +74,13 @@ public class SqlToWayangRelTest {
         assert(!result.stream().anyMatch(record -> record.getField(0).equals("test1")));
     }
 
-    private SqlContext createSqlContext() throws IOException, ParseException, SQLException {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
+    private SqlContext createSqlContext(String calciteResourceName, String tableResourceName) throws IOException, ParseException, SQLException {
+        String calciteModelPath = SqlAPI.class.getResource(calciteResourceName).getPath();
         
         System.out.println("loading calcite model: " + calciteModelPath);
         Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
 
-        String dataPath = SqlAPI.class.getResource("/data/largeLeftTableIndex.csv").getPath();
+        String dataPath = SqlAPI.class.getResource(tableResourceName).getPath();
         configuration.setProperty("wayang.fs.table.url", dataPath);
 
         configuration.setProperty(
@@ -101,8 +101,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void filterIsNotNull() throws Exception {
-        SqlContext sqlContext = createSqlContext();
-
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA IS NOT NULL)" //
@@ -115,8 +114,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void filterWithNotLike() throws Exception {
-        SqlContext sqlContext = createSqlContext();
-
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA NOT LIKE '_est1')" //
@@ -129,8 +127,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void filterWithLike() throws Exception {
-        SqlContext sqlContext = createSqlContext();
-
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA LIKE '_est1' OR largeLeftTableIndex.NAMEA LIKE 't%')" //
@@ -142,8 +139,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void joinWithLargeLeftTableIndexCorrect() throws Exception {
-        SqlContext sqlContext = createSqlContext();
-
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex AS na INNER JOIN fs.largeLeftTableIndex AS nb ON na.NAMEB = nb.NAMEA " //
@@ -155,8 +151,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void joinWithLargeLeftTableIndexMirrorAlias() throws Exception {
-        SqlContext sqlContext = createSqlContext();
-
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex AS na INNER JOIN fs.largeLeftTableIndex AS nb ON nb.NAMEB = na.NAMEA " //
@@ -168,28 +163,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void exampleFilterTableRefToTableRef() throws Exception {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
-        
-        System.out.println("loading calcite model: " + calciteModelPath);
-        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
-
-        String dataPath = SqlAPI.class.getResource("/data/exampleRefToRef.csv").getPath();
-        configuration.setProperty("wayang.fs.table.url", dataPath);
-
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
-
-        configuration.setProperty(
-        "wayang.ml.optimizations.file",
-        "mlo" + ".txt"
-        );
-
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
-
-        SqlContext sqlContext = new SqlContext(configuration);
-
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleRefToRef.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.exampleRefToRef WHERE exampleRefToRef.NAMEA = exampleRefToRef.NAMEB" //
@@ -201,28 +175,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void exampleMinWithStrings() throws Exception {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
-        
-        System.out.println("loading calcite model: " + calciteModelPath);
-        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
-
-        String dataPath = SqlAPI.class.getResource("/data/exampleMin.csv").getPath();
-        configuration.setProperty("wayang.fs.table.url", dataPath);
-
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
-
-        configuration.setProperty(
-        "wayang.ml.optimizations.file",
-        "mlo" + ".txt"
-        );
-
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
-
-        SqlContext sqlContext = new SqlContext(configuration);
-
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleMin.csv");
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT MIN(exampleMin.NAME) FROM fs.exampleMin" //
