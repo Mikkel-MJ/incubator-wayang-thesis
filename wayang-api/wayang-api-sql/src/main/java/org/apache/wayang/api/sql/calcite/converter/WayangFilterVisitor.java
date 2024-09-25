@@ -88,6 +88,10 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
 
             switch(kind){
                 case IS_NOT_NULL:
+                    assert(call.getOperands().size() == 1);
+                    return eval(record, kind, call.getOperands().get(0), null);
+                case IS_NULL:
+                    assert(call.getOperands().size() == 1);
                     return eval(record, kind, call.getOperands().get(0), null);
                 case NOT:
                     assert(call.getOperands().size() == 1);
@@ -151,6 +155,8 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 switch (kind) {
                     case IS_NOT_NULL:
                         return !isEqualTo(leftField, Optional.empty());
+                    case IS_NULL:
+                        return isEqualTo(leftField, Optional.empty());
                     default:
                         throw new IllegalStateException("Predicate not supported yet, kind: " + kind + " left field: " + leftField);
                 }
@@ -231,5 +237,5 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
             EnumSet.of(SqlKind.AND, SqlKind.OR,
                     SqlKind.EQUALS, SqlKind.NOT_EQUALS,
                     SqlKind.LESS_THAN, SqlKind.GREATER_THAN,
-                    SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, SqlKind.NOT, SqlKind.LIKE, SqlKind.IS_NOT_NULL);
+                    SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, SqlKind.NOT, SqlKind.LIKE, SqlKind.IS_NOT_NULL, SqlKind.IS_NULL);
 }
