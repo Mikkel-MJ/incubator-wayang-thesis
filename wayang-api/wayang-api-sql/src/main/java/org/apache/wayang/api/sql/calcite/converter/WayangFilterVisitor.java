@@ -86,8 +86,13 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                 throw new IllegalStateException("Cannot handle this filter predicate yet: " + kind + " during RexCall: " + call);
             }
 
+            System.out.println(call);
+
             switch(kind){
+                case IS_NOT_NULL:
+                    return eval(record, kind, call.getOperands().get(0), null);
                 case NOT:
+                    System.out.println("not: " + call);
                     assert(call.getOperands().size() == 1);
                     return !(call.getOperands().get(0).accept(this)); //Since NOT captures only one operand we just get the first
                 case AND:
@@ -138,16 +143,27 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
                     default:
                         throw new IllegalStateException("Predicate not supported yet, kind: " + kind + " left field: " + leftField + " right field: " + rightField);
                 }
+            } else if (leftOperand instanceof RexInputRef && rightOperand == null) {
+                RexInputRef leftRexInputRef = (RexInputRef) leftOperand;
+                int leftIndex = leftRexInputRef.getIndex();
+
+                Optional<?> leftField = Optional.ofNullable(record.getField(leftIndex));
+                
+                switch (kind) {
+                    case IS_NOT_NULL:
+                        return !isEqualTo(leftField, Optional.empty());
+                    default:
+                        throw new IllegalStateException("Predicate not supported yet, kind: " + kind + " left field: " + leftField);
+                }
             }
             else {
-                throw new IllegalStateException("Predicate not supported yet");
+                throw new IllegalStateException("Predicate not supported yet, kind: " + kind + ", record: " + record + ", left operand: " + leftOperand + ", right operand: " + rightOperand);
             }
         }
 
         private boolean like(Optional<?> o, RexLiteral toCompare) {       
             String unwrapped = o.map(s -> (String) s).orElse("");
 
-            
             boolean isMatch = SqlFunctions.like(unwrapped, toCompare
                 .toString()
                 .replace("'", "") //the calcite sqlToRegex api needs input w/o 's
@@ -216,5 +232,5 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> {
             EnumSet.of(SqlKind.AND, SqlKind.OR,
                     SqlKind.EQUALS, SqlKind.NOT_EQUALS,
                     SqlKind.LESS_THAN, SqlKind.GREATER_THAN,
-                    SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, SqlKind.NOT, SqlKind.LIKE);
+                    SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL, SqlKind.NOT, SqlKind.LIKE, SqlKind.IS_NOT_NULL);
 }
