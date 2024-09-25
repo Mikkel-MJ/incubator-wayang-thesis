@@ -37,38 +37,33 @@ import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.json.simple.parser.ParseException;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.sql.SQLException;
 import java.util.Collection;
 
 
 public class SqlToWayangRelTest {
     @Test
-    public void filterIsNotValue() throws Exception {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
-        
-        System.out.println("loading calcite model: " + calciteModelPath);
-        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
+    public void filterIsNull() throws Exception {
+        SqlContext sqlContext = createSqlContext();
 
-        String dataPath = SqlAPI.class.getResource("/data/largeLeftTableIndex.csv").getPath();
-        configuration.setProperty("wayang.fs.table.url", dataPath);
-
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
-
-        configuration.setProperty(
-        "wayang.ml.optimizations.file",
-        "mlo" + ".txt"
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA IS NULL)" //
         );
 
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+        assert(result.size() == 0);
+    }
 
-        SqlContext sqlContext = new SqlContext(configuration);
-
+    //@Test
+    public void filterIsNotValue() throws Exception {
+        SqlContext sqlContext = createSqlContext();
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
             "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA <> 'test1')" //
@@ -79,8 +74,7 @@ public class SqlToWayangRelTest {
         assert(!result.stream().anyMatch(record -> record.getField(0).equals("test1")));
     }
 
-    //@Test
-    public void filterIsNotNull() throws Exception {
+    private SqlContext createSqlContext() throws IOException, ParseException, SQLException {
         String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
         
         System.out.println("loading calcite model: " + calciteModelPath);
@@ -102,6 +96,12 @@ public class SqlToWayangRelTest {
         configuration.setProperty("wayang.ml.experience.enabled", "false");
 
         SqlContext sqlContext = new SqlContext(configuration);
+        return sqlContext;
+    }
+
+    //@Test
+    public void filterIsNotNull() throws Exception {
+        SqlContext sqlContext = createSqlContext();
 
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
@@ -115,27 +115,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void filterWithNotLike() throws Exception {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
-        
-        System.out.println("loading calcite model: " + calciteModelPath);
-        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
-
-        String dataPath = SqlAPI.class.getResource("/data/largeLeftTableIndex.csv").getPath();
-        configuration.setProperty("wayang.fs.table.url", dataPath);
-
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
-
-        configuration.setProperty(
-        "wayang.ml.optimizations.file",
-        "mlo" + ".txt"
-        );
-
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
-
-        SqlContext sqlContext = new SqlContext(configuration);
+        SqlContext sqlContext = createSqlContext();
 
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
@@ -149,27 +129,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void filterWithLike() throws Exception {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
-        
-        System.out.println("loading calcite model: " + calciteModelPath);
-        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
-
-        String dataPath = SqlAPI.class.getResource("/data/largeLeftTableIndex.csv").getPath();
-        configuration.setProperty("wayang.fs.table.url", dataPath);
-
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
-
-        configuration.setProperty(
-        "wayang.ml.optimizations.file",
-        "mlo" + ".txt"
-        );
-
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
-
-        SqlContext sqlContext = new SqlContext(configuration);
+        SqlContext sqlContext = createSqlContext();
 
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
@@ -182,27 +142,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void joinWithLargeLeftTableIndexCorrect() throws Exception {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
-        
-        System.out.println("loading calcite model: " + calciteModelPath);
-        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
-
-        String dataPath = SqlAPI.class.getResource("/data/largeLeftTableIndex.csv").getPath();
-        configuration.setProperty("wayang.fs.table.url", dataPath);
-
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
-
-        configuration.setProperty(
-        "wayang.ml.optimizations.file",
-        "mlo" + ".txt"
-        );
-
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
-
-        SqlContext sqlContext = new SqlContext(configuration);
+        SqlContext sqlContext = createSqlContext();
 
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
@@ -215,27 +155,7 @@ public class SqlToWayangRelTest {
 
     //@Test
     public void joinWithLargeLeftTableIndexMirrorAlias() throws Exception {
-        String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
-        
-        System.out.println("loading calcite model: " + calciteModelPath);
-        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
-
-        String dataPath = SqlAPI.class.getResource("/data/largeLeftTableIndex.csv").getPath();
-        configuration.setProperty("wayang.fs.table.url", dataPath);
-
-        configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
-
-        configuration.setProperty(
-        "wayang.ml.optimizations.file",
-        "mlo" + ".txt"
-        );
-
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
-
-        SqlContext sqlContext = new SqlContext(configuration);
+        SqlContext sqlContext = createSqlContext();
 
 
         Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
