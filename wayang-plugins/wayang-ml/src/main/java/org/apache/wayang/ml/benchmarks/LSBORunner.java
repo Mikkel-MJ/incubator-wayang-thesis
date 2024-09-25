@@ -74,8 +74,8 @@ public class LSBORunner {
         Configuration config = new Configuration();
         config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
 
-        HashMap<String, WayangPlan> plans = TPCH.createPlans("/var/www/html/data");
-        WayangPlan plan = plans.get("query12");
+        HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);
+        WayangPlan plan = plans.get("query" + args[2]);
 
         LSBO.process(plan, config, plugins);
     }
