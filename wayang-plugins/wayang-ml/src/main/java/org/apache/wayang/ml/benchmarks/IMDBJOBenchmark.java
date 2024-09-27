@@ -1,11 +1,16 @@
 package org.apache.wayang.ml.benchmarks;
 
+import com.amazonaws.services.iot.model.SqlParseException;
 import com.google.common.io.Resources;
 
+import org.apache.calcite.runtime.CalciteException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
+import org.apache.wayang.java.Java;
+import org.apache.wayang.postgres.Postgres;
+import org.apache.wayang.spark.Spark;
 
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -21,42 +26,58 @@ public class IMDBJOBenchmark {
      * @param args args[0]: path to calcite-job-ready-queries/*.sql
      */
     public static void main(String[] args) throws Exception {
-        Configuration configuration = new Configuration();
+        try {
+            Configuration configuration = new Configuration();
 
-        String calciteModel = Resources.toString(
-            IMDBJOBenchmark.class.getResource("/calcite-model.json"),
-            Charset.defaultCharset());
+            String calciteModel = Resources.toString(
+                IMDBJOBenchmark.class.getResource("/calcite-model.json"),
+                Charset.defaultCharset());
 
-        configuration.setProperty("wayang.calcite.model", calciteModel);
-        configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://host.docker.internal:5432/job");
-        configuration.setProperty("wayang.postgres.jdbc.user", "postgres");
-        configuration.setProperty("wayang.postgres.jdbc.password", "postgres");
+            configuration.setProperty("wayang.calcite.model", calciteModel);
+            configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://host.docker.internal:5432/job");
+            configuration.setProperty("wayang.postgres.jdbc.user", "postgres");
+            configuration.setProperty("wayang.postgres.jdbc.password", "postgres");
 
-        configuration.setProperty(
-            "wayang.ml.executions.file",
-            "mle" + ".txt"
-        );
+            configuration.setProperty(
+                "wayang.ml.executions.file",
+                "mle" + ".txt"
+            );
 
-        configuration.setProperty(
-            "wayang.ml.optimizations.file",
-            "mlo" + ".txt"
-        );
+            configuration.setProperty(
+                "wayang.ml.optimizations.file",
+                "mlo" + ".txt"
+            );
 
-        configuration.setProperty("wayang.ml.experience.enabled", "false");
+            configuration.setProperty("wayang.ml.experience.enabled", "false");
 
+            SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(), Spark.basicPlugin());
 
-        SqlContext sqlContext = new SqlContext(configuration);
+            Path pathToQuery = Paths.get(args[0]);
+            String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); //need to chop off the last ';' otherwise sqlContext cant parse it
+            System.out.println("Read query: " + query);
+            
+            Collection<Record> result = sqlContext.executeSql(
+                query
+            );
 
-        Path pathToQuery = Paths.get(args[0]);
-        String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); //need to chop off the last ';' otherwise sqlContext cant parse it
-        System.out.println("Read query: " + query);
-        
-        Collection<Record> result = sqlContext.executeSql(
-            query
-        );
-
-        result.stream().forEach(e -> System.out.println(e));
+            System.out.println("\nResults: ");
+            result.stream().forEach(e -> System.out.println(e));
+        } catch (IndexOutOfBoundsException e) {
+            e.printStackTrace();
+            System.exit(1);
+        } catch (CalciteException e) {
+            e.printStackTrace();
+            System.exit(2);
+        } catch (SqlParseException e) {
+            e.printStackTrace();
+            System.exit(3);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(4);
+        } catch (Error e) {
+            e.printStackTrace();
+            System.exit(5);
+        } 
     }
-    
 }
  
