@@ -76,6 +76,16 @@ public class SqlContext extends WayangContext {
         calciteSchema = SchemaUtils.getSchema(configuration);
     }
 
+    public SqlContext(Configuration configuration, Plugin ... plugins) throws SQLException {
+        super(configuration.fork(String.format("SqlContext(%s)", configuration.getName())));
+
+        for (Plugin plugin : plugins) {
+            this.withPlugin(plugin);
+        }
+
+        calciteSchema = SchemaUtils.getSchema(configuration);
+    }
+
     public Collection<Record> executeSql(String sql) throws SqlParseException {
 
         Properties configProperties = Optimizer.ConfigProperties.getDefaults();
