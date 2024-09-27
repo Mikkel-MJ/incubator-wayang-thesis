@@ -29,7 +29,6 @@ import org.apache.wayang.basic.operators.ReduceByOperator;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.ReduceDescriptor;
 import org.apache.wayang.core.function.TransformationDescriptor;
-import org.apache.wayang.core.plan.wayangplan.BinaryToUnaryOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.types.DataUnitType;
 
@@ -252,10 +251,9 @@ class aggregateFunction implements FunctionDescriptor.SerializableBinaryOperator
                 case "Double":
                     return doubleMap.apply((Double) a, (Double) b);
                 default:
-                    throw new IllegalStateException("Unsupported operation between: " + a.getClass().toString() + " and: " + b.getClass().toString());
+                    throw new IllegalStateException("Unsupported operation between: " + aWrapped.getClass().toString() + " and: " + bWrapped.getClass().toString());
             }
         }
         throw new IllegalStateException("Unsupported operation between: " + a.getClass().getSimpleName() + " and: " + b.getClass().getSimpleName());
     }
-
 }

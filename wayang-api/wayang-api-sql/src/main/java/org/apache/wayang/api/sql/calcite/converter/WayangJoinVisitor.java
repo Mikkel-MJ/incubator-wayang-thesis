@@ -35,16 +35,16 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 
 public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
 
-    WayangJoinVisitor(WayangRelConverter wayangRelConverter) {
+    WayangJoinVisitor(final WayangRelConverter wayangRelConverter) {
         super(wayangRelConverter);
     }
 
     @Override
-    Operator visit(WayangJoin wayangRelNode) {
-        Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0));
-        Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1));
+    Operator visit(final WayangJoin wayangRelNode) {
+        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0));
+        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1));
 
-        RexNode condition = ((Join) wayangRelNode).getCondition();
+        final RexNode condition = ((Join) wayangRelNode).getCondition();
 
         if (!condition.isA(SqlKind.EQUALS)) {
             throw new UnsupportedOperationException("Only equality joins supported but got: " + condition.getKind() + " from relNode: " + wayangRelNode + ", with inputs: " + wayangRelNode.getInputs());
@@ -81,7 +81,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
         childOpRight.connectTo(0, join, 1);
 
         // Join returns Tuple2 - map to a Record
-        MapOperator<Tuple2, Record> mapOperator = new MapOperator(
+        final MapOperator<Tuple2, Record> mapOperator = new MapOperator(
                 new MapFunctionImpl(),
                 Tuple2.class,
                 Record.class
@@ -98,18 +98,18 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
     private class KeyIndex extends RexVisitorImpl<Integer> {
         final Child child;
 
-        protected KeyIndex(boolean deep, Child child) {
+        protected KeyIndex(final boolean deep, final Child child) {
             super(deep);
             this.child = child;
         }
 
         @Override
-        public Integer visitCall(RexCall call) {
-            RexNode operand = call.getOperands().get(child.ordinal());
+        public Integer visitCall(final RexCall call) {
+            final RexNode operand = call.getOperands().get(child.ordinal());
             if (!(operand instanceof RexInputRef)) {
                 throw new UnsupportedOperationException("Unsupported operation");
             }
-            RexInputRef rexInputRef = (RexInputRef) operand;
+            final RexInputRef rexInputRef = (RexInputRef) operand;
             return rexInputRef.getIndex();
         }
     }
@@ -120,7 +120,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
     private class KeyExtractor implements FunctionDescriptor.SerializableFunction<Record, Object> {
         private final int index;
 
-        public KeyExtractor(int index) {
+        public KeyExtractor(final int index) {
             this.index = index;
         }
 
@@ -139,12 +139,12 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
 
         @Override
         public Record apply(final Tuple2<Record, Record> tuple2) {
-            int length1 = tuple2.getField0().size();
-            int length2 = tuple2.getField1().size();
+            final int length1 = tuple2.getField0().size();
+            final int length2 = tuple2.getField1().size();
 
-            int totalLength = length1 + length2;
+            final int totalLength = length1 + length2;
 
-            Object[] fields = new Object[totalLength];
+            final Object[] fields = new Object[totalLength];
 
             for (int i = 0; i < length1; i++) {
                 fields[i] = tuple2.getField0().getField(i);
