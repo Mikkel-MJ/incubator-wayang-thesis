@@ -18,22 +18,23 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
+import java.io.Serializable;
+
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.wayang.api.sql.calcite.converter.JoinHelpers.KeyExtractor;
+import org.apache.wayang.api.sql.calcite.converter.JoinHelpers.KeyIndex;
+import org.apache.wayang.api.sql.calcite.converter.JoinHelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.operators.MapOperator;
-import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
-public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
+public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
 
     WayangJoinVisitor(final WayangRelConverter wayangRelConverter) {
         super(wayangRelConverter);
@@ -92,73 +93,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
         return mapOperator;
     }
 
-    /**
-     * Extracts key index from the call
-     */
-    private class KeyIndex extends RexVisitorImpl<Integer> {
-        final Child child;
-
-        protected KeyIndex(final boolean deep, final Child child) {
-            super(deep);
-            this.child = child;
-        }
-
-        @Override
-        public Integer visitCall(final RexCall call) {
-            final RexNode operand = call.getOperands().get(child.ordinal());
-            if (!(operand instanceof RexInputRef)) {
-                throw new UnsupportedOperationException("Unsupported operation");
-            }
-            final RexInputRef rexInputRef = (RexInputRef) operand;
-            return rexInputRef.getIndex();
-        }
-    }
-
-    /**
-     * Extracts the key
-     */
-    private class KeyExtractor implements FunctionDescriptor.SerializableFunction<Record, Object> {
-        private final int index;
-
-        public KeyExtractor(final int index) {
-            this.index = index;
-        }
-
-        public Object apply(final Record record) {
-            return record.getField(index);
-        }
-    }
-
-    /**
-     * Flattens Tuple2<Record, Record> to Record
-     */
-    private class MapFunctionImpl implements FunctionDescriptor.SerializableFunction<Tuple2<Record, Record>, Record> {
-        public MapFunctionImpl() {
-            super();
-        }
-
-        @Override
-        public Record apply(final Tuple2<Record, Record> tuple2) {
-            final int length1 = tuple2.getField0().size();
-            final int length2 = tuple2.getField1().size();
-
-            final int totalLength = length1 + length2;
-
-            final Object[] fields = new Object[totalLength];
-
-            for (int i = 0; i < length1; i++) {
-                fields[i] = tuple2.getField0().getField(i);
-            }
-            for (int j = length1; j < totalLength; j++) {
-                fields[j] = tuple2.getField1().getField(j - length1);
-            }
-            return new Record(fields);
-
-        }
-    }
-
     // Helpers
-    private enum Child {
+    public static enum Child {
         LEFT, RIGHT
     }
 }
