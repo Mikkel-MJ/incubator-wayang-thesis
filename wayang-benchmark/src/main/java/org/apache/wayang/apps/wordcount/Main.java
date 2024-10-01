@@ -44,7 +44,11 @@ public class Main {
                 System.exit(1);
             }
 
-            WayangContext wayangContext = new WayangContext();
+            Configuration configuration = new Configuration();
+            //configuration.setProperty("spark.driver.host", "spark-cluster");
+            //configuration.setProperty("spark.app.name", "word_count_remote_spark");
+
+            WayangContext wayangContext = new WayangContext(configuration);
 
             for (String platform : args[0].split(",")) {
                 switch (platform) {

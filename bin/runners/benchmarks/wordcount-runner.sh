@@ -11,11 +11,11 @@ echo "Installing Spark"
 SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
 
-wget https://dlcdn.apache.org/spark/spark-3.5.2/spark-3.5.2-bin-hadoop3.tgz
+wget https://dlcdn.apache.org/spark/spark-3.5.3/spark-3.5.3-bin-hadoop3.tgz
 
-tar -xzf spark-3.5.2-bin-hadoop3.tgz
-sudo mv spark-3.5.2-bin-hadoop3 /opt/spark
-rm spark-3.5.2-bin-hadoop3.tgz
+tar -xzf spark-3.5.3-bin-hadoop3.tgz
+sudo mv spark-3.5.3-bin-hadoop3 /opt/spark
+rm spark-3.5.3-bin-hadoop3.tgz
 
 export SPARK_HOME=/opt/spark
 export PATH=$PATH:$SPARK_HOME/bin
@@ -59,4 +59,4 @@ tar -xvf apache-wayang-assembly-0.7.1-incubating-dist.tar.gz
 
 cd wayang-0.7.1
 
-./bin/wayang-submit -Xmx32g org.apache.wayang.apps.wordcount.Main java,spark,flink,giraph file://${WORKDIR}/README.md
+./bin/wayang-submit -Xmx32g org.apache.wayang.apps.wordcount.Main spark file://${WORKDIR}/README.md

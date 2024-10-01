@@ -16,7 +16,7 @@
 #
 import requests
 
-BEARER_TOKEN = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJKdXJpUGV0ZXJzZW4jODg4OCIsImxhc3ROYW1lIjoiUGV0ZXJzZW4iLCJyb2xlIjoiVVNFUiIsInNlcnZpY2VMaWNlbnNlQWdyZWVtZW50Ijp0cnVlLCJpc3MiOiJjbG91ZC5zZHUuZGsiLCJmaXJzdE5hbWVzIjoiSnVyaSIsImV4dGVuZGVkQnlDaGFpbiI6W10sIm9yZ0lkIjoiaXR1LmRrIiwidWlkIjo0MiwiYXVkIjoiYWxsOndyaXRlIiwidHdvRmFjdG9yQXV0aGVudGljYXRpb24iOnRydWUsImV4cCI6MTcyNzcwMjY1NSwiaWF0IjoxNzI3NzAyMDU1LCJlbWFpbCI6Imp1cnBAaXR1LmRrIiwicHJpbmNpcGFsVHlwZSI6IndheWYiLCJwdWJsaWNTZXNzaW9uUmVmZXJlbmNlIjoiMmIwZmVhMmMtZjg4OS00OGEzLTkyMDEtMDIxNzQzMjJmYjdhIn0.EOd6Q7QrTCnl5Dvk20YcuaSOX6RAt3nRn0vh9W7aceJWXt0Qh7oKTJCoUiHD941GpIYSDn4tERhJjmjxFFTv5ETxLpHbhex1gZKzYSjf1WUfVzfTgt9xI8uF2rQr6vxxBdhPXOcTzaeUyAKxtHL79Em7ILsRxv8TOX7UrJbeb0RxSOTGrIHeU9K3156O8L98E1dfAI1QXTb8b1nd2By5Y1UhhAJs0BNJU7np5ApVTgEWO3pMHbOyvqhba6usA136OadWNuJ7-vgpBL_tyfZFWQEcRZAuA4lug4Ru6M1YoruaqgMYABr1V2rzfAMF4flaJCvjDGLk-QODMvJ7NyvkgA"
+BEARER_TOKEN = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJKdXJpUGV0ZXJzZW4jODg4OCIsImxhc3ROYW1lIjoiUGV0ZXJzZW4iLCJyb2xlIjoiVVNFUiIsInNlcnZpY2VMaWNlbnNlQWdyZWVtZW50Ijp0cnVlLCJpc3MiOiJjbG91ZC5zZHUuZGsiLCJmaXJzdE5hbWVzIjoiSnVyaSIsImV4dGVuZGVkQnlDaGFpbiI6W10sIm9yZ0lkIjoiaXR1LmRrIiwidWlkIjo0MiwiYXVkIjoiYWxsOndyaXRlIiwidHdvRmFjdG9yQXV0aGVudGljYXRpb24iOnRydWUsImV4cCI6MTcyNzc4MDg5OCwiaWF0IjoxNzI3NzgwMjk4LCJlbWFpbCI6Imp1cnBAaXR1LmRrIiwicHJpbmNpcGFsVHlwZSI6IndheWYiLCJwdWJsaWNTZXNzaW9uUmVmZXJlbmNlIjoiMmIwZmVhMmMtZjg4OS00OGEzLTkyMDEtMDIxNzQzMjJmYjdhIn0.SIRm1qYTRFb3G_m2j4-Z23VKvw1V-rT99PM4vvyQcIMV-3gi3SUwbFl62CwQrLMDlespyzIbgvVeacS1_I51KdrKvYyPa-dXya1e2fSc_0mD93l_C8AWf--hIglGejuA6xcSEi3Z4PCRJdnrQvTagBA5GH9baXMnx4eAkZwN22KQAnrrfvgjVw8IxDVsDPBpThELFB8eX9siG5AJW-f9G5r62kJdUABOQCkkJxX-OyIboEO3oxh3TT0iOr8vqMOBbzsJsl41bHvCQwB4dNMRSEATCkd8KZb_a9xvel6rYOYMZLbwDyPBTVcoCw2GkRrGa5STadByhy21tXZNZEcM5g"
 
 API_URL = "https://cloud.sdu.dk/api"
 JOBS_URL = API_URL + "/jobs/browse?providers=ucloud&state=RUNNING"
@@ -206,7 +206,7 @@ SPARK_BODY = {
 									"name": "spark-cluster",
 									"public": True,
 									"title": "Spark Cluster",
-									"version": "3.5.2",
+									"version": "3.1.2",
 									"website": "https://docs.cloud.sdu.dk/Apps/spark-cluster.html"
 								},
 								"tags": []
@@ -217,7 +217,7 @@ SPARK_BODY = {
 				"name": "spark-cluster",
 				"public": True,
 				"title": "Spark Cluster",
-				"version": "3.5.2",
+				"version": "3.1.2",
 				"website": "https://docs.cloud.sdu.dk/Apps/spark-cluster.html"
 			},
 			"name": "Spark test",
@@ -472,7 +472,7 @@ def create_wayang_body(spark_id, postgres_id):
                 "name": "Wayang Test",
                 "parameters": {
                     "b_var": {
-                        "path": "/911975/lsbo-paper/runners/runner-9.sh",
+                        "path": "/911975/lsbo-paper/runners/wordcount-runner.sh",
                         "readOnly": False,
                         "type": "file"
                     },

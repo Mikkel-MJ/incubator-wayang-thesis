@@ -11,15 +11,6 @@ echo "Installing Spark"
 SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
 
-wget https://dlcdn.apache.org/spark/spark-3.5.2/spark-3.5.2-bin-hadoop3.tgz
-
-tar -xzf spark-3.5.2-bin-hadoop3.tgz
-sudo mv spark-3.5.2-bin-hadoop3 /opt/spark
-rm spark-3.5.2-bin-hadoop3.tgz
-
-export SPARK_HOME=/opt/spark
-export PATH=$PATH:$SPARK_HOME/bin
-
 echo "Installing Hadoop"
 
 wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
@@ -29,6 +20,15 @@ mv hadoop-3.3.6 /opt/hadoop
 rm hadoop-3.3.6.tar.gz
 
 export HADOOP_HOME=/opt/hadoop
+export SPARK_VERSION=3.5.3
+
+wget https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz
+tar -zxf spark-${SPARK_VERSION}-bin-hadoop3.tgz
+rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
+mv spark-${SPARK_VERSION}-bin-hadoop3 ${SPARK_HOME}
+
+export SPARK_HOME=/opt/spark
+export PATH=$PATH:$SPARK_HOME/bin
 
 echo "Installing Flink"
 
