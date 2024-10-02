@@ -13,4 +13,4 @@ export PATH="$PATH:${GIRAPH_HOME}/bin"
 cd ${WORKDIR}
 cd wayang-0.7.1
 
-./bin/wayang-submit -Xmx32g org.apache.wayang.apps.wordcount.Main spark file://${WORKDIR}README.md
+./bin/wayang-submit -Xmx32g org.apache.wayang.apps.wordcount.Main spark file://$(pwd)/README.md

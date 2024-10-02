@@ -45,8 +45,9 @@ public class Main {
             }
 
             Configuration configuration = new Configuration();
+            configuration.setProperty("spark.master", "spark://spark-cluster:7077");
             //configuration.setProperty("spark.driver.host", "spark-cluster");
-            //configuration.setProperty("spark.app.name", "word_count_remote_spark");
+            //configuration.setProperty("spark.driver.port", "7077");
 
             WayangContext wayangContext = new WayangContext(configuration);
 

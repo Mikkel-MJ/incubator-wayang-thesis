@@ -3,7 +3,7 @@
 sudo apt update
 echo "Installing Java"
 
-sudo apt install default-jre --yes
+sudo apt install openjdk-11-jdk --yes
 
 java -version
 
@@ -21,13 +21,13 @@ rm hadoop-3.3.6.tar.gz
 
 export HADOOP_HOME=/opt/hadoop
 export SPARK_VERSION=3.5.3
+export SPARK_HOME=/opt/spark
 
 wget https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz
 tar -zxf spark-${SPARK_VERSION}-bin-hadoop3.tgz
 rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
 mv spark-${SPARK_VERSION}-bin-hadoop3 ${SPARK_HOME}
 
-export SPARK_HOME=/opt/spark
 export PATH=$PATH:$SPARK_HOME/bin
 
 echo "Installing Flink"

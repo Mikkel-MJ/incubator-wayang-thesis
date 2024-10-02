@@ -16,7 +16,7 @@
 #
 import requests
 
-BEARER_TOKEN = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJKdXJpUGV0ZXJzZW4jODg4OCIsImxhc3ROYW1lIjoiUGV0ZXJzZW4iLCJyb2xlIjoiVVNFUiIsInNlcnZpY2VMaWNlbnNlQWdyZWVtZW50Ijp0cnVlLCJpc3MiOiJjbG91ZC5zZHUuZGsiLCJmaXJzdE5hbWVzIjoiSnVyaSIsImV4dGVuZGVkQnlDaGFpbiI6W10sIm9yZ0lkIjoiaXR1LmRrIiwidWlkIjo0MiwiYXVkIjoiYWxsOndyaXRlIiwidHdvRmFjdG9yQXV0aGVudGljYXRpb24iOnRydWUsImV4cCI6MTcyNzc4MDg5OCwiaWF0IjoxNzI3NzgwMjk4LCJlbWFpbCI6Imp1cnBAaXR1LmRrIiwicHJpbmNpcGFsVHlwZSI6IndheWYiLCJwdWJsaWNTZXNzaW9uUmVmZXJlbmNlIjoiMmIwZmVhMmMtZjg4OS00OGEzLTkyMDEtMDIxNzQzMjJmYjdhIn0.SIRm1qYTRFb3G_m2j4-Z23VKvw1V-rT99PM4vvyQcIMV-3gi3SUwbFl62CwQrLMDlespyzIbgvVeacS1_I51KdrKvYyPa-dXya1e2fSc_0mD93l_C8AWf--hIglGejuA6xcSEi3Z4PCRJdnrQvTagBA5GH9baXMnx4eAkZwN22KQAnrrfvgjVw8IxDVsDPBpThELFB8eX9siG5AJW-f9G5r62kJdUABOQCkkJxX-OyIboEO3oxh3TT0iOr8vqMOBbzsJsl41bHvCQwB4dNMRSEATCkd8KZb_a9xvel6rYOYMZLbwDyPBTVcoCw2GkRrGa5STadByhy21tXZNZEcM5g"
+BEARER_TOKEN = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJKdXJpUGV0ZXJzZW4jODg4OCIsImxhc3ROYW1lIjoiUGV0ZXJzZW4iLCJyb2xlIjoiVVNFUiIsInNlcnZpY2VMaWNlbnNlQWdyZWVtZW50Ijp0cnVlLCJpc3MiOiJjbG91ZC5zZHUuZGsiLCJmaXJzdE5hbWVzIjoiSnVyaSIsImV4dGVuZGVkQnlDaGFpbiI6W10sIm9yZ0lkIjoiaXR1LmRrIiwidWlkIjo0MiwiYXVkIjoiYWxsOndyaXRlIiwidHdvRmFjdG9yQXV0aGVudGljYXRpb24iOnRydWUsImV4cCI6MTcyNzg2MjU3MCwiaWF0IjoxNzI3ODYxOTcwLCJlbWFpbCI6Imp1cnBAaXR1LmRrIiwicHJpbmNpcGFsVHlwZSI6IndheWYiLCJwdWJsaWNTZXNzaW9uUmVmZXJlbmNlIjoiODFmYjhlN2EtMDkzOC00OWM1LTlkMTctYTE3Y2Y1MzhkNDEwIn0.Dm05vNfwcfUkIUx3o4oRpDELmC3vdmDx_AFRwoTNATKpZDE59AmQfjF8Di9UZJwGGjBastlIVrEVpVmfE0HQG5dzgppqFzKWVe2KnAOouaOJ4pCzQcqZvSHqupXVP_Mq3L_90w-QI-lmWIU31nBh3Ff12E2DM20LNOtG4S0Dl4EyNOkD2Gh0WfhjJA-IYATRn8ykqgiI6r-Dmt3HbWeL6ifqorusQVoQzZk3jHsrEl_D1E11IL1zwXZBZ3mUo8cwhH68J-AYALS6nuMZXMmLp9U-IrcmUd2i8jDvzgHOk13Hzl0Sxsr-fUsnT6aImYh9IohE_7_jnWkBlP48kcvhlg"
 
 API_URL = "https://cloud.sdu.dk/api"
 JOBS_URL = API_URL + "/jobs/browse?providers=ucloud&state=RUNNING"
@@ -206,7 +206,7 @@ SPARK_BODY = {
 									"name": "spark-cluster",
 									"public": True,
 									"title": "Spark Cluster",
-									"version": "3.1.2",
+									"version": "3.5.3",
 									"website": "https://docs.cloud.sdu.dk/Apps/spark-cluster.html"
 								},
 								"tags": []
@@ -217,7 +217,7 @@ SPARK_BODY = {
 				"name": "spark-cluster",
 				"public": True,
 				"title": "Spark Cluster",
-				"version": "3.1.2",
+				"version": "3.5.3",
 				"website": "https://docs.cloud.sdu.dk/Apps/spark-cluster.html"
 			},
 			"name": "Spark test",
