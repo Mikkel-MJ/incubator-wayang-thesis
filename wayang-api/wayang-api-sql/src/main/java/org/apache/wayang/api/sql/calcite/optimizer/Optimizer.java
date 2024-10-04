@@ -30,9 +30,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.rules.FilterJoinRule;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule.FilterIntoJoinRuleConfig;
-import org.apache.calcite.rel.rules.FilterJoinRule.JoinConditionPushRule.JoinConditionPushRuleConfig;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlNode;
@@ -40,7 +38,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.util.ChainedSqlOperatorTable;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -93,11 +91,11 @@ public class Optimizer {
                 config
         );
 
-        SqlOperatorTable operatorTable = new ChainedSqlOperatorTable(ImmutableList.of(SqlStdOperatorTable.instance()));
+        SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
 
         SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
                 .withLenientOperatorLookup(config.lenientOperatorLookup())
-                .withSqlConformance(config.conformance())
+                .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
 
@@ -147,11 +145,11 @@ public class Optimizer {
                 config
         );
 
-        SqlOperatorTable operatorTable = new ChainedSqlOperatorTable(ImmutableList.of(SqlStdOperatorTable.instance()));
+        SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
 
         SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
                 .withLenientOperatorLookup(config.lenientOperatorLookup())
-                .withSqlConformance(config.conformance())
+                .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
 
