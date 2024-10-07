@@ -34,8 +34,12 @@ import org.apache.wayang.ml.util.CardinalitySampler;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.Level;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.ElementaryOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
-import org.apache.wayang.core.optimizer.CardinalityEstimate;
+import org.apache.wayang.core.plan.wayangplan.OperatorBase;
+import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimate;
+import org.apache.wayang.core.optimizer.cardinality.FixedSizeCardinalityEstimator;
+import org.apache.wayang.core.optimizer.cardinality.DefaultCardinalityEstimator;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -94,10 +98,16 @@ public class Training {
                 .traverse(plan.getSinks())
                 .getTraversedNodes();
 
-            final CardinalityEstimate sourceCardinality = new CardinalityEstimate(123, 321, 0.123d);
             for (Operator operator : operators) {
-                operator.setCardinalityEstimators((optimizationContext, inputEstimates) -> sourceCardinality);
                 System.out.println("Operator: " + operator);
+                System.out.println("Sink: " + operator.isSink());
+
+                if (!operator.isSource() && !operator.isSink()) {
+                    ((OperatorBase) operator).setCardinalityEstimator(0, new DefaultCardinalityEstimator(
+                            0.5d, 1, false, longs -> 42
+                    ));
+                    System.out.println("Estimator: " + ((ElementaryOperator) operator).getCardinalityEstimator(0));
+                }
             }
 
             /*int hashCode = new HashCodeBuilder(17, 37).append(plan).toHashCode();
