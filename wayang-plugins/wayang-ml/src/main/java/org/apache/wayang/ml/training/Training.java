@@ -35,6 +35,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.Level;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.optimizer.CardinalityEstimate;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -93,7 +94,9 @@ public class Training {
                 .traverse(plan.getSinks())
                 .getTraversedNodes();
 
+            final CardinalityEstimate sourceCardinality = new CardinalityEstimate(123, 321, 0.123d);
             for (Operator operator : operators) {
+                operator.setCardinalityEstimators((optimizationContext, inputEstimates) -> sourceCardinality);
                 System.out.println("Operator: " + operator);
             }
 
