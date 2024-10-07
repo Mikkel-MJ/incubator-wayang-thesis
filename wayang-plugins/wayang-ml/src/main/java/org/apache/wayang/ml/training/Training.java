@@ -33,11 +33,14 @@ import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.ml.util.CardinalitySampler;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.Level;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.Operator;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.lang.reflect.Constructor;
 import java.util.Set;
+import java.util.Collection;
 import java.time.Instant;
 import java.time.Duration;
 import java.util.Comparator;
@@ -85,6 +88,14 @@ public class Training {
             Configuration config = context.getConfiguration();
             config.setProperty("wayang.ml.experience.enabled", "false");
             WayangPlan plan = builder.build();
+
+            Collection<Operator> operators =  PlanTraversal.upstream()
+                .traverse(plan.getSinks())
+                .getTraversedNodes();
+
+            for (Operator operator : operators) {
+                System.out.println("Operator: " + operator);
+            }
 
             /*int hashCode = new HashCodeBuilder(17, 37).append(plan).toHashCode();
             String path = "/var/www/html/data/" + hashCode + "-cardinalities.json";*/
