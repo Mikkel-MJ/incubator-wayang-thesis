@@ -29,6 +29,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.schema.Schema;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule.FilterIntoJoinRuleConfig;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -65,8 +66,28 @@ public class Optimizer {
     private final SqlValidator sqlValidator;
     private final SqlToRelConverter sqlToRelConverter;
     private final VolcanoPlanner volcanoPlanner;
+    private static RelOptCluster cluster;
+    private static RelOptSchema relOptSchema;
+    private static Schema schema;
+    private static RelDataTypeFactory relDataTypeFactory;
 
-    public Optimizer(
+    public static Schema getCalciteSchema(){
+        return schema;
+    }
+
+    public static RelOptSchema getRelOptSchema() {
+        return relOptSchema;
+    }
+
+    public static RelOptCluster getCluster() {
+        return cluster;
+    }
+
+    public static RelDataTypeFactory getTypeFactory(){
+        return relDataTypeFactory;
+    }
+
+    protected Optimizer(
             CalciteConnectionConfig config,
             SqlValidator sqlValidator,
             SqlToRelConverter sqlToRelConverter,
@@ -81,15 +102,18 @@ public class Optimizer {
             CalciteSchema calciteSchema,
             Properties configProperties,
             RelDataTypeFactory typeFactory) {
-
+        relDataTypeFactory = typeFactory;
+        schema = calciteSchema.schema;
+        System.out.println("CREATING OPTIMIZERS");
         CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
 
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(
                 calciteSchema.root(),
                 ImmutableList.of(calciteSchema.name),
                 typeFactory,
-                config
-        );
+                config);
+        
+        relOptSchema = catalogReader; //set the reloptschema for serialisation access
 
         SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
 
@@ -99,13 +123,14 @@ public class Optimizer {
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
 
-        SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory, validatorConfig);
+        SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
+                validatorConfig);
 
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
-        RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
-        
+        cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
+
         SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
                 .withExpand(false);
@@ -116,18 +141,24 @@ public class Optimizer {
                 catalogReader,
                 cluster,
                 StandardConvertletTable.INSTANCE,
-                converterConfig
-        );
+                converterConfig);
 
         return new Optimizer(config, validator, converter, planner);
     }
 
-
-
-    //To remove
+    // To remove
+    /**
+     * 
+     * @param wayangSchema
+     * @return
+     * @deprecated Use
+     *             {@link #create(CalciteSchema, Properties, RelDataTypeFactory)}
+     *             instead
+     */
+    @Deprecated
     public static Optimizer create(WayangSchema wayangSchema) {
         RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
-
+        relDataTypeFactory = typeFactory;
         // Configuration
         Properties configProperties = new Properties();
         configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
@@ -138,6 +169,7 @@ public class Optimizer {
 
         CalciteSchema rootSchema = CalciteSchema.createRootSchema(false, false);
         rootSchema.add(wayangSchema.getSchemaName(), wayangSchema);
+
         Prepare.CatalogReader catalogReader = new CalciteCatalogReader(
                 rootSchema,
                 Collections.singletonList(wayangSchema.getSchemaName()),
@@ -153,17 +185,21 @@ public class Optimizer {
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
 
-        SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory, validatorConfig);
+            
+        SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
+                validatorConfig);
 
+        
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.addRule(FilterIntoJoinRuleConfig.DEFAULT.toRule());
 
-        RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
+        cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
         SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
                 .withExpand(false);
+
 
         SqlToRelConverter converter = new SqlToRelConverter(
                 null,
@@ -171,12 +207,10 @@ public class Optimizer {
                 catalogReader,
                 cluster,
                 StandardConvertletTable.INSTANCE,
-                converterConfig
-        );
+                converterConfig);
 
         return new Optimizer(config, validator, converter, planner);
     }
-
 
     public SqlNode parseSql(String sql) throws SqlParseException {
         SqlParser.Config parserConfig = SqlParser.config()
@@ -195,11 +229,11 @@ public class Optimizer {
     }
 
     public RelNode convert(SqlNode sqlNode) {
-        RelRoot root  = sqlToRelConverter.convertQuery(sqlNode, false, true);
+        RelRoot root = sqlToRelConverter.convertQuery(sqlNode, false, true);
         return root.rel;
     }
 
-    //TODO: create a basic ruleset
+    // TODO: create a basic ruleset
     public RelNode optimize(RelNode node, RelTraitSet requiredTraitSet, RuleSet rules) {
         Program program = Programs.of(RuleSets.ofList(rules));
 
@@ -208,8 +242,7 @@ public class Optimizer {
                 node,
                 requiredTraitSet,
                 Collections.emptyList(),
-                Collections.emptyList()
-        );
+                Collections.emptyList());
     }
 
     public WayangPlan convert(RelNode relNode) {
@@ -226,7 +259,6 @@ public class Optimizer {
         return new WayangPlan(sink);
     }
 
-
     public static class ConfigProperties {
 
         public static Properties getDefaults() {
@@ -236,10 +268,5 @@ public class Optimizer {
             configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
             return configProperties;
         }
-
     }
-
-
 }
-
-

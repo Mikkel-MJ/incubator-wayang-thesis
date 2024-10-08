@@ -6,31 +6,33 @@ import java.util.function.BiFunction;
 
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.runtime.SqlFunctions;
+import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteSerializable;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class AggregateFunction implements FunctionDescriptor.SerializableBinaryOperator<Record> {
+public class AggregateFunction extends CalciteSerializable implements FunctionDescriptor.SerializableBinaryOperator<Record>{
     private transient final List<AggregateCall> aggregateCallList;
 
-    public AggregateFunction(List<AggregateCall> aggregateCalls) {
+    public AggregateFunction(final List<AggregateCall> aggregateCalls) {
+        super(aggregateCalls.toArray(AggregateCall[]::new));
         this.aggregateCallList = aggregateCalls;
     }
 
     @Override
-    public Record apply(Record record1, Record record2) {
-        int l = record1.size();
-        Object[] resValues = new Object[l];
+    public Record apply(final Record record1, final Record record2) {
+        final int l = record1.size();
+        final Object[] resValues = new Object[l];
         int i;
-        boolean countDone = false;
+        final boolean countDone = false;
     
         for (i = 0; i < l - aggregateCallList.size() - 1; i++) {
             resValues[i] = record1.getField(i);
         }
     
-        for (AggregateCall aggregateCall : aggregateCallList) {
-            String name = aggregateCall.getAggregation().getName();
-            Object field1 = record1.getField(i);
-            Object field2 = record2.getField(i);
+        for (final AggregateCall aggregateCall : aggregateCallList) {
+            final String name = aggregateCall.getAggregation().getName();
+            final Object field1 = record1.getField(i);
+            final Object field2 = record2.getField(i);
             
             switch (name) {
                 case "SUM":
@@ -67,14 +69,14 @@ public class AggregateFunction implements FunctionDescriptor.SerializableBinaryO
      * @param doubleMap mapping if the field is a double or null
      * @return the result of the mapping being applied
      */
-    private Object castAndMap(Object a, Object b, 
-    BiFunction<String, String, String> stringMap, 
-    BiFunction<Long, Long, Long> longMap,
-    BiFunction<Integer, Integer, Integer> integerMap,
-    BiFunction<Double, Double, Double> doubleMap) {
+    private Object castAndMap(final Object a, final Object b, 
+    final BiFunction<String, String, String> stringMap, 
+    final BiFunction<Long, Long, Long> longMap,
+    final BiFunction<Integer, Integer, Integer> integerMap,
+    final BiFunction<Double, Double, Double> doubleMap) {
         if ((a == null || b == null) || (a.getClass() == b.getClass())) { //support operations between null and any class
-            Optional<Object> aWrapped = Optional.ofNullable(a); //objects can be null in this if statement due to condition above
-            Optional<Object> bWrapped = Optional.ofNullable(b);
+            final Optional<Object> aWrapped = Optional.ofNullable(a); //objects can be null in this if statement due to condition above
+            final Optional<Object> bWrapped = Optional.ofNullable(b);
 
             switch (aWrapped.orElse(bWrapped.orElse("")).getClass().getSimpleName()) {//force .getClass() to be safe so we can pass null objects to .apply methods.
                 case "String":

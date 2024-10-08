@@ -8,15 +8,15 @@ import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
 public class KeyExtractor implements FunctionDescriptor.SerializableFunction<Record, Object> {
-    private Set<Integer> indexSet;
+    private final Set<Integer> indexSet;
 
-    public KeyExtractor(Set<Integer> indexSet) {
+    public KeyExtractor(final Set<Integer> indexSet) {
         this.indexSet = indexSet;
     }
 
     public Object apply(final Record record) {
-        List<Object> keys = new ArrayList<>();
-        for (Integer index : indexSet) {
+        final List<Object> keys = new ArrayList<>();
+        for (final Integer index : indexSet) {
             keys.add(record.getField(index));
         }
         return keys;

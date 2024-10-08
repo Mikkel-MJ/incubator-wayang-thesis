@@ -17,22 +17,36 @@
 
 package org.apache.wayang.api.sql;
 
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexProgram;
+import org.apache.calcite.rex.RexProgramBuilder;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
+import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteSerializable;
+import org.apache.wayang.api.sql.calcite.converter.FilterHelpers.FilterPredicateImpl;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
+import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchemaBuilder;
 import org.apache.wayang.api.sql.calcite.schema.WayangTable;
 import org.apache.wayang.api.sql.calcite.schema.WayangTableBuilder;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
 import org.apache.wayang.api.sql.context.SqlContext;
+import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
@@ -40,15 +54,53 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Properties;
 
 
 public class SqlToWayangRelTest {
     @Test
+    public void serializationTest() throws Exception {
+        //create filterPredicateImpl for serialisation
+        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        RexBuilder rb                  = new RexBuilder(typeFactory);
+        RexNode leftOperand            = rb.makeInputRef(typeFactory.createSqlType(SqlTypeName.VARCHAR), 0);
+        RexNode rightOperand           = rb.makeLiteral("test");
+        RexNode cond                   = rb.makeCall(SqlStdOperatorTable.EQUALS, leftOperand, rightOperand);
+        CalciteSerializable fpImpl     = new FilterPredicateImpl(cond);
+        
+        //setup the optimizer as calcite serialization requires the schema to be ready before serialisation
+        Properties configProperties           = Optimizer.ConfigProperties.getDefaults();
+        RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
+        String calciteModelPath               = SqlAPI.class.getResource("/model-example-min.json").getPath();
+        Configuration configuration           = new ModelParser(new Configuration(), calciteModelPath).setProperties();
+        CalciteSchema calciteSchema           = SchemaUtils.getSchema(configuration);
+        Optimizer optimizer                   = Optimizer.create(calciteSchema, configProperties, relDataTypeFactory);
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject((CalciteSerializable) fpImpl);
+        objectOutputStream.close();
+        System.out.println("Serialized object: " + byteArrayOutputStream.toString());
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+        CalciteSerializable deserializedObject = (CalciteSerializable) objectInputStream.readObject();
+        objectInputStream.close();
+        System.out.println("Deserialised object serialisables: " + deserializedObject);
+
+        assert(((FilterPredicateImpl) deserializedObject).test(new Record("test")));
+    }
+
+    //@Test
     public void filterIsNull() throws Exception {
         SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 

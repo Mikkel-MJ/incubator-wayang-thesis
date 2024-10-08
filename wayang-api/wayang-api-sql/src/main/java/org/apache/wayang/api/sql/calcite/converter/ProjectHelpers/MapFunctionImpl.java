@@ -8,14 +8,16 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.wayang.api.sql.calcite.converter.WayangProjectVisitor;
+import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteSerializable;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class MapFunctionImpl implements FunctionDescriptor.SerializableFunction<Record, Record> {
+public class MapFunctionImpl extends CalciteSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
 
     private transient final List<RexNode> projects;
 
     public MapFunctionImpl(final List<RexNode> projects) {
+        super(projects.toArray(RexNode[]::new));
         this.projects = projects;
     }
 

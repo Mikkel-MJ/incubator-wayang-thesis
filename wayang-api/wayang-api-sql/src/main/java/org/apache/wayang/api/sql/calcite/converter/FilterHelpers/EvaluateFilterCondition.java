@@ -9,14 +9,12 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.runtime.SqlFunctions;
-import org.apache.calcite.runtime.SqlFunctions.LikeFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.wayang.api.sql.calcite.converter.WayangFilterVisitor;
 import org.apache.wayang.basic.data.Record;
 
 public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements Serializable {
     final Record record;
-    private final LikeFunction likeFunction = new LikeFunction();
 
     protected EvaluateFilterCondition(final boolean deep, final Record record) {
         super(deep);
@@ -113,7 +111,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
 
     private boolean like(final Optional<?> o, final RexLiteral toCompare) {       
         final String unwrapped = o.map(s -> (String) s).orElse("");
-        final boolean isMatch = likeFunction.like(unwrapped, toCompare
+        final boolean isMatch = SqlFunctions.like(unwrapped, toCompare
             .toString()
             .replace("'", "") //the calcite sqlToRegex api needs input w/o 's
         );
