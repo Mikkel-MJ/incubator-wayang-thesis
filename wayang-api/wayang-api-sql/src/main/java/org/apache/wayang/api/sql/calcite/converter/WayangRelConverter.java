@@ -25,7 +25,7 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 
 public class WayangRelConverter {
 
-    public Operator convert(RelNode node) {
+    public Operator convert(final RelNode node) {
         if(node instanceof WayangTableScan) {
             return new WayangTableScanVisitor(this).visit((WayangTableScan)node);
         } else if (node instanceof WayangProject) {

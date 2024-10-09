@@ -1,35 +1,36 @@
 package org.apache.wayang.api.sql.calcite.converter.AggregateHelpers;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.runtime.SqlFunctions;
-import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteSerializable;
+import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteAggSerializable;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class AggregateFunction extends CalciteSerializable implements FunctionDescriptor.SerializableBinaryOperator<Record>{
-    private transient final List<AggregateCall> aggregateCallList;
-
+public class AggregateFunction extends CalciteAggSerializable implements FunctionDescriptor.SerializableBinaryOperator<Record>{
     public AggregateFunction(final List<AggregateCall> aggregateCalls) {
         super(aggregateCalls.toArray(AggregateCall[]::new));
-        this.aggregateCallList = aggregateCalls;
     }
 
     @Override
     public Record apply(final Record record1, final Record record2) {
+        List<AggregateCall> aggregateCalls = Arrays.asList(super.serializables);
+        
         final int l = record1.size();
         final Object[] resValues = new Object[l];
         int i;
         final boolean countDone = false;
     
-        for (i = 0; i < l - aggregateCallList.size() - 1; i++) {
+        for (i = 0; i < l - aggregateCalls.size() - 1; i++) {
             resValues[i] = record1.getField(i);
         }
     
-        for (final AggregateCall aggregateCall : aggregateCallList) {
+        for (final AggregateCall aggregateCall : aggregateCalls) {
             final String name = aggregateCall.getAggregation().getName();
             final Object field1 = record1.getField(i);
             final Object field2 = record2.getField(i);

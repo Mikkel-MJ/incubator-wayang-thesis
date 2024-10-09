@@ -25,7 +25,7 @@ abstract class WayangRelNodeVisitor<T extends RelNode> {
 
     final WayangRelConverter wayangRelConverter;
 
-    WayangRelNodeVisitor(WayangRelConverter wayangRelConverter) {
+    WayangRelNodeVisitor(final WayangRelConverter wayangRelConverter) {
         this.wayangRelConverter = wayangRelConverter;
     }
 

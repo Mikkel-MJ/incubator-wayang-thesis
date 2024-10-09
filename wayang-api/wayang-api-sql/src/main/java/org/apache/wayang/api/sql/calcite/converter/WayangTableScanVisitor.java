@@ -36,18 +36,18 @@ import java.util.Objects;
 //TODO: create tablesource with column types
 //TODO: support other sources
 public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan> {
-    WayangTableScanVisitor(WayangRelConverter wayangRelConverter) {
+    WayangTableScanVisitor(final WayangRelConverter wayangRelConverter) {
         super(wayangRelConverter);
     }
 
     @Override
-    Operator visit(WayangTableScan wayangRelNode) {
+    Operator visit(final WayangTableScan wayangRelNode) {
 
-        String tableName = wayangRelNode.getTableName();
-        List<String> columnNames = wayangRelNode.getColumnNames();
+        final String tableName = wayangRelNode.getTableName();
+        final List<String> columnNames = wayangRelNode.getColumnNames();
 
         // Get the source platform for this table
-        String tableSource = wayangRelNode.getTable().getQualifiedName().get(0);
+        final String tableSource = wayangRelNode.getTable().getQualifiedName().get(0);
         if (tableSource.equals("postgres")) {
             return new PostgresTableSource(tableName, columnNames.toArray(new String[]{}));
         }
@@ -55,17 +55,17 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
             ModelParser modelParser;
             try {
                 modelParser = new ModelParser();
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 throw new RuntimeException(e);
             }
-            RelDataType rowType = wayangRelNode.getRowType();
-            List<RelDataType> fieldTypes = new ArrayList<>();
-            for (RelDataTypeField field : rowType.getFieldList()) {
+            final RelDataType rowType = wayangRelNode.getRowType();
+            final List<RelDataType> fieldTypes = new ArrayList<>();
+            for (final RelDataTypeField field : rowType.getFieldList()) {
                 fieldTypes.add(field.getType());
             }
-            String url = String.format("file:/%s/%s.csv", modelParser.getFsPath(), wayangRelNode.getTableName());
+            final String url = String.format("file:/%s/%s.csv", modelParser.getFsPath(), wayangRelNode.getTableName());
 
-            String separator = modelParser.getSeparator();
+            final String separator = modelParser.getSeparator();
 
             if (Objects.equals(separator, "")) {
                 return new JavaCSVTableSource(url,

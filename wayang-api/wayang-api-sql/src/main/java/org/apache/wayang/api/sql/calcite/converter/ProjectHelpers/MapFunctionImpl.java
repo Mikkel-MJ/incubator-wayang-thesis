@@ -1,6 +1,7 @@
 package org.apache.wayang.api.sql.calcite.converter.ProjectHelpers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.calcite.rex.RexCall;
@@ -8,21 +9,18 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.wayang.api.sql.calcite.converter.WayangProjectVisitor;
-import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteSerializable;
+import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteRexSerializable;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class MapFunctionImpl extends CalciteSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
-
-    private transient final List<RexNode> projects;
-
+public class MapFunctionImpl extends CalciteRexSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
     public MapFunctionImpl(final List<RexNode> projects) {
         super(projects.toArray(RexNode[]::new));
-        this.projects = projects;
     }
 
     @Override
     public Record apply(final Record record) {
+        List<RexNode> projects = Arrays.asList(super.serializables);
 
         final List<Object> projectedRecord = new ArrayList<>();
         for (int i = 0; i < projects.size(); i++){

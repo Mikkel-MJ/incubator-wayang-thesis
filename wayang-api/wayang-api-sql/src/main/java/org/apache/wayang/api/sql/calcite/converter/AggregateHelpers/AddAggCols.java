@@ -1,22 +1,23 @@
 package org.apache.wayang.api.sql.calcite.converter.AggregateHelpers;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteSerializable;
+import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteAggSerializable;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class AddAggCols extends CalciteSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
-    private final transient List<AggregateCall> aggregateCalls;
-
+public class AddAggCols extends CalciteAggSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
     public AddAggCols(final List<AggregateCall> aggregateCalls) {
         super(aggregateCalls.toArray(AggregateCall[]::new));
-        this.aggregateCalls = aggregateCalls;
     }
 
     @Override
     public Record apply(final Record record) {
+        List<AggregateCall> aggregateCalls = Arrays.asList(super.serializables);
+
         final int l = record.size();
         final int newRecordSize = l + aggregateCalls.size() + 1;
         final Object[] resValues = new Object[newRecordSize];

@@ -9,7 +9,7 @@ import org.apache.wayang.core.function.FunctionDescriptor;
  */
 public class MapFunctionImpl implements FunctionDescriptor.SerializableFunction<Tuple2<Record, Record>, Record> {
     public MapFunctionImpl() {
-        super();
+
     }
 
     @Override
@@ -28,6 +28,5 @@ public class MapFunctionImpl implements FunctionDescriptor.SerializableFunction<
             fields[j] = tuple2.getField1().getField(j - length1);
         }
         return new Record(fields);
-
     }
 }
