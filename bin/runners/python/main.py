@@ -16,7 +16,7 @@
 #
 import requests
 
-BEARER_TOKEN = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJKdXJpUGV0ZXJzZW4jODg4OCIsImxhc3ROYW1lIjoiUGV0ZXJzZW4iLCJyb2xlIjoiVVNFUiIsInNlcnZpY2VMaWNlbnNlQWdyZWVtZW50Ijp0cnVlLCJpc3MiOiJjbG91ZC5zZHUuZGsiLCJmaXJzdE5hbWVzIjoiSnVyaSIsImV4dGVuZGVkQnlDaGFpbiI6W10sIm9yZ0lkIjoiaXR1LmRrIiwidWlkIjo0MiwiYXVkIjoiYWxsOndyaXRlIiwidHdvRmFjdG9yQXV0aGVudGljYXRpb24iOnRydWUsImV4cCI6MTcyNzg2MjU3MCwiaWF0IjoxNzI3ODYxOTcwLCJlbWFpbCI6Imp1cnBAaXR1LmRrIiwicHJpbmNpcGFsVHlwZSI6IndheWYiLCJwdWJsaWNTZXNzaW9uUmVmZXJlbmNlIjoiODFmYjhlN2EtMDkzOC00OWM1LTlkMTctYTE3Y2Y1MzhkNDEwIn0.Dm05vNfwcfUkIUx3o4oRpDELmC3vdmDx_AFRwoTNATKpZDE59AmQfjF8Di9UZJwGGjBastlIVrEVpVmfE0HQG5dzgppqFzKWVe2KnAOouaOJ4pCzQcqZvSHqupXVP_Mq3L_90w-QI-lmWIU31nBh3Ff12E2DM20LNOtG4S0Dl4EyNOkD2Gh0WfhjJA-IYATRn8ykqgiI6r-Dmt3HbWeL6ifqorusQVoQzZk3jHsrEl_D1E11IL1zwXZBZ3mUo8cwhH68J-AYALS6nuMZXMmLp9U-IrcmUd2i8jDvzgHOk13Hzl0Sxsr-fUsnT6aImYh9IohE_7_jnWkBlP48kcvhlg"
+BEARER_TOKEN = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJKdXJpUGV0ZXJzZW4jODg4OCIsImxhc3ROYW1lIjoiUGV0ZXJzZW4iLCJyb2xlIjoiVVNFUiIsInNlcnZpY2VMaWNlbnNlQWdyZWVtZW50Ijp0cnVlLCJpc3MiOiJjbG91ZC5zZHUuZGsiLCJmaXJzdE5hbWVzIjoiSnVyaSIsImV4dGVuZGVkQnlDaGFpbiI6W10sIm9yZ0lkIjoiaXR1LmRrIiwidWlkIjo0MiwiYXVkIjoiYWxsOndyaXRlIiwidHdvRmFjdG9yQXV0aGVudGljYXRpb24iOnRydWUsImV4cCI6MTcyODQ3OTI4NiwiaWF0IjoxNzI4NDc4Njg2LCJlbWFpbCI6Imp1cnBAaXR1LmRrIiwicHJpbmNpcGFsVHlwZSI6IndheWYiLCJwdWJsaWNTZXNzaW9uUmVmZXJlbmNlIjoiOWNkYzcyZDktNjY2MC00NjJjLWIxOTYtNzQ5MzRjNzM4Mzk1In0.XeXwplnOxQFXzU_2pvVB4S7Ynt0yxKn3E8OA7jxfqCq7-lW0HmvfCEcmkiIDCQ11TjAJylB2EG503i6gJA3nKpglliyug443SUc8GH-OMZptv_zkgEJE5_lrkLrwpQzYpMSTvdeCd2wzMMqP6eBSmaT5O7s4E_pnaCl_9ruG_JzInykBPJcz4RjnMFGm6qwVtHDOiNc2MBgiDNLYIgKhosDSCw9_JISDw75tNF5v1Fd83Q4hvw2XBIx5qhvRnmJUXJW8o0uBBHKE8xE7wPYoWcqWuk99suzdV7duKgfd3hmCl_H0BC1YZDPhNEjxMHTBGLTz9otVicPrmSNMUUXgMg"
 
 API_URL = "https://cloud.sdu.dk/api"
 JOBS_URL = API_URL + "/jobs/browse?providers=ucloud&state=RUNNING"
@@ -472,7 +472,7 @@ def create_wayang_body(spark_id, postgres_id):
                 "name": "Wayang Test",
                 "parameters": {
                     "b_var": {
-                        "path": "/911975/lsbo-paper/runners/wordcount-runner.sh",
+                        "path": "/911975/lsbo-paper/runners/benchmarks/runner.sh",
                         "readOnly": False,
                         "type": "file"
                     },

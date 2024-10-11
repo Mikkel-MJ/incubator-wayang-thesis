@@ -53,6 +53,7 @@ public class TPCHBenchmarks {
             Configuration config = new Configuration();
             String modelType = "";
 
+            config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
             if (args.length > 4) {
