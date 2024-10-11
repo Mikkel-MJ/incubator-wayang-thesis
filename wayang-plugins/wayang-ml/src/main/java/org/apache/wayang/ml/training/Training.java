@@ -34,7 +34,9 @@ import org.apache.wayang.ml.util.CardinalitySampler;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.Level;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.ElementaryOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.OperatorBase;
 import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimate;
 
 import java.io.BufferedWriter;
