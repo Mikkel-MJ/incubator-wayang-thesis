@@ -75,10 +75,12 @@ public class MLContext extends WayangContext {
         Job wayangJob = this.createJob("", wayangPlan, udfJars);
         OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
 
-        wayangJob.execute();
-
         Configuration config = this.getConfiguration();
         Configuration jobConfig = wayangJob.getConfiguration();
+        System.out.println("Spark config updated: " + jobConfig.getStringProperty("spark.master"));
+
+        wayangJob.execute();
+
         if (config.getBooleanProperty("wayang.ml.experience.enabled")) {
             String original;
 
@@ -107,6 +109,8 @@ public class MLContext extends WayangContext {
     public void executeVAE(WayangPlan wayangPlan, String ...udfJars) {
         try {
             Job job = this.createJob("", wayangPlan, udfJars);
+            Configuration jobConfig = job.getConfiguration();
+
             //job.prepareWayangPlan();
             job.estimateKeyFigures();
             OneHotMappings.setOptimizationContext(job.getOptimizationContext());
