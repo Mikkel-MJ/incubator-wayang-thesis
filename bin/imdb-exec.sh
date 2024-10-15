@@ -15,9 +15,14 @@ DIRECTORY="/var/www/html/wayang-plugins/wayang-ml/src/main/resources/calcite-rea
 # Loop over each file in the directory
 for FILE in "$DIRECTORY"/*.sql
 do
-  # Execute the wayang-submit command with the current file as an argument
-  ./bin/wayang-submit org.apache.wayang.ml.benchmarks.IMDBJOBenchmark "$FILE"
+  # Measure the time taken for the wayang-submit command
 
+  SECONDS=0
+  # Execute the wayang-submit command with the current file as an argument
+  ./bin/wayang-submit -Xmx8g org.apache.wayang.ml.benchmarks.IMDBJOBenchmark "$FILE"
+
+  # Output the time taken, exit status, and file name
+  echo "Time taken: ${SECONDS}s" >> "$output_path"
   echo $? >> "$output_path"
   echo "$FILE" >> "$output_path"
 done
