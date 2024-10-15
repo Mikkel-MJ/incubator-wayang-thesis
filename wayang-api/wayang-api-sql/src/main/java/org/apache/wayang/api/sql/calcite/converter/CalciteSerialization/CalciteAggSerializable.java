@@ -5,17 +5,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.externalize.RelJson;
 import org.apache.calcite.rel.type.RelDataType;
@@ -29,10 +26,13 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.calcite.util.ImmutableBitSet;
+
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.amazonaws.services.kms.model.UnsupportedOperationException;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -53,11 +53,6 @@ public class CalciteAggSerializable implements CalciteSerializable {
     }
 
     private void writeObject(final ObjectOutputStream out) throws IOException {
-        System.out.println("Serialising obj: " + this.toString());
-        System.out.println("Typename: " + this.typeName);
-        Arrays.stream(serializables).forEach(System.out::println);
-        Arrays.stream(serializables).forEach(o -> System.out.println(o.getClass()));
-        System.out.println("serializables end \n");
         out.defaultWriteObject();//write default object like sqltypename
 
         final String[] nodes = this.getNodesAsStrings(serializables); //serialize aggregate calls
@@ -100,11 +95,6 @@ public class CalciteAggSerializable implements CalciteSerializable {
         final Map<String, Object> mapAgg    = (Map<String, Object>) map.get("agg"); //get aggregate json object
         final Map<String, Object> mapType   = (Map<String, Object>) map.get("type");
         final SqlAggFunction sqlAggFunction = (SqlAggFunction) this.toOp(mapAgg);
-        
-        System.out.println("cluster " + cluster);
-        System.out.println("map " + map);
-        System.out.println("typename " + this.typeName);
-        System.out.println("collation " + cluster.traitSet().getCollation());
 
         final boolean distinct = (boolean) map.get("distinct");
         final boolean approximate = false; // no idea how to fetch this
@@ -118,7 +108,7 @@ public class CalciteAggSerializable implements CalciteSerializable {
 
         final AggregateCall call = AggregateCall.create(sqlAggFunction, distinct, approximate, ignoreNulls, argList,
                 filterArg, distinctKeys, collation, type, name);
-        System.out.println(call);
+
         return call;
     }
 
@@ -137,21 +127,33 @@ public class CalciteAggSerializable implements CalciteSerializable {
         final SqlKind sqlKind = SqlKind.valueOf(kind);
         final SqlSyntax sqlSyntax = SqlSyntax.valueOf(syntax);
         final List<SqlOperator> operators = new ArrayList<>();
+
         SqlStdOperatorTable.instance().lookupOperatorOverloads(
                 new SqlIdentifier(name, new SqlParserPos(0, 0)),
                 null,
                 sqlSyntax,
                 operators,
                 SqlNameMatchers.liberal());
+
         for (final SqlOperator operator : operators) {
             if (operator.kind == sqlKind) {
                 return operator;
             }
         }
+
         final String class_ = (String) map.get("class");
         if (class_ != null) {
             return AvaticaUtils.instantiatePlugin(SqlOperator.class, class_);
         }
+
         throw new UnsupportedOperationException("could not convert json object to operator");
+    }
+    @Override
+    public String toString(){
+        String serialisablesString = Arrays.stream(serializables)
+            .map(AggregateCall::toString)
+            .reduce("", String::concat);
+
+        return this + "[serialisables: " + serialisablesString + " type: " + typeName + "]";
     }
 }
