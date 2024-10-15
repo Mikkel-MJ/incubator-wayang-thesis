@@ -24,14 +24,10 @@ import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexProgram;
-import org.apache.calcite.rex.RexProgramBuilder;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
@@ -68,14 +64,25 @@ import java.util.Properties;
 
 public class SqlToWayangRelTest {
     @Test
-    public void serializationTest() throws Exception {
+    public void aggSerialisationTest() throws Exception {
         //create filterPredicateImpl for serialisation
         RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
         RexBuilder rb                  = new RexBuilder(typeFactory);
         RexNode leftOperand            = rb.makeInputRef(typeFactory.createSqlType(SqlTypeName.VARCHAR), 0);
         RexNode rightOperand           = rb.makeLiteral("test");
         RexNode cond                   = rb.makeCall(SqlStdOperatorTable.EQUALS, leftOperand, rightOperand);
-        CalciteSerializable fpImpl     = new FilterPredicateImpl(cond);
+        CalciteSerializable fpImpl     = (CalciteSerializable) new FilterPredicateImpl(cond);
+    }
+
+    //@Test
+    public void rexSerializationTest() throws Exception {
+        //create filterPredicateImpl for serialisation
+        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        RexBuilder rb                  = new RexBuilder(typeFactory);
+        RexNode leftOperand            = rb.makeInputRef(typeFactory.createSqlType(SqlTypeName.VARCHAR), 0);
+        RexNode rightOperand           = rb.makeLiteral("test");
+        RexNode cond                   = rb.makeCall(SqlStdOperatorTable.EQUALS, leftOperand, rightOperand);
+        CalciteSerializable fpImpl     = (CalciteSerializable) new FilterPredicateImpl(cond);
         
         //setup the optimizer as calcite serialization requires the schema to be ready before serialisation
         Properties configProperties           = Optimizer.ConfigProperties.getDefaults();

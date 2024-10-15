@@ -183,13 +183,11 @@ public class Optimizer {
                 .withLenientOperatorLookup(config.lenientOperatorLookup())
                 .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
-                .withIdentifierExpansion(true);
-
+                .withIdentifierExpansion(true);         
             
         SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
                 validatorConfig);
 
-        
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.addRule(FilterIntoJoinRuleConfig.DEFAULT.toRule());
