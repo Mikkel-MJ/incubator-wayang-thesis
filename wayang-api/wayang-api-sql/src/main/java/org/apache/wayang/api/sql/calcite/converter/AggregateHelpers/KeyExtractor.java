@@ -11,8 +11,8 @@ import org.apache.wayang.core.function.FunctionDescriptor;
 public class KeyExtractor implements FunctionDescriptor.SerializableFunction<Record, Object> {
     private final HashSet<Integer> indexSet;
 
-    public KeyExtractor(final Set<Integer> indexSet) {
-        this.indexSet = new HashSet<>(indexSet); //force serialisable
+    public KeyExtractor(final HashSet<Integer> indexSet) {
+        this.indexSet = indexSet; //force serialisable
     }
 
     public Object apply(final Record record) {

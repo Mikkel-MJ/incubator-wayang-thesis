@@ -2,7 +2,6 @@ package org.apache.wayang.api.sql.calcite.converter.AggregateHelpers;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteAggSerializable;

@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.runtime.SqlFunctions;

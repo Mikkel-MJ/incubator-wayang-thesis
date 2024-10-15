@@ -3,7 +3,6 @@ package org.apache.wayang.api.sql.calcite.converter.AggregateHelpers;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteAggSerializable;
@@ -13,9 +12,9 @@ import org.apache.wayang.core.function.FunctionDescriptor;
 public class GetResult extends CalciteAggSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
     private final HashSet<Integer> groupingfields;
 
-    public GetResult(final List<AggregateCall> aggregateCalls, final Set<Integer> groupingfields) {
+    public GetResult(final List<AggregateCall> aggregateCalls, final HashSet<Integer> groupingfields) {
         super(aggregateCalls.toArray(AggregateCall[]::new));
-        this.groupingfields = new HashSet<>(groupingfields);
+        this.groupingfields = groupingfields;
     }
 
     @Override
