@@ -34,8 +34,8 @@ import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.types.DataUnitType;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
@@ -50,7 +50,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
         List<AggregateCall> aggregateCalls = ((Aggregate) wayangRelNode).getAggCallList();
         int groupCount = wayangRelNode.getGroupCount();
-        Set<Integer> groupingFields = wayangRelNode.getGroupSet().asSet();
+        HashSet<Integer> groupingFields = new HashSet<>(wayangRelNode.getGroupSet().asSet());
 
         MapOperator mapOperator = new MapOperator(
                 new AddAggCols(aggregateCalls),
@@ -60,6 +60,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
         if (groupCount > 0) {
             ReduceByOperator<Record, Object> reduceByOperator;
+            System.out.println("Creating transform Descriptor (aggregate)");
             reduceByOperator = new ReduceByOperator<>(
                     new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class, Object.class),
                     new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),
