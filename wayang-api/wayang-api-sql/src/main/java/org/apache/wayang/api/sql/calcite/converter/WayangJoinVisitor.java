@@ -27,6 +27,7 @@ import org.apache.wayang.api.sql.calcite.converter.JoinHelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.JoinHelpers.KeyIndex;
 import org.apache.wayang.api.sql.calcite.converter.JoinHelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
+import org.apache.wayang.api.sql.calcite.utils.SqlField;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
@@ -47,31 +48,36 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
         final RexNode condition = ((Join) wayangRelNode).getCondition();
 
+        System.out.println("join cond: " + condition);
+        System.out.println("col: " + childOpLeft);
+        System.out.println("cor : " + childOpRight);
+
         if (!condition.isA(SqlKind.EQUALS)) {
             throw new UnsupportedOperationException("Only equality joins supported but got: " + condition.getKind() + " from relNode: " + wayangRelNode + ", with inputs: " + wayangRelNode.getInputs());
-        } if (condition.isA(SqlKind.AND)); 
+        } 
         
-
         int leftKeyIndex = condition.accept(new KeyIndex(false, Child.LEFT));
         int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT));
 
         //init join
-        JoinOperator<Record, Record, Object> join;
+        JoinOperator<Record, Record, SqlField> join;
         //calculate offsets
         if (leftKeyIndex > rightKeyIndex) { //if the table index on the left is larger than the right
             leftKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
 
-            join = new JoinOperator<>(
-                new TransformationDescriptor<>(new KeyExtractor(rightKeyIndex), Record.class, Object.class),
-                new TransformationDescriptor<>(new KeyExtractor(leftKeyIndex), Record.class, Object.class)
+            System.out.println("Creating transform descriptor in join:");
+            join = new JoinOperator<Record, Record, SqlField>(
+                new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(rightKeyIndex), Record.class, SqlField.class),
+                new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(leftKeyIndex), Record.class, SqlField.class)
             );
 
         } else if (rightKeyIndex > leftKeyIndex) {//standard case 
             rightKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
-
+        
+            System.out.println("Creating transform descriptor in join:");
             join = new JoinOperator<>(
-                new TransformationDescriptor<>(new KeyExtractor(leftKeyIndex), Record.class, Object.class),
-                new TransformationDescriptor<>(new KeyExtractor(rightKeyIndex), Record.class, Object.class)
+                new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(leftKeyIndex), Record.class, SqlField.class),
+                new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(rightKeyIndex), Record.class, SqlField.class)
             );
         } else {
             throw new UnsupportedOperationException("Could not compute offset for condition: " + condition + " left key index: " + leftKeyIndex + " right key index: " + rightKeyIndex);
@@ -81,6 +87,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
+        System.out.println("Creating transform descriptor in join (map): ");
+        
         // Join returns Tuple2 - map to a Record
         final MapOperator<Tuple2, Record> mapOperator = new MapOperator(
                 new MapFunctionImpl(),
