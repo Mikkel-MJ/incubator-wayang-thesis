@@ -31,12 +31,12 @@
         <dependency>
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-core</artifactId>
-            <version>1.36.0</version>
+            <version>1.32.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-linq4j</artifactId>
-            <version>1.36.0</version>
+            <version>1.32.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.calcite</groupId>
@@ -106,11 +106,6 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.15.3</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>32.1.3-jre</version>
         </dependency>
     </dependencies>
 
