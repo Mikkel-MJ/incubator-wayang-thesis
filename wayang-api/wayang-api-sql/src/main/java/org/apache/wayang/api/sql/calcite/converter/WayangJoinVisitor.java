@@ -48,10 +48,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
         final RexNode condition = ((Join) wayangRelNode).getCondition();
 
-        System.out.println("join cond: " + condition);
-        System.out.println("col: " + childOpLeft);
-        System.out.println("cor : " + childOpRight);
-
         if (!condition.isA(SqlKind.EQUALS)) {
             throw new UnsupportedOperationException("Only equality joins supported but got: " + condition.getKind() + " from relNode: " + wayangRelNode + ", with inputs: " + wayangRelNode.getInputs());
         } 
@@ -74,7 +70,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         } else if (rightKeyIndex > leftKeyIndex) {//standard case 
             rightKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
         
-            System.out.println("Creating transform descriptor in join:");
             join = new JoinOperator<>(
                 new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(leftKeyIndex), Record.class, SqlField.class),
                 new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(rightKeyIndex), Record.class, SqlField.class)
