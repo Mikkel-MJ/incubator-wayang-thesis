@@ -19,10 +19,11 @@ do
 
   SECONDS=0
   # Execute the wayang-submit command with the current file as an argument
-  ./bin/wayang-submit -Xmx8g org.apache.wayang.ml.benchmarks.IMDBJOBenchmark "$FILE"
+  output="$(./bin/wayang-submit -Xmx8g org.apache.wayang.ml.benchmarks.IMDBJOBenchmark "$FILE" 2>&1 | tail -n 10)"
 
   # Output the time taken, exit status, and file name
   echo "Time taken: ${SECONDS}s" >> "$output_path"
-  echo $? >> "$output_path"
-  echo "$FILE" >> "$output_path"
+  echo "Exitcode: {$?}" >> "$output_path"
+  echo "Filepath: {$FILE}" >> "$output_path"
+  echo -e "Last 10 output lines: ${output}\n" >> "$output_path"
 done
