@@ -8,6 +8,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
+import org.apache.wayang.flink.Flink;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.spark.Spark;
@@ -50,7 +51,9 @@ public class IMDBJOBenchmark {
 
             configuration.setProperty("wayang.ml.experience.enabled", "false");
 
-            SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(), Spark.basicPlugin());
+            //SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(), Flink.basicPlugin(), Flink.conversionPlugin(), Java.channelConversionPlugin());
+            //SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(), Spark.basicPlugin(), Spark.conversionPlugin(), Flink.conversionPlugin(), Java.channelConversionPlugin());
+            SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),    Java.channelConversionPlugin());
 
             Path pathToQuery = Paths.get(args[0]);
             String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); //need to chop off the last ';' otherwise sqlContext cant parse it
