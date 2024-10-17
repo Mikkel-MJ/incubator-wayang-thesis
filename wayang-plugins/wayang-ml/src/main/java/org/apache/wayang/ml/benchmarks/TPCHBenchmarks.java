@@ -25,6 +25,7 @@ import org.apache.wayang.java.Java;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
 
+import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
@@ -53,7 +54,8 @@ public class TPCHBenchmarks {
             Configuration config = new Configuration();
             String modelType = "";
 
-            /config.setProperty("spark.master", "spark://spark-cluster:7077");
+            config.setProperty("spark.master", "spark://spark-cluster:7077");
+            config.setProperty("spark.deploy.mode", "cluster");
             //config.setProperty("spark.deploy.mode", "cluster");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
@@ -92,12 +94,12 @@ public class TPCHBenchmarks {
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);
-                wayangContext.execute(plan, "");
+                wayangContext.execute(plan, ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class), ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class));
                 System.out.println("Finished execution");
             } else {
                 System.out.println("Using vae cost model");
                 System.out.println("Executing query " + args[3]);
-                wayangContext.executeVAE(plan, "");
+                wayangContext.executeVAE(plan, ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class), ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class));
                 System.out.println("Finished execution");
             }
         } catch (Exception e) {

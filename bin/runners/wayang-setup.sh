@@ -7,19 +7,20 @@ sudo apt install openjdk-11-jdk --yes
 
 java -version
 
-echo "Installing Spark"
 SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
 
 echo "Installing Hadoop"
 
-wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
-
-tar -xzf hadoop-3.3.6.tar.gz
-mv hadoop-3.3.6 /opt/hadoop
-rm hadoop-3.3.6.tar.gz
-
+export HADOOP_VERSION=3.3.0
 export HADOOP_HOME=/opt/hadoop
+
+wget https://archive.apache.org/dist/hadoop/core/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz
+tar -zxf hadoop-${HADOOP_VERSION}.tar.gz
+mv hadoop-${HADOOP_VERSION} ${HADOOP_HOME}
+rm hadoop-${HADOOP_VERSION}.tar.gz
+
+echo "Installing Spark"
 export SPARK_VERSION=3.5.3
 export SPARK_HOME=/opt/spark
 
