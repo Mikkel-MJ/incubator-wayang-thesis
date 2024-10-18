@@ -432,9 +432,11 @@
                                         <goal>testCompile</goal>
                                     </goals>
                                     <configuration>
-                                        <scalaVersion>${scala.version}</scalaVersion>
                                         <sourceDir>${project.build.sourceDirectory}/../scala</sourceDir>
                                         <testSourceDir>${project.build.testSourceDirectory}/../scala</testSourceDir>
+                                        <failOnMultipleScalaVersions>true</failOnMultipleScalaVersions>
+                                        <scalaCompatVersion>2.12</scalaCompatVersion>
+                                        <scalaVersion>2.12.12</scalaVersion>
                                     </configuration>
                                 </execution>
                                 <execution>

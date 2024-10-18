@@ -31,6 +31,7 @@ import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.wayang.ml.training.TPCH;
+import org.apache.wayang.apps.tpch.queries.Query10;
 
 import java.util.HashMap;
 import java.util.List;
@@ -94,7 +95,7 @@ public class TPCHBenchmarks {
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);
-                wayangContext.execute(plan, ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class), ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class));
+                wayangContext.execute(plan, ReflectionUtils.getDeclaringJar(Query10.class), ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class));
                 System.out.println("Finished execution");
             } else {
                 System.out.println("Using vae cost model");
