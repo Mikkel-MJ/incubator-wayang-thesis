@@ -31,8 +31,8 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
-import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteSerializable;
-import org.apache.wayang.api.sql.calcite.converter.FilterHelpers.FilterPredicateImpl;
+import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteSerializable;
+import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FilterPredicateImpl;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
@@ -63,17 +63,6 @@ import java.util.Properties;
 
 
 public class SqlToWayangRelTest {
-    @Test
-    public void aggSerialisationTest() throws Exception {
-        //create filterPredicateImpl for serialisation
-        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
-        RexBuilder rb                  = new RexBuilder(typeFactory);
-        RexNode leftOperand            = rb.makeInputRef(typeFactory.createSqlType(SqlTypeName.VARCHAR), 0);
-        RexNode rightOperand           = rb.makeLiteral("test");
-        RexNode cond                   = rb.makeCall(SqlStdOperatorTable.EQUALS, leftOperand, rightOperand);
-        CalciteSerializable fpImpl     = (CalciteSerializable) new FilterPredicateImpl(cond);
-    }
-
     //@Test
     public void rexSerializationTest() throws Exception {
         //create filterPredicateImpl for serialisation
