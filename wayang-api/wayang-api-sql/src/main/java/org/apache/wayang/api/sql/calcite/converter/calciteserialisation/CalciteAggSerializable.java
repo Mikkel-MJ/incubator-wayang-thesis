@@ -1,4 +1,4 @@
-package org.apache.wayang.api.sql.calcite.converter.CalciteSerialization;
+package org.apache.wayang.api.sql.calcite.converter.calciteserialisation;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -154,6 +154,6 @@ public class CalciteAggSerializable implements CalciteSerializable {
             .map(AggregateCall::toString)
             .reduce("", String::concat);
 
-        return this + "[serialisables: " + serialisablesString + " type: " + typeName + "]";
+        return this.getClass().getSimpleName() + "[Serialisables: " + serialisablesString + ", Type: " + typeName + "]";
     }
 }

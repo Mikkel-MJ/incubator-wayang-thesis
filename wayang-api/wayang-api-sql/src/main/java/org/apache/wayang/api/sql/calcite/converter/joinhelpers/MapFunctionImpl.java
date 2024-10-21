@@ -1,4 +1,4 @@
-package org.apache.wayang.api.sql.calcite.converter.JoinHelpers;
+package org.apache.wayang.api.sql.calcite.converter.joinhelpers;
 
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;

@@ -1,7 +1,7 @@
-package org.apache.wayang.api.sql.calcite.converter.FilterHelpers;
+package org.apache.wayang.api.sql.calcite.converter.filterhelpers;
 
 import org.apache.calcite.rex.RexNode;
-import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteRexSerializable;
+import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteRexSerializable;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 

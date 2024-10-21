@@ -21,7 +21,7 @@ package org.apache.wayang.api.sql.calcite.converter;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.wayang.api.sql.calcite.converter.FilterHelpers.FilterPredicateImpl;
+import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FilterPredicateImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.FilterOperator;

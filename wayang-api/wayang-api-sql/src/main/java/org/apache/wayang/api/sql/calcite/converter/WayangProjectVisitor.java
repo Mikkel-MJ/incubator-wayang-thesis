@@ -23,7 +23,8 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.wayang.api.sql.calcite.converter.ProjectHelpers.MapFunctionImpl;
+import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
+import org.apache.wayang.api.sql.calcite.converter.projecthelpers.ProjectionFunction;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
@@ -50,8 +51,9 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
 
         //TODO: create a map with specific dataset type
+        ProjectionFunction pf = new ProjectionFunction(new MapFunctionImpl(projects), "field0", "field1");
         final MapOperator<Tuple2<Record, Record>, Record> projection = new MapOperator(
-                new MapFunctionImpl(projects),
+                pf,
                 Record.class,
                 Record.class);
 

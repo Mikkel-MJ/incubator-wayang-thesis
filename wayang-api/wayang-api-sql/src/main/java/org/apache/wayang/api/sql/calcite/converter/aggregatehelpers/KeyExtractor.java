@@ -1,9 +1,8 @@
-package org.apache.wayang.api.sql.calcite.converter.AggregateHelpers;
+package org.apache.wayang.api.sql.calcite.converter.aggregatehelpers;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;

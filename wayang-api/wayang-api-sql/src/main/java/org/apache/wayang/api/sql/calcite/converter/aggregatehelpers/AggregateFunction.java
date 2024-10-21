@@ -1,4 +1,4 @@
-package org.apache.wayang.api.sql.calcite.converter.AggregateHelpers;
+package org.apache.wayang.api.sql.calcite.converter.aggregatehelpers;
 
 import java.util.Arrays;
 import java.util.List;
@@ -7,7 +7,7 @@ import java.util.function.BiFunction;
 
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.runtime.SqlFunctions;
-import org.apache.wayang.api.sql.calcite.converter.CalciteSerialization.CalciteAggSerializable;
+import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteAggSerializable;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 

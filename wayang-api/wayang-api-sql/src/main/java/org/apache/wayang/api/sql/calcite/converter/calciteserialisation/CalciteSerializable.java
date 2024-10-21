@@ -1,4 +1,4 @@
-package org.apache.wayang.api.sql.calcite.converter.CalciteSerialization;
+package org.apache.wayang.api.sql.calcite.converter.calciteserialisation;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -24,11 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
  * For manual initialisation see test {@link SqlToWayangRelTest}.
  */
 public interface CalciteSerializable extends Serializable {
-    /**
-     * This value is taken directly from calcite.
-     */
-    public static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<LinkedHashMap<String, Object>>() {
-    };
+    public static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF = new TypeReference<LinkedHashMap<String, Object>>() {};
 
     /**
      * Default implementation for serialising {@link AggregateCall} and

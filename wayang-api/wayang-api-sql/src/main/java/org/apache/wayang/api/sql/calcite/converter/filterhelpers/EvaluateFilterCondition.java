@@ -1,4 +1,4 @@
-package org.apache.wayang.api.sql.calcite.converter.FilterHelpers;
+package org.apache.wayang.api.sql.calcite.converter.filterhelpers;
 
 import java.io.Serializable;
 import java.util.Optional;

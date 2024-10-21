@@ -1,4 +1,4 @@
-package org.apache.wayang.api.sql.calcite.converter.CalciteSerialization;
+package org.apache.wayang.api.sql.calcite.converter.calciteserialisation;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -28,7 +28,7 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
     protected final SqlTypeName typeName;
 
     /**
-     * Handles {@link Rexnode}-serialisation for classes.
+     * Handles {@link RexNode}-serialisation for classes.
      * See {@link CalciteAggSerializable} for serializable aggregate calls.
      * Serialisation requires that the {@link Optimizer} has been created, see {@link CalciteSerializable}.
      * @param rexNodes

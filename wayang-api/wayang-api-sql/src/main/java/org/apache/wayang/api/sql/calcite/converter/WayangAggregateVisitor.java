@@ -20,10 +20,10 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.wayang.api.sql.calcite.converter.AggregateHelpers.AddAggCols;
-import org.apache.wayang.api.sql.calcite.converter.AggregateHelpers.AggregateFunction;
-import org.apache.wayang.api.sql.calcite.converter.AggregateHelpers.GetResult;
-import org.apache.wayang.api.sql.calcite.converter.AggregateHelpers.KeyExtractor;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.GlobalReduceOperator;
