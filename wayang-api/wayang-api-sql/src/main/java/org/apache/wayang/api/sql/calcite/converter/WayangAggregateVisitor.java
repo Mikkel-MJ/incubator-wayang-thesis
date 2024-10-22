@@ -60,7 +60,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
         if (groupCount > 0) {
             ReduceByOperator<Record, Object> reduceByOperator;
-            System.out.println("Creating transform Descriptor (aggregate)");
+
             reduceByOperator = new ReduceByOperator<>(
                     new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class, Object.class),
                     new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),

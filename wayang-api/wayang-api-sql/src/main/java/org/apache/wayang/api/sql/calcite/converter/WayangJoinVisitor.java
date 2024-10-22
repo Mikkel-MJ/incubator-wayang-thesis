@@ -61,7 +61,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         if (leftKeyIndex > rightKeyIndex) { //if the table index on the left is larger than the right
             leftKeyIndex -= wayangRelNode.getInput(0).getRowType().getFieldCount();
 
-            System.out.println("Creating transform descriptor in join:");
             join = new JoinOperator<Record, Record, SqlField>(
                 new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(rightKeyIndex), Record.class, SqlField.class),
                 new TransformationDescriptor<Record, SqlField>(new KeyExtractor<SqlField>(leftKeyIndex), Record.class, SqlField.class)
@@ -81,8 +80,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         //call connectTo on both operators (left and right)
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
-
-        System.out.println("Creating transform descriptor in join (map): ");
         
         // Join returns Tuple2 - map to a Record
         final MapOperator<Tuple2, Record> mapOperator = new MapOperator(
