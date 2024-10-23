@@ -19,11 +19,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 
-
 public class IMDBJOBenchmark {
     /**
-     * Benchmarking tool for the imdb/jo benchmark, Calcite dictates that every jo query follows
-     * the schema, "schema_name.table_name". The tool searches for the queries in resources/calcite-ready-job-queries
+     * Benchmarking tool for the imdb/jo benchmark, Calcite dictates that every jo
+     * query follows
+     * the schema, "schema_name.table_name". The tool searches for the queries in
+     * resources/calcite-ready-job-queries
+     * 
      * @param args args[0]: path to calcite-job-ready-queries/*.sql
      */
     public static void main(String[] args) throws Exception {
@@ -31,8 +33,8 @@ public class IMDBJOBenchmark {
             Configuration configuration = new Configuration();
 
             String calciteModel = Resources.toString(
-                IMDBJOBenchmark.class.getResource("/calcite-model.json"),
-                Charset.defaultCharset());
+                    IMDBJOBenchmark.class.getResource("/calcite-model.json"),
+                    Charset.defaultCharset());
 
             configuration.setProperty("wayang.calcite.model", calciteModel);
             configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://host.docker.internal:5432/job");
@@ -40,30 +42,37 @@ public class IMDBJOBenchmark {
             configuration.setProperty("wayang.postgres.jdbc.password", "postgres");
 
             configuration.setProperty(
-                "wayang.ml.executions.file",
-                "mle" + ".txt"
-            );
+                    "wayang.ml.executions.file",
+                    "mle" + ".txt");
 
             configuration.setProperty(
-                "wayang.ml.optimizations.file",
-                "mlo" + ".txt"
-            );
+                    "wayang.ml.optimizations.file",
+                    "mlo" + ".txt");
 
             configuration.setProperty("wayang.ml.experience.enabled", "false");
 
-            //SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(), Flink.basicPlugin(), Flink.conversionPlugin(), Java.channelConversionPlugin());
-            //SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(), Spark.basicPlugin(), Spark.conversionPlugin(), Flink.conversionPlugin(), Java.channelConversionPlugin());
-            SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),    Java.channelConversionPlugin());
+            SqlContext sqlContext = new SqlContext(configuration, Java.basicPlugin(), Java.channelConversionPlugin(),
+                    Postgres.plugin(), Postgres.conversionPlugin());
+            // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
+            // Flink.basicPlugin(), Flink.conversionPlugin(),
+            // Java.channelConversionPlugin());
+            // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
+            // Spark.basicPlugin(), Spark.conversionPlugin(), Flink.conversionPlugin(),
+            // Java.channelConversionPlugin());
+            // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
+            // Java.channelConversionPlugin());
 
             Path pathToQuery = Paths.get(args[0]);
-            String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); //need to chop off the last ';' otherwise sqlContext cant parse it
+            String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off the last
+                                                                                            // ';' otherwise sqlContext
+                                                                                            // cant parse it
             System.out.println("Read query: " + query);
-            
-            Collection<Record> result = sqlContext.executeSql(
-                query
-            );
 
-            System.out.println("\nResults: ");
+            Collection<Record> result = sqlContext.executeSql(
+                    query);
+
+
+            System.out.println("\nResults: " + " amount of records: " + result.size());
             result.stream().forEach(e -> System.out.println(e));
         } catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
@@ -80,7 +89,6 @@ public class IMDBJOBenchmark {
         } catch (Error e) {
             e.printStackTrace();
             System.exit(5);
-        } 
+        }
     }
 }
- 

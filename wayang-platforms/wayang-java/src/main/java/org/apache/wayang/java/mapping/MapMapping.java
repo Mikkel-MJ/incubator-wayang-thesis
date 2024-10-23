@@ -54,8 +54,8 @@ public class MapMapping implements Mapping {
 
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
-        return new ReplacementSubplanFactory.OfSingleOperators<MapOperator>(
-                (matchedOperator, epoch) -> new JavaMapOperator<>(matchedOperator).at(epoch)
+        return new ReplacementSubplanFactory.OfSingleOperators<MapOperator<?,?>>(
+                (matchedOperator, epoch) -> {System.out.println("Creating new operator with mapping: " + this + " from operator: " + matchedOperator + " functionDescriptor: " + matchedOperator.getFunctionDescriptor()); return new JavaMapOperator<>(matchedOperator).at(epoch);}
         );
     }
 }

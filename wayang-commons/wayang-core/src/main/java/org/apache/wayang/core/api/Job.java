@@ -243,6 +243,7 @@ public class Job extends OneTimeExecutable {
     @Override
     public void execute() throws WayangException {
         try {
+            System.out.println("executing: " + this.wayangPlan.asPrintString());
             super.execute();
         } catch (WayangException e) {
             throw e;
@@ -379,7 +380,7 @@ public class Job extends OneTimeExecutable {
         final Collection<PlanTransformation> transformations = this.gatherTransformations();
         this.wayangPlan.applyTransformations(transformations);
         this.optimizationRound.stop("Prepare", "Transformations");
-
+        System.out.println("WayangPlan after transformation: " + wayangPlan.asPrintString());
         this.optimizationRound.start("Prepare", "Sanity");
         assert this.wayangPlan.isSane();
         this.optimizationRound.stop("Prepare", "Sanity");

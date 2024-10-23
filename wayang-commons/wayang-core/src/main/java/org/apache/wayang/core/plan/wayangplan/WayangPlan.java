@@ -26,6 +26,7 @@ import org.apache.wayang.core.util.WayangCollections;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -216,5 +217,13 @@ public class WayangPlan {
      */
     public void setLoopsIsolated() {
         this.isLoopsIsolated = true;
+    }
+
+    public String asPrintString(){
+        StringWriter sw = new StringWriter();
+
+        final Collection<Operator> operators = PlanTraversal.upstream().traverse(this.getSinks()).getTraversedNodes();
+        operators.forEach(o -> sw.append(o.toString()));
+        return sw.toString();
     }
 }

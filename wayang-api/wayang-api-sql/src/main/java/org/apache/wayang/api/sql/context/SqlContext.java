@@ -41,6 +41,7 @@ import org.apache.wayang.spark.Spark;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -127,7 +128,14 @@ public class SqlContext extends WayangContext {
         WayangPlan wayangPlan = optimizer.convert(wayangRel, collector);
         PrintUtils.print("After optimiser conversion: ", wayangPlan);
 
-        this.execute(getJobName(), wayangPlan, udfJars);
+        if (udfJars.length == 0) {
+            System.out.println("Executing w/o udfJars");
+            this.execute(getJobName(), wayangPlan);
+        } else {
+            System.out.println("Executing with udfJars: ");
+            Arrays.stream(udfJars).forEach(System.out::println);
+            this.execute(getJobName(), wayangPlan, udfJars);
+        }
 
         return collector;
     }
