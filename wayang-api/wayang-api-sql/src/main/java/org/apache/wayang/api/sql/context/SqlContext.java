@@ -76,7 +76,7 @@ public class SqlContext extends WayangContext {
         calciteSchema = SchemaUtils.getSchema(configuration);
     }
 
-    public SqlContext(Configuration configuration, Plugin ... plugins) throws SQLException {
+    public SqlContext(Configuration configuration, Plugin... plugins) throws SQLException {
         super(configuration.fork(String.format("SqlContext(%s)", configuration.getName())));
 
         for (Plugin plugin : plugins) {
@@ -86,8 +86,17 @@ public class SqlContext extends WayangContext {
         calciteSchema = SchemaUtils.getSchema(configuration);
     }
 
-    public Collection<Record> executeSql(String sql) throws SqlParseException {
-
+    /**
+     * Executes sql with varargs udfJars. udfJars can help in serialisation contexts where the
+     * jars need to be used for serialisation remotely, in use cases like Spark and
+     * Flink.
+     * udfJars can be given by: {@code ReflectionUtils.getDeclaringJar(Foo.class)}
+     * @param sql     string sql without ";"
+     * @param udfJars varargs of your udf jars, typically just the calling class
+     * @return collection of sql records
+     * @throws SqlParseException
+     */
+    public Collection<Record> executeSql(String sql, String... udfJars) throws SqlParseException {
         Properties configProperties = Optimizer.ConfigProperties.getDefaults();
         RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
@@ -100,34 +109,30 @@ public class SqlContext extends WayangContext {
 
         PrintUtils.print("After parsing sql query", relNode);
 
-
         RuleSet rules = RuleSets.ofList(
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE
-        );
+                WayangRules.WAYANG_AGGREGATE_RULE);
         RelNode wayangRel = optimizer.optimize(
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
-                rules
-        );
+                rules);
 
         PrintUtils.print("After translating logical intermediate plan", wayangRel);
 
-
         Collection<Record> collector = new ArrayList<>();
         WayangPlan wayangPlan = optimizer.convert(wayangRel, collector);
-        this.execute(getJobName(), wayangPlan);
+        PrintUtils.print("After optimiser conversion: ", wayangPlan);
+
+        this.execute(getJobName(), wayangPlan, udfJars);
 
         return collector;
     }
 
     private static String getJobName() {
-        return "SQL["+jobId.incrementAndGet()+"]";
+        return "SQL[" + jobId.incrementAndGet() + "]";
     }
-
-
 }
