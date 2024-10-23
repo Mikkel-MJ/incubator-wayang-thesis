@@ -24,10 +24,8 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
-import org.apache.wayang.api.sql.calcite.converter.projecthelpers.ProjectionFunction;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.basic.data.Record;
-import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.calcite.rex.RexCall;
@@ -44,24 +42,21 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
     @Override
     Operator visit(final WayangProject wayangRelNode) {
-
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
 
         /* Quick check */
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
 
-        //TODO: create a map with specific dataset type
-        ProjectionFunction pf = new ProjectionFunction(new MapFunctionImpl(projects), "field0", "field1");
-        final MapOperator<Tuple2<Record, Record>, Record> projection = new MapOperator(
-                pf,
-                Record.class,
-                Record.class);
+        // TODO: create a map with specific dataset type
+        final MapOperator<Record, Record> projection =  new MapOperator<Record, Record> (
+            new MapFunctionImpl(projects),
+            Record.class,
+            Record.class);
 
         childOp.connectTo(0, projection, 0);
-
+    
         return projection;
     }
-
 
     public static Object evaluateRexCall(final Record record, final RexCall rexCall) {
         if (rexCall == null) {
@@ -89,7 +84,8 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         }
     }
 
-    public static Object evaluateNaryOperation(final Record record, final List<RexNode> operands, final BinaryOperator<Double> operation) {
+    public static Object evaluateNaryOperation(final Record record, final List<RexNode> operands,
+            final BinaryOperator<Double> operation) {
         if (operands.isEmpty()) {
             return null;
         }
@@ -98,7 +94,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
         for (int i = 0; i < operands.size(); i++) {
             final Number val = (Number) evaluateRexNode(record, operands.get(i));
-            if(val == null){
+            if (val == null) {
                 return null;
             }
             values.add(val.doubleValue());
@@ -107,7 +103,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         Object result = values.get(0);
         // Perform the operation with the remaining operands
         for (int i = 1; i < operands.size(); i++) {
-            result = operation.apply((double)result, values.get(i));
+            result = operation.apply((double) result, values.get(i));
         }
 
         return result;
@@ -123,8 +119,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
             return literal.getValue();
         } else if (rexNode instanceof RexInputRef) {
             return record.getField(((RexInputRef) rexNode).getIndex());
-        }
-        else {
+        } else {
             return null; // Unsupported or unknown expression
         }
     }
