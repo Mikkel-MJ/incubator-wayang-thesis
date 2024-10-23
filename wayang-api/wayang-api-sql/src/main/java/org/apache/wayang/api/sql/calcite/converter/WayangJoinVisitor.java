@@ -82,11 +82,16 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         childOpRight.connectTo(0, join, 1);
         
         // Join returns Tuple2 - map to a Record
-        final MapOperator<Tuple2, Record> mapOperator = new MapOperator(
-                new MapFunctionImpl(),
+        MapFunctionImpl mapFunctionImpl = new MapFunctionImpl();
+        System.out.println("inniting map function impl: " + mapFunctionImpl);
+        final MapOperator<Tuple2<Record,Record>, Record> mapOperator = new MapOperator(
+                mapFunctionImpl,
                 Tuple2.class,
                 Record.class
         );
+        System.out.println("Inniiting map op " + mapOperator);
+
+        System.out.println("map op func descript " + mapOperator.getFunctionDescriptor());
 
         join.connectTo(0, mapOperator, 0);
 
