@@ -73,12 +73,28 @@ public class ProjectionDescriptor<Input, Output> extends TransformationDescripto
      * @param inputType          input {@link BasicDataUnitType}
      * @param outputType         output {@link BasicDataUnitType}
      */
-    private ProjectionDescriptor(SerializableFunction<Input, Output> javaImplementation,
+    public ProjectionDescriptor(SerializableFunction<Input, Output> javaImplementation,
                                  List<String> fieldNames,
                                  BasicDataUnitType<Input> inputType,
                                  BasicDataUnitType<Output> outputType) {
         super(javaImplementation, inputType, outputType);
         this.fieldNames = fieldNames;
+    }
+
+        /**
+     * Basic constructor.
+     *
+     * @param javaImplementation Java-based implementation of the projection
+     * @param fieldNames         names of the fields to be projected
+     * @param inputType          input {@link BasicDataUnitType}
+     * @param outputType         output {@link BasicDataUnitType}
+     */
+    public ProjectionDescriptor(SerializableFunction<Input, Output> javaImplementation,
+                                 Class<Input> inputType,
+                                 Class<Output> outputType,
+                                 String... fieldNames) {
+        super(javaImplementation, inputType, outputType);
+        this.fieldNames = Arrays.asList(fieldNames);
     }
 
     /**

@@ -26,7 +26,9 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
@@ -46,12 +48,14 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
         /* Quick check */
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
-
+        System.out.println("wayangRelNode: " + wayangRelNode.explain() + ", " + wayangRelNode.getCorrelVariable() + ", " + wayangRelNode.getDigest() + ", " + wayangRelNode.getRelTypeName() + wayangRelNode.getNamedProjects());
+        projects.stream().map(rexNode -> this + rexNode.toString() + ", " + rexNode.getKind() + ", " + rexNode.getType() + ", " + rexNode.getType().getSqlIdentifier()).forEach(System.out::println);
         // TODO: create a map with specific dataset type
-        final MapOperator<Record, Record> projection =  new MapOperator<Record, Record> (
-            new MapFunctionImpl(projects),
-            Record.class,
-            Record.class);
+
+        String[] projectNames = wayangRelNode.getNamedProjects().stream().map(tup -> tup.right).toArray(String[]::new);
+        SerializableFunction<Record,Record> mp = new MapFunctionImpl(projects);
+        ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<Record,Record>(mp, Record.class, Record.class, projectNames);
+        final MapOperator<Record, Record> projection =  new MapOperator<Record, Record> (pd);
 
         childOp.connectTo(0, projection, 0);
     
