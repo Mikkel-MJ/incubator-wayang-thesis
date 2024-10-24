@@ -31,7 +31,14 @@ import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.wayang.ml.training.TPCH;
+import org.apache.wayang.apps.tpch.queries.Query1Wayang;
+import org.apache.wayang.apps.tpch.queries.Query3;
+import org.apache.wayang.apps.tpch.queries.Query5;
+import org.apache.wayang.apps.tpch.queries.Query6;
 import org.apache.wayang.apps.tpch.queries.Query10;
+import org.apache.wayang.apps.tpch.queries.Query12;
+import org.apache.wayang.apps.tpch.queries.Query14;
+import org.apache.wayang.apps.tpch.queries.Query19;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,8 +63,7 @@ public class TPCHBenchmarks {
             String modelType = "";
 
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.deploy.mode", "cluster");
-            //config.setProperty("spark.deploy.mode", "cluster");
+            config.setProperty("spark.driver.memory", "16g");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
             if (args.length > 4) {
@@ -92,15 +98,27 @@ public class TPCHBenchmarks {
             HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);
             WayangPlan plan = plans.get("query" + args[3]);
 
+            String[] jars = new String[]{
+                ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class),
+                ReflectionUtils.getDeclaringJar(Query1Wayang.class),
+                ReflectionUtils.getDeclaringJar(Query3.class),
+                ReflectionUtils.getDeclaringJar(Query5.class),
+                ReflectionUtils.getDeclaringJar(Query6.class),
+                ReflectionUtils.getDeclaringJar(Query10.class),
+                ReflectionUtils.getDeclaringJar(Query12.class),
+                ReflectionUtils.getDeclaringJar(Query14.class),
+                ReflectionUtils.getDeclaringJar(Query19.class),
+            };
+
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);
-                wayangContext.execute(plan, ReflectionUtils.getDeclaringJar(Query10.class), ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class));
+                wayangContext.execute(plan, jars);
                 System.out.println("Finished execution");
             } else {
                 System.out.println("Using vae cost model");
                 System.out.println("Executing query " + args[3]);
-                wayangContext.executeVAE(plan, ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class), ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class));
+                wayangContext.executeVAE(plan, jars);
                 System.out.println("Finished execution");
             }
         } catch (Exception e) {
