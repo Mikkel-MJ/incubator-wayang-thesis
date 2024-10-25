@@ -27,7 +27,6 @@ public class MapFunctionImpl implements FunctionDescriptor.SerializableFunction<
         for (int j = length1; j < totalLength; j++) {
             fields[j] = tuple2.getField1().getField(j - length1);
         }
-        System.out.println("return fields: " + fields);
         return new Record(fields);
     }
 } 

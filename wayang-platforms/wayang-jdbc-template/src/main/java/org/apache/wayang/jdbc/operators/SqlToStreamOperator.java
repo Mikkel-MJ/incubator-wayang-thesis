@@ -170,8 +170,8 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record> im
                 this.resultSet = st.executeQuery(sqlQuery);
             } catch (SQLException e) {
                 this.close();
-                throw new WayangException("Could not execute SQL.", e);
-            }
+                throw new WayangException("Could not execute SQL. with query string: " + sqlQuery, e);
+            } 
             this.moveToNext();
         }
 
