@@ -65,6 +65,12 @@ public class TPCHBenchmarks {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
             config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.flink.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.master", "flink-cluster");
+            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.executor.memory", "16g");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
             if (args.length > 4) {

@@ -36,6 +36,9 @@ if [ $UCLOUD_RANK = 0 ]; then
     ssh-keygen -t rsa -q -f /home/ucloud/.ssh/id_rsa
     sudo cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 
+    echo "Configuring master"
+    cp /work/lsbo-paper/runners/flink/masters /opt/flink/conf
+
     echo "Configuring workers"
     cp /work/lsbo-paper/runners/flink/workers /opt/flink/conf
 
