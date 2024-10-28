@@ -85,6 +85,7 @@ public class SparkPlatform extends Platform {
             "spark.ui.showConsoleProgress",
             "spark.io.compression.codec",
             "spark.driver.memory",
+            "spark.executor.memory",
             "spark.executor.heartbeatInterval",
             "spark.network.timeout",
             "spark.deploy.mode",

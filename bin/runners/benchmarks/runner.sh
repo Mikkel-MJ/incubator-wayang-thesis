@@ -22,13 +22,13 @@ data_path=/work/lsbo-paper/data/
 experience_path=/work/lsbo-paper/data/experience/
 
 for query in ${queries[@]}; do
-    for i in {0..2}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks spark $data_path $data_path/benchmarks/ $query
-    done
+    #for i in {0..1}; do
+        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks spark $data_path $data_path/benchmarks/ $query
+    #done
 
-    for i in {0..2}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query bvae $bvae_path $experience_path
-    done
+    #for i in {0..1}; do
+    #    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query bvae $bvae_path $experience_path
+    #done
 done
 

@@ -63,7 +63,8 @@ public class TPCHBenchmarks {
             String modelType = "";
 
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.driver.memory", "16g");
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.executor.memory", "16g");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
             if (args.length > 4) {
