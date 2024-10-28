@@ -18,6 +18,7 @@
 
 package org.apache.wayang.jdbc.compiler;
 
+import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.PredicateDescriptor;
 
@@ -38,4 +39,13 @@ public class FunctionCompiler {
         return sqlImplementation;
     }
 
+    /**
+     * Compile join descriptors to their SQL equivalent
+     * @param descriptor left 
+     * @param descriptor2 right
+     * @return a compiled SQL {@code Join} clause
+     */
+    public String compile(ProjectionDescriptor<?,?> descriptor, ProjectionDescriptor<?,?> descriptor2) {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -19,6 +19,7 @@
 package org.apache.wayang.postgres.mapping;
 
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.mapping.Mapping;
@@ -30,6 +31,7 @@ import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.postgres.operators.PostgresJoinOperator;
 import org.apache.wayang.postgres.platform.PostgresPlatform;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -59,10 +61,8 @@ public class JoinMapping implements Mapping {
                 ),
                 false
         )
-            .withAdditionalTest(op -> op.getKeyDescriptor0() instanceof TransformationDescriptor)
-            .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor)
-            .withAdditionalTest(op -> op.getKeyDescriptor0().getSqlImplementation() != null)
-            .withAdditionalTest(op -> op.getKeyDescriptor1().getSqlImplementation() != null);
+        .withAdditionalTest(op -> op.getKeyDescriptor0() instanceof TransformationDescriptor)
+        .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor);
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
@@ -72,5 +72,14 @@ public class JoinMapping implements Mapping {
                     return new PostgresJoinOperator<Object>(matchedOperator).at(epoch);
                 }
         );
+    }
+
+    /**
+     * generates the sql join string for a given operator & descriptors
+     * @param joinOperator
+     * @return
+     */
+    private String generateSqlImplementation (JoinOperator<?,?,?> joinOperator) {
+        throw new UnsupportedOperationException();
     }
 }
