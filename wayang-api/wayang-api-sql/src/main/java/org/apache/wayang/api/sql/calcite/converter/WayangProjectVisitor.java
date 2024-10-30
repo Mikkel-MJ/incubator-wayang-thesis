@@ -28,12 +28,15 @@ import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.basic.types.RecordType;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.checkerframework.checker.units.qual.s;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BinaryOperator;
 
@@ -52,10 +55,20 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         projects.stream().map(rexNode -> this + rexNode.toString() + ", " + rexNode.getKind() + ", " + rexNode.getType() + ", " + rexNode.getType().getSqlIdentifier()).forEach(System.out::println);
         // TODO: create a map with specific dataset type
 
-        String[] projectNames = wayangRelNode.getNamedProjects().stream().map(tup -> tup.right).toArray(String[]::new);
-        SerializableFunction<Record,Record> mp = new MapFunctionImpl(projects);
-        ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<Record,Record>(mp, Record.class, Record.class, projectNames);
-        final MapOperator<Record, Record> projection =  new MapOperator<Record, Record> (pd);
+        final String[] projectNames = wayangRelNode.getNamedProjects() //get all the names of our output
+            .stream()
+            .map(tup -> tup.right)
+            .toArray(String[]::new);
+
+        final RecordType inputRecordType = new RecordType( //get the field names for the input operator
+            wayangRelNode.getInput(0) //this should be safe since project has one operator
+                .getRowType()
+                .getFieldNames()
+                .toArray(String[]::new)
+        );
+
+        final ProjectionDescriptor<Record, Record> pd = ProjectionDescriptor.createForRecords(inputRecordType, projectNames);
+        final MapOperator<Record, Record> projection  = new MapOperator<Record, Record> (pd);
 
         childOp.connectTo(0, projection, 0);
     
