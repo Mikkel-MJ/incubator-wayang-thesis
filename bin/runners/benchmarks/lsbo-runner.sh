@@ -11,7 +11,20 @@ export GIRAPH_HOME=/opt/giraph
 export PATH="$PATH:${GIRAPH_HOME}/bin"
 
 cd ${WORKDIR}
-cd wayang-0.7.1
+
+if [ ! -d python-ml ]; then
+    echo "Unpacking python-ml"
+    tar -zxf python-ml.tar
+fi
+
+cd python-ml
+
+if [ ! -d venv ]; then
+    echo "Setting up pyenv"
+    python3.11 -m venv ./venv
+    echo "Installing python requirements"
+    ./venv/bin/python3.11 -m pip install -r requirements.txt
+fi
 
 queries=(1 3 6 10 12 14 19)
 
@@ -21,12 +34,7 @@ data_path=/work/lsbo-paper/data
 experience_path=/work/lsbo-paper/data/experience/
 
 for query in ${queries[@]}; do
-    for i in {0..5}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query
-    done
-
-    for i in {0..5}; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.TPCHBenchmarks java,spark,flink,giraph $data_path $data_path/benchmarks/ $query bvae $bvae_path $experience_path
-    done
+    echo "Start LSBO loop for query ${query}"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph /work/lsbo-paper/data/'
 done
 

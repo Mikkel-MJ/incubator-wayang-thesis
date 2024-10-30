@@ -38,6 +38,14 @@ import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.wayang.ml.training.LSBO;
 import org.apache.wayang.ml.training.TPCH;
+import org.apache.wayang.apps.tpch.queries.Query1Wayang;
+import org.apache.wayang.apps.tpch.queries.Query3;
+import org.apache.wayang.apps.tpch.queries.Query5;
+import org.apache.wayang.apps.tpch.queries.Query6;
+import org.apache.wayang.apps.tpch.queries.Query10;
+import org.apache.wayang.apps.tpch.queries.Query12;
+import org.apache.wayang.apps.tpch.queries.Query14;
+import org.apache.wayang.apps.tpch.queries.Query19;
 import org.apache.wayang.ml.encoding.OneHotMappings;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
@@ -69,14 +77,34 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
         Configuration config = new Configuration();
         config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
+        config.setProperty("spark.master", "spark://spark-cluster:7077");
+        config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[2]);
+        config.setProperty("spark.executor.memory", "16g");
+        config.setProperty("wayang.flink.run", "distribution");
+        config.setProperty("wayang.flink.parallelism", "1");
+        config.setProperty("wayang.flink.master", "flink-cluster");
+        config.setProperty("wayang.flink.port", "6123");
+        config.setProperty("spark.executor.memory", "16g");
+
+        String[] jars = new String[]{
+            ReflectionUtils.getDeclaringJar(LSBORunner.class),
+            ReflectionUtils.getDeclaringJar(Query1Wayang.class),
+            ReflectionUtils.getDeclaringJar(Query3.class),
+            ReflectionUtils.getDeclaringJar(Query5.class),
+            ReflectionUtils.getDeclaringJar(Query6.class),
+            ReflectionUtils.getDeclaringJar(Query10.class),
+            ReflectionUtils.getDeclaringJar(Query12.class),
+            ReflectionUtils.getDeclaringJar(Query14.class),
+            ReflectionUtils.getDeclaringJar(Query19.class),
+        };
 
         HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);
         WayangPlan plan = plans.get("query" + args[2]);
 
-        LSBO.process(plan, config, plugins);
+        LSBO.process(plan, config, plugins, jars);
     }
 }

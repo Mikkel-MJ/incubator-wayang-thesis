@@ -42,6 +42,8 @@ if [ $UCLOUD_RANK = 0 ]; then
     echo "Configuring workers"
     cp /work/lsbo-paper/runners/flink/workers /opt/flink/conf
 
+    sleep 30s
+
     echo "Starting master"
     sudo $FLINK_HOME/bin/start-cluster.sh
 fi

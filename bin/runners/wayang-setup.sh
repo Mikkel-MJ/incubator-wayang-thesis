@@ -7,6 +7,15 @@ sudo apt install openjdk-11-jdk --yes
 
 java -version
 
+echo "Installing Python 3.11"
+sudo apt update
+sudo apt upgrade -y
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update
+sudo apt-get install -y python3.11-full python3.11-dev python3-pip
+python3.11 --version
+
 SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
 

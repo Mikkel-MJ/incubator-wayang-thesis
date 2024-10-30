@@ -80,8 +80,9 @@ public class LSBO {
     public static void process(
         WayangPlan plan,
         Configuration config,
-        List<Plugin> plugins
-    ) {
+        List<Plugin> plugins,
+        String... udfJars
+    ) throws Exception {
         try {
             Socket socket = setupSocket();
             config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
@@ -121,7 +122,7 @@ public class LSBO {
             // execute each WayangPlan and sample latency
             // encode the best one
             // Get the initial plan created by the LSBO loop
-            Job executionJob = context.createJob("executing", sampledPlan, "");
+            Job executionJob = context.createJob("executing", sampledPlan, udfJars);
 
             ExplainUtils.parsePlan(sampledPlan, false);
             TreeNode encoded = TreeEncoder.encode(sampledPlan);
@@ -153,11 +154,13 @@ public class LSBO {
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println(e);
+                throw e;
             }
 
         } catch(Exception e) {
             e.printStackTrace();
             System.out.println(e);
+            throw e;
         }
     }
 
