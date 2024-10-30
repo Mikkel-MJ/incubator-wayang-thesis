@@ -49,12 +49,6 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
     Operator visit(final WayangProject wayangRelNode) {
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
 
-        /* Quick check */
-        final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
-        System.out.println("wayangRelNode: " + wayangRelNode.explain() + ", " + wayangRelNode.getCorrelVariable() + ", " + wayangRelNode.getDigest() + ", " + wayangRelNode.getRelTypeName() + wayangRelNode.getNamedProjects());
-        projects.stream().map(rexNode -> this + rexNode.toString() + ", " + rexNode.getKind() + ", " + rexNode.getType() + ", " + rexNode.getType().getSqlIdentifier()).forEach(System.out::println);
-        // TODO: create a map with specific dataset type
-
         final String[] projectNames = wayangRelNode.getNamedProjects() //get all the names of our output
             .stream()
             .map(tup -> tup.right)
