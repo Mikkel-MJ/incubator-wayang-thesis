@@ -19,24 +19,19 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.types.RecordType;
-import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
-import org.checkerframework.checker.units.qual.s;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BinaryOperator;
 
