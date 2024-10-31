@@ -77,7 +77,7 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
         Configuration config = new Configuration();
         config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));

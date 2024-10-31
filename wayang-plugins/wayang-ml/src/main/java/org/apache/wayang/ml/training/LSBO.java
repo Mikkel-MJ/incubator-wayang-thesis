@@ -21,6 +21,7 @@ package org.apache.wayang.ml.training;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
+import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.util.Tuple;
@@ -82,7 +83,7 @@ public class LSBO {
         Configuration config,
         List<Plugin> plugins,
         String... udfJars
-    ) throws Exception {
+    ) {
         try {
             Socket socket = setupSocket();
             config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
@@ -151,16 +152,31 @@ public class LSBO {
                 latencyFeed.send();
 
                 System.gc();
-            } catch (Exception e) {
+            } catch (WayangException e) {
                 e.printStackTrace();
                 System.out.println(e);
-                throw e;
+
+                // Send longest possible time back, only execution failed
+                encodedInput = wayangNode.toString() + ":" + encoded.toString() + ":" + Long.MAX_VALUE;
+                //System.out.println(encodedInput);
+
+                ArrayList<String> latency = new ArrayList<>();
+                latency.add(encodedInput);
+
+                System.out.println("Wayang sending: " + encodedInput);
+
+                ProcessFeeder<String, String> latencyFeed = new ProcessFeeder<>(
+                    socket,
+                    ByteString.copyFromUtf8("lambda x: x"),
+                    latency
+                );
+
+                latencyFeed.send();
             }
 
-        } catch(Exception e) {
+        } catch(IOException e) {
             e.printStackTrace();
             System.out.println(e);
-            throw e;
         }
     }
 
