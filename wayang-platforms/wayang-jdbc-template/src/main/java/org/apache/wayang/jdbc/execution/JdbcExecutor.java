@@ -122,7 +122,9 @@ public class JdbcExecutor extends ExecutorTemplate {
         Collection<String> conditions = filterTasks.stream()
                 .map(ExecutionTask::getOperator)
                 .map(this::getSqlClause)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()
+        );
+        
         String projection = projectionTask == null ? "*" : this.getSqlClause(projectionTask.getOperator());
         Collection<String> joins = joinTasks.stream()
                 .map(ExecutionTask::getOperator)
@@ -196,7 +198,9 @@ public class JdbcExecutor extends ExecutorTemplate {
      */
     protected String createSqlQuery(String tableName, Collection<String> conditions, String projection, Collection<String> joins) {
         StringBuilder sb = new StringBuilder(1000);
-        sb.append("SELECT ").append(projection).append(" FROM ").append(tableName);
+        String firstTableName = projection.split("\\.")[0]; //this prolly will break on multiple selections 
+                                                            //TODO: add support for multiple selections
+        sb.append("SELECT ").append(projection).append(" FROM ").append(firstTableName);
         if (!joins.isEmpty()) {
             String separator = " ";
             for (String join : joins) {
