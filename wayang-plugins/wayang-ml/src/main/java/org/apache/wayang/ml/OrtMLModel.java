@@ -305,7 +305,8 @@ public class OrtMLModel {
             return new Tuple<WayangPlan, TreeNode>(decodedPlan, encoded);
         } catch(Exception e) {
             e.printStackTrace();
-            return new Tuple<WayangPlan, TreeNode>(plan, encoded);
+            throw e;
+            //return new Tuple<WayangPlan, TreeNode>(plan, encoded);
         } finally {
             this.inputMap.clear();
             this.requestedOutputs.clear();
