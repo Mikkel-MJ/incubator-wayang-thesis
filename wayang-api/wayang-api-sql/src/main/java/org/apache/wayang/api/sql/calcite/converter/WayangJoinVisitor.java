@@ -19,25 +19,29 @@
 package org.apache.wayang.api.sql.calcite.converter;
 
 import java.io.Serializable;
+import java.util.Map;
+import java.util.Optional;
 
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
+import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.api.sql.calcite.utils.SqlField;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
-import scala.Function3;
-import scala.Function;
 import scala.Tuple3;
 
 public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
@@ -62,26 +66,56 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT));
 
         // init join
-        final JoinOperator<Record, Record, SqlField> join = Function.tupled(this::determineKeyExtractionDirection)
-                                                                    .andThen(Function.tupled(this::getJoinOperator))
-                                                                    .apply(new Tuple3<Integer,Integer,WayangJoin>(leftKeyIndex, rightKeyIndex, wayangRelNode));
+        final Tuple3<Integer, Integer, WayangJoin> keyExtractor = this.determineKeyExtractionDirection(leftKeyIndex, rightKeyIndex, wayangRelNode);
+
+        final String leftFieldName = wayangRelNode.getInput(0) // get left col name
+                .getRowType()
+                .getFieldNames()
+                .get(keyExtractor._1());
+
+        final String rightFieldName = wayangRelNode.getInput(1) // right col name
+                .getRowType()
+                .getFieldNames()
+                .get(keyExtractor._2());
+
+        System.out.println("joining fields: " + leftFieldName + " right: " + rightFieldName);
+        //fetch table names from joining columns
+        final Map<RelDataTypeField, String> columnToOriginMap = CalciteSources.getTableOriginForColumn(wayangRelNode);
+        final String leftTableName  = columnToOriginMap.get(wayangRelNode.getRowType().getFieldList().get(keyExtractor._1()));
+        final String rightTableName = columnToOriginMap.get(wayangRelNode.getRowType().getFieldList().get(keyExtractor._2()));
+
+        System.out.println("map: " + columnToOriginMap);
+        System.out.println("map: " + columnToOriginMap.keySet());
+        System.out.println("map: " + columnToOriginMap.values());
+        System.out.println("left table name: " + leftTableName);
+        System.out.println("right table name: " + rightTableName);
+        System.out.println("left: " + wayangRelNode.getInput(0).getRowType().getFieldList().get(keyExtractor._1()));
+        System.out.println("right: " + wayangRelNode.getInput(1).getRowType().getFieldList().get(keyExtractor._2()));
+
+        System.out.println("keys: " + keyExtractor._1());
+        System.out.println("keys: " + keyExtractor._2());
         
+        if (leftTableName.length() == 0) System.exit(-1);
+        if (rightTableName.length() == 0) System.exit(-1);
+
+        final JoinOperator<Record, Record, SqlField> join = this.getJoinOperator(
+            keyExtractor._1(), keyExtractor._2(), wayangRelNode, leftTableName, leftFieldName, rightTableName, rightFieldName
+        );
+
         // call connectTo on both operators (left and right)
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
+        final String[] joinTableNames = {leftTableName+"."+leftFieldName, leftTableName+"."+rightFieldName};
+
         // Join returns Tuple2 - map to a Record
-        final String[] joinTableNames = ((Join) wayangRelNode).getRowType().getFieldNames().toArray(String[]::new);
-        final Class<Tuple2<Record, Record>> clazz = (Class<Tuple2<Record, Record>>) new Tuple2<Record, Record>(null, null)
-                .getClass(); // the things we do for type coercion in java...
+        final SerializableFunction<Tuple2, Record> mp = new MapFunctionImpl();
 
-        final SerializableFunction<Tuple2<Record, Record>, Record> mp = new MapFunctionImpl();
+        final ProjectionDescriptor<Tuple2, Record> pd = new ProjectionDescriptor<Tuple2, Record>(
+                mp, Tuple2.class, Record.class, joinTableNames);
 
-        final ProjectionDescriptor<Tuple2<Record, Record>, Record> pd = new ProjectionDescriptor<Tuple2<Record, Record>, Record>(
-                mp, clazz, Record.class, joinTableNames);
+        final MapOperator<Tuple2, Record> mapOperator = new MapOperator<Tuple2, Record>(pd);
 
-        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<Tuple2<Record, Record>, Record>(pd);
-        
         join.connectTo(0, mapOperator, 0);
 
         return mapOperator;
@@ -100,7 +134,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
      *                                       in practice I am not sure if this
      *                                       should be supported
      */
-    protected Tuple3<Integer, Integer, WayangJoin> determineKeyExtractionDirection(Integer leftKeyIndex, Integer rightKeyIndex, WayangJoin wayangRelNode) {
+    protected Tuple3<Integer, Integer, WayangJoin> determineKeyExtractionDirection(Integer leftKeyIndex,
+            Integer rightKeyIndex, WayangJoin wayangRelNode) {
         switch (leftKeyIndex.compareTo(rightKeyIndex)) {
             case 1: // left greater than
             {
@@ -115,7 +150,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
             default: // both equal
                 throw new UnsupportedOperationException();
         }
-        
     }
 
     /**
@@ -128,32 +162,26 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
      * @param rightKeyIndex
      * @return a {@link JoinOperator} with {@link KeyExtractors} set
      */
-    protected JoinOperator<Record, Record, SqlField> getJoinOperator(Integer leftKeyIndex, Integer rightKeyIndex, WayangJoin wayangRelNode) {
+    protected JoinOperator<Record, Record, SqlField> getJoinOperator(Integer leftKeyIndex, Integer rightKeyIndex,
+            WayangJoin wayangRelNode, String leftTableName, String leftFieldName, String rightTableName, String rightFieldName) {
         if (wayangRelNode.getInputs().size() != 2)
             throw new UnsupportedOperationException("Join had an unexpected amount of inputs, found: "
                     + wayangRelNode.getInputs().size() + ", expected: 2");
 
-        final String[] leftTableNames = wayangRelNode.getInput(0)
-                .getRowType()
-                .getFieldNames()
-                .toArray(String[]::new);
-
-        final String[] rightTableNames = wayangRelNode.getInput(1)
-                .getRowType()
-                .getFieldNames()
-                .toArray(String[]::new);
-
-        final ProjectionDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
+        final TransformationDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(leftKeyIndex),
-                Record.class, SqlField.class, leftTableNames);
+                Record.class, SqlField.class, leftFieldName)
+                    .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName); // for jdbc usage mb move l8r
 
-        final ProjectionDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
+        final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(rightKeyIndex),
-                Record.class, SqlField.class, rightTableNames);
+                Record.class, SqlField.class, rightFieldName)
+                    .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName); // for jdbc usage mb move l8r
 
         final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
                 leftProjectionDescriptor,
-                righProjectionDescriptor);
+                righProjectionDescriptor
+        );
 
         return join;
     }
