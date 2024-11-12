@@ -283,6 +283,7 @@ public class OrtMLModel {
 
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
+            System.out.println("Result: " + Arrays.deepToString(resultTensor));
             long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
             for (int i = 0; i < resultTensor[0].length; i++)  {
                 for (int j = 0; j < resultTensor[0][i].length; j++) {
