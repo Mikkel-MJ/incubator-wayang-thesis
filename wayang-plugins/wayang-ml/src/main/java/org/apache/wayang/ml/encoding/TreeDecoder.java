@@ -96,7 +96,6 @@ public class TreeDecoder {
                 () -> new WayangException(String.format("Couldnt recover platform for operator: %s", operator.get()))
             );
 
-            System.out.println("Setting platform: " + platform.getName() + " for operator: " + operator.get().getName());
             operator.get().addTargetPlatform(platform);
         } else {
             logger.info("Operator couldn't be recovered, potentially conversion operator: {}", node);

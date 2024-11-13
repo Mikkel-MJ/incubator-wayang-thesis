@@ -101,7 +101,7 @@ public class OrtMLModel {
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
         float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
-        long[][][] input1Right = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
+        long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
 
         //input1Left = input1.field0.toArray(input1Left);
         for (int i = 0; i < input1.field0.get(0).length; i++) {
@@ -113,11 +113,11 @@ public class OrtMLModel {
         }
 
         for (int i = 0; i < input1.field1.get(0).length; i++) {
-            input1Right[0][i]  = input1.field1.get(0)[i];
+            inputIndexStructure[0][i]  = input1.field1.get(0)[i];
         }
 
         OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
-        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, input1Right);
+        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, inputIndexStructure);
 
         this.inputMap.put("input1", tensorOneLeft);
         this.inputMap.put("input2", tensorOneRight);
@@ -161,7 +161,7 @@ public class OrtMLModel {
         long[] input4Dims = ((TensorInfo) inputInfoList.get("input4").getInfo()).getShape();
 
         float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
-        long[][][] input1Right = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
+        long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
         float[][][] input2Left = new float[1][(int) input3Dims[1]][(int) input3Dims[2]];
         long[][][] input2Right = new long[1][(int) input4Dims[1]][(int) input4Dims[2]];
 
@@ -174,7 +174,7 @@ public class OrtMLModel {
         }
 
         for (int i = 0; i < input1.field1.get(0).length; i++) {
-            input1Right[0][i]  = input1.field1.get(0)[i];
+            inputIndexStructure[0][i]  = input1.field1.get(0)[i];
         }
 
         for (int i = 0; i < input2.field0.get(0).length; i++) {
@@ -190,7 +190,7 @@ public class OrtMLModel {
         }
 
         OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
-        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, input1Right);
+        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, inputIndexStructure);
         OnnxTensor tensorTwoLeft = OnnxTensor.createTensor(env, input2Left);
         OnnxTensor tensorTwoRight = OnnxTensor.createTensor(env, input2Right);
 
@@ -245,7 +245,8 @@ public class OrtMLModel {
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
         float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
-        long[][][] input1Right = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
+        long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
+        //long[][][] inputIndexStructure = new long[1][encoded.getTreeSize()][(int) input2Dims[2]];
 
         //input1Left = input1.field0.toArray(input1Left);
         for (int i = 0; i < input.field0.get(0).length; i++) {
@@ -257,11 +258,11 @@ public class OrtMLModel {
         }
 
         for (int i = 0; i < input.field1.get(0).length; i++) {
-            input1Right[0][i]  = input.field1.get(0)[i];
+            inputIndexStructure[0][i]  = input.field1.get(0)[i];
         }
 
         OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
-        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, input1Right);
+        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, inputIndexStructure);
         OrtTensorDecoder decoder = new OrtTensorDecoder();
 
         this.inputMap.put("input1", tensorOneLeft);
@@ -283,7 +284,6 @@ public class OrtMLModel {
 
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
-            System.out.println("Result: " + Arrays.deepToString(resultTensor));
             long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
             for (int i = 0; i < resultTensor[0].length; i++)  {
                 for (int j = 0; j < resultTensor[0][i].length; j++) {
@@ -299,11 +299,10 @@ public class OrtMLModel {
             decoded.softmax();
 
             // Now set the platforms on the wayangPlan
-            encoded = encoded.withPlatformChoicesFrom(decoded);
+            TreeNode reconstructed = encoded.withPlatformChoicesFrom(decoded);
+            WayangPlan decodedPlan = TreeDecoder.decode(reconstructed);
 
-            WayangPlan decodedPlan = TreeDecoder.decode(encoded);
-
-            return new Tuple<WayangPlan, TreeNode>(decodedPlan, encoded);
+            return new Tuple<WayangPlan, TreeNode>(decodedPlan, reconstructed);
         } catch(Exception e) {
             e.printStackTrace();
             throw e;

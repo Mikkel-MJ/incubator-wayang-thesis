@@ -114,8 +114,13 @@ public class TreeNode {
     }
 
     public TreeNode withPlatformChoicesFrom(TreeNode node) {
-        if (this.encoded == null || node.encoded == null) {
-            return this;
+        if (this.encoded != null) {
+            assert node.encoded != null;
+        }
+
+        if (node.encoded == null) {
+            assert this.encoded != null;
+            //return this;
         }
 
         HashMap<String, Integer> platformMappings = OneHotMappings.getInstance().getPlatformsMapping();
@@ -135,18 +140,30 @@ public class TreeNode {
 
         assert platform != "";
 
-        //System.out.println("Chose platform: " + platform);
+        System.out.println("Chose platform: " + platform);
 
         int operatorsCount = operatorMappings.size();
         this.encoded[operatorsCount + platformPosition] = 1;
 
-        if (this.left != null && node.left != null) {
+        if (this.left != null) {
+            assert node.left != null;
             this.left = left.withPlatformChoicesFrom(node.left);
         }
 
-        if (this.right != null && node.right != null) {
+        if (this.right != null) {
+            assert node.right != null;
             this.right = right.withPlatformChoicesFrom(node.right);
         }
+
+        /*
+        if (this.left != null && node.left != null) {
+            this.left = left.withPlatformChoicesFrom(node.left);
+        }*/
+
+        /*
+        if (this.right != null && node.right != null) {
+            this.right = right.withPlatformChoicesFrom(node.right);
+        }*/
 
         return this;
     }
@@ -184,6 +201,29 @@ public class TreeNode {
 
     public boolean isLeaf() {
         return this.left == null && this.right == null;
+    }
+
+
+    public int getTreeSize() {
+        int size = 1;
+
+        if (this.left != null) {
+            size += this.left.getTreeSize();
+        }
+
+        if (this.right != null) {
+            size += this.right.getTreeSize();
+        }
+
+        if (this.right != null && this.left == null) {
+            size += 1;
+        }
+
+        if (this.right == null && this.left != null) {
+            size += 1;
+        }
+
+        return size;
     }
 
 }

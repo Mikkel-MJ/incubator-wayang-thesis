@@ -20,6 +20,7 @@ package org.apache.wayang.ml.benchmarks;
 
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.WayangContext;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.ml.MLContext;
@@ -42,8 +43,10 @@ import org.apache.wayang.apps.tpch.queries.Query14;
 import org.apache.wayang.apps.tpch.queries.Query19;
 import org.apache.wayang.ml.training.GeneratableJob;
 import org.apache.wayang.ml.util.Jobs;
+import org.apache.wayang.api.DataQuanta;
 
 import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import scala.collection.Seq;
@@ -114,10 +117,20 @@ public class GeneratableBenchmarks {
             PlanBuilder builder = quanta.getPlanBuilder();
             WayangPlan plan = builder.build();
 
+            System.out.println("Found nr of operators in plan: " + PlanTraversal
+                .upstream()
+                .traverse(plan.getSinks())
+                .getTraversedNodes()
+                .size());
+                //.forEach(System.out::println);
+
             String[] jars = new String[]{
                 ReflectionUtils.getDeclaringJar(GeneratableBenchmarks.class),
-                ReflectionUtils.getDeclaringJar(createdJob.getClass()),
+                ReflectionUtils.getDeclaringJar(DataQuanta.class),
+                ReflectionUtils.getDeclaringJar(Query1Wayang.class),
             };
+
+            System.out.println("Jars:" + Arrays.toString(jars));
 
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {

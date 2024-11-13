@@ -77,7 +77,6 @@ public class MLContext extends WayangContext {
 
         Configuration config = this.getConfiguration();
         Configuration jobConfig = wayangJob.getConfiguration();
-        System.out.println("Spark config updated: " + jobConfig.getStringProperty("spark.master"));
 
         wayangJob.execute();
 
@@ -110,7 +109,6 @@ public class MLContext extends WayangContext {
         try {
             Job job = this.createJob("", wayangPlan, udfJars);
             Configuration jobConfig = job.getConfiguration();
-
             //job.prepareWayangPlan();
             job.estimateKeyFigures();
             OneHotMappings.setOptimizationContext(job.getOptimizationContext());
