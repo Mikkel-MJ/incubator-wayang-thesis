@@ -87,6 +87,7 @@ public class SparkPlatform extends Platform {
             "spark.driver.memory",
             "spark.executor.memory",
             "spark.executor.heartbeatInterval",
+            "spark.rpc.message.maxSize",
             "spark.network.timeout",
             "spark.deploy.mode",
             // "spark.extraListeners"

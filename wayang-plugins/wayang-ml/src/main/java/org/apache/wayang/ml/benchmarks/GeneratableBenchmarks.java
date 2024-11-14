@@ -72,6 +72,7 @@ public class GeneratableBenchmarks {
 
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.rpc.message.maxSize", "2047");
             config.setProperty("spark.executor.memory", "16g");
             config.setProperty("wayang.flink.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");

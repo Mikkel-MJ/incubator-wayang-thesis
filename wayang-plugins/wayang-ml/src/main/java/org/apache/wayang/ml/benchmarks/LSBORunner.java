@@ -49,7 +49,12 @@ import org.apache.wayang.apps.tpch.queries.Query19;
 import org.apache.wayang.ml.encoding.OneHotMappings;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
+import org.apache.wayang.api.DataQuanta;
+import org.apache.wayang.api.PlanBuilder;
+import org.apache.wayang.ml.training.GeneratableJob;
+import org.apache.wayang.ml.util.Jobs;
 
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -77,8 +82,9 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
+        Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[2]));
         Configuration config = new Configuration();
         config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
         config.setProperty("spark.master", "spark://spark-cluster:7077");
@@ -100,10 +106,20 @@ public class LSBORunner {
             ReflectionUtils.getDeclaringJar(Query12.class),
             ReflectionUtils.getDeclaringJar(Query14.class),
             ReflectionUtils.getDeclaringJar(Query19.class),
+            ReflectionUtils.getDeclaringJar(DataQuanta.class),
         };
 
+        /*
         HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);
         WayangPlan plan = plans.get("query" + args[2]);
+        */
+
+        Constructor<?> cnstr = job.getDeclaredConstructors()[0];
+        GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
+        String[] jobArgs = {args[0], args[1]};
+        DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
+        PlanBuilder builder = quanta.getPlanBuilder();
+        WayangPlan plan = builder.build();
 
         LSBO.process(plan, config, plugins, jars);
     }
