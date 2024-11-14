@@ -33,7 +33,8 @@ bvae_path=/work/lsbo-paper/data/models/bvae.onnx
 data_path=/work/lsbo-paper/data
 experience_path=/work/lsbo-paper/data/experience/
 
-for query in ${queries[@]}; do
+#for query in ${queries[@]}; do
+for query in {901..1000}; do
     echo "Start LSBO loop for query ${query}"
     ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph /work/lsbo-paper/data/'
 done
