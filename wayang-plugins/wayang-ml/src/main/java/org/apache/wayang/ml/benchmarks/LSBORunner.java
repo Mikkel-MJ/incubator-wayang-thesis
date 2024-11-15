@@ -82,7 +82,7 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
         Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[2]));
         Configuration config = new Configuration();
@@ -114,13 +114,18 @@ public class LSBORunner {
         WayangPlan plan = plans.get("query" + args[2]);
         */
 
-        Constructor<?> cnstr = job.getDeclaredConstructors()[0];
-        GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
-        String[] jobArgs = {args[0], args[1]};
-        DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
-        PlanBuilder builder = quanta.getPlanBuilder();
-        WayangPlan plan = builder.build();
+        try {
+            Constructor<?> cnstr = job.getDeclaredConstructors()[0];
+            GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
+            String[] jobArgs = {args[0], args[1]};
+            DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
+            PlanBuilder builder = quanta.getPlanBuilder();
+            WayangPlan plan = builder.build();
 
-        LSBO.process(plan, config, plugins, jars);
+            LSBO.process(plan, config, plugins, jars);
+        } catch(Exception e) {
+            System.out.println(e.getMessage());
+        }
+
     }
 }

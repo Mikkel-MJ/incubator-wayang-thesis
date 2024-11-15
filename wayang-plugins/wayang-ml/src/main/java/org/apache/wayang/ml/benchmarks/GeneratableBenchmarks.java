@@ -118,13 +118,6 @@ public class GeneratableBenchmarks {
             PlanBuilder builder = quanta.getPlanBuilder();
             WayangPlan plan = builder.build();
 
-            System.out.println("Found nr of operators in plan: " + PlanTraversal
-                .upstream()
-                .traverse(plan.getSinks())
-                .getTraversedNodes()
-                .size());
-                //.forEach(System.out::println);
-
             String[] jars = new String[]{
                 ReflectionUtils.getDeclaringJar(GeneratableBenchmarks.class),
                 ReflectionUtils.getDeclaringJar(DataQuanta.class),
