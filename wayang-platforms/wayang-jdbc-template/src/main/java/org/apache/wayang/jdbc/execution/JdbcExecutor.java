@@ -35,26 +35,36 @@ import org.apache.wayang.core.util.WayangCollections;
 import org.apache.wayang.core.util.fs.FileSystem;
 import org.apache.wayang.core.util.fs.FileSystems;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel;
+import org.apache.wayang.jdbc.channels.SqlQueryChannel.Instance;
 import org.apache.wayang.jdbc.compiler.FunctionCompiler;
 import org.apache.wayang.jdbc.operators.JdbcExecutionOperator;
 import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
 import org.apache.wayang.jdbc.operators.JdbcJoinOperator;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
+import org.apache.wayang.jdbc.operators.JdbcTableSource;
+import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
 import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
+
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * {@link Executor} implementation for the {@link JdbcPlatformTemplate}.
@@ -69,119 +79,125 @@ public class JdbcExecutor extends ExecutorTemplate {
 
     private final FunctionCompiler functionCompiler = new FunctionCompiler();
 
-    public JdbcExecutor(JdbcPlatformTemplate platform, Job job) {
+    public JdbcExecutor(final JdbcPlatformTemplate platform, final Job job) {
         super(job.getCrossPlatformExecutor());
         this.platform = platform;
         this.connection = this.platform.createDatabaseDescriptor(job.getConfiguration()).createJdbcConnection();
     }
 
     @Override
-    public void execute(ExecutionStage stage, OptimizationContext optimizationContext, ExecutionState executionState) {
-        // TODO: Load ChannelInstances from executionState? (as of now there is no input into PostgreSQL).
-        Collection<?> startTasks = stage.getStartTasks();
-        Collection<?> termTasks = stage.getTerminalTasks();
+    public void execute(final ExecutionStage stage, final OptimizationContext optimizationContext,
+            final ExecutionState executionState) {
+        
+        final Collection<ExecutionTask> startTasks = stage.getStartTasks();
+        final Set<ExecutionTask> allTasks = stage.getAllTasks();
+        System.out.println("executionStage out: " + stage.getOutboundChannels());
+        System.out.println("executionStage int: " + stage.getInboundChannels());
+            
+        assert startTasks.stream().allMatch(task -> task.getOperator() instanceof TableSource);
 
-        // Verify that we can handle this instance.
-        assert startTasks.size() == 1 : "Invalid jdbc stage: multiple sources are not currently supported";
-        ExecutionTask startTask = (ExecutionTask) startTasks.toArray()[0];
-        assert termTasks.size() == 1 : "Invalid JDBC stage: multiple terminal tasks are not currently supported.";
-        ExecutionTask termTask = (ExecutionTask) termTasks.toArray()[0];
-        assert startTask.getOperator() instanceof TableSource : "Invalid JDBC stage: Start task has to be a TableSource";
+        final Stream<TableSource> tableSources = startTasks.stream()
+                .map(task -> (TableSource) task.getOperator());
 
-        // Extract the different types of ExecutionOperators from the stage.
-        TableSource tableOp = (TableSource) startTask.getOperator();
-        SqlQueryChannel.Instance tipChannelInstance = this.instantiateOutboundChannel(startTask, optimizationContext);
-        Collection<ExecutionTask> filterTasks = new ArrayList<>(4);
-        ExecutionTask projectionTask = null;
-        Collection<ExecutionTask> joinTasks = new ArrayList<>();
-        Set<ExecutionTask> allTasks = stage.getAllTasks();
-        assert allTasks.size() <= 3;
-        ExecutionTask nextTask = this.findJdbcExecutionOperatorTaskInStage(startTask, stage);
-        while (nextTask != null) {
-            // Evaluate the nextTask.
-            if (nextTask.getOperator() instanceof JdbcFilterOperator) {
-                filterTasks.add(nextTask);
-            } else if (nextTask.getOperator() instanceof JdbcProjectionOperator) {
-                assert projectionTask == null; //Allow one projection operator per stage for now.
-                projectionTask = nextTask;
-            } else if (nextTask.getOperator() instanceof JdbcJoinOperator) {
-                joinTasks.add(nextTask);
-            } else {
-                throw new WayangException(String.format("Unsupported JDBC execution task %s", nextTask.toString()));
-            }
-
-            // Move the tipChannelInstance.
-            tipChannelInstance = this.instantiateOutboundChannel(nextTask, optimizationContext, tipChannelInstance);
-
-            // Go to the next nextTask.
-            nextTask = this.findJdbcExecutionOperatorTaskInStage(nextTask, stage);
-        }
+        final Collection<ExecutionTask> filterTasks = allTasks.stream()
+                .filter(task -> task.getOperator() instanceof JdbcFilterOperator)
+                .collect(Collectors.toList());
+        final Collection<ExecutionTask> projectionTasks = allTasks.stream()
+                .filter(task -> task.getOperator() instanceof JdbcProjectionOperator)
+                .collect(Collectors.toList());
+        final Collection<ExecutionTask> joinTasks = allTasks.stream()
+                .filter(task -> task.getOperator() instanceof JdbcJoinOperator)
+                .collect(Collectors.toList());
 
         // Create the SQL query.
-        String tableName = this.getSqlClause(tableOp);
-        Collection<String> conditions = filterTasks.stream()
-                .map(ExecutionTask::getOperator)
-                .map(this::getSqlClause)
-                .collect(Collectors.toList()
-        );
-        
-        String projection = projectionTask == null ? "*" : this.getSqlClause(projectionTask.getOperator());
-        Collection<String> joins = joinTasks.stream()
+        final Stream<String> tableNames = tableSources.map(this::getSqlClause);
+        final String joinedTableNames = tableNames.collect(Collectors.joining(","));
+
+        final Collection<String> conditions = filterTasks.stream()
                 .map(ExecutionTask::getOperator)
                 .map(this::getSqlClause)
                 .collect(Collectors.toList());
-        String query = this.createSqlQuery(tableName, conditions, projection, joins);
-        tipChannelInstance.setSqlQuery(query);
 
-        // Return the tipChannelInstance.
-        executionState.register(tipChannelInstance);
+        // mapping that asks whether this is a projection that comes after a table
+        // source, if so,
+        // then we will use it in the select statement
+        final Map<ExecutionTask, Boolean> taskInputIsTableMap = projectionTasks.stream()
+                .collect(Collectors.toMap(
+                        task -> task,
+                        task -> !(task.getInputChannel(0).getProducerOperator() instanceof JdbcJoinOperator)));
+
+        System.out.println("task input is table: " + taskInputIsTableMap);
+        // collect projections necessary in select statement
+        final String collectedProjections = projectionTasks.stream()
+                .filter(task -> taskInputIsTableMap.get(task))
+                .map(task -> task.getOperator())
+                .map(this::getSqlClause)
+                .collect(Collectors.joining(","));
+
+        final String projection = collectedProjections.equals("") ? joinedTableNames : collectedProjections;
+        final String selectStatement = collectedProjections.equals("") ? "*" : collectedProjections;
+
+        final Collection<String> joins = joinTasks.stream()
+                .map(ExecutionTask::getOperator)
+                .map(this::getSqlClause)
+                .collect(Collectors.toList());
+
+        final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins, selectStatement);
+
+        // get Operators who have sqlToStream connections:
+        // TODO: this code is temporary while we figure out how to correctly build the
+        // sql queries for
+        // each individual sqlToStreamOperator channel,
+        allTasks.stream()
+                .filter(task -> task.getOutputChannel(0) // this filter finds all operators who have proceeding sql to
+                                                         // stream operators
+                        .getConsumers()
+                        .stream()
+                        .anyMatch(consumer -> consumer.getOperator() instanceof SqlToStreamOperator))
+                .map(task -> this.instantiateOutboundChannel(task, optimizationContext)) //
+                .forEach(chann -> { // set the string query generated above to each channel, this is bad, since in
+                                    // practice the same query will probably be executed multiple times
+                    chann.setSqlQuery(query);
+                    executionState.register(chann); // register at this execution stage so it gets executed
+                });
     }
 
     /**
-     * Retrieves the follow-up {@link ExecutionTask} of the given {@code task} unless it is not comprising a
-     * {@link JdbcExecutionOperator} and/or not in the given {@link ExecutionStage}.
+     * Instantiates the outbound {@link SqlQueryChannel} of an
+     * {@link ExecutionTask}.
      *
-     * @param task  whose follow-up {@link ExecutionTask} is requested; should have a single follower
-     * @param stage in which the follow-up {@link ExecutionTask} should be
-     * @return the said follow-up {@link ExecutionTask} or {@code null} if none
-     */
-    private ExecutionTask findJdbcExecutionOperatorTaskInStage(ExecutionTask task, ExecutionStage stage) {
-        assert task.getNumOuputChannels() == 1;
-        final Channel outputChannel = task.getOutputChannel(0);
-        final ExecutionTask consumer = WayangCollections.getSingle(outputChannel.getConsumers());
-        return consumer.getStage() == stage && consumer.getOperator() instanceof JdbcExecutionOperator ?
-                consumer :
-                null;
-    }
-
-    /**
-     * Instantiates the outbound {@link SqlQueryChannel} of an {@link ExecutionTask}.
-     *
-     * @param task                whose outbound {@link SqlQueryChannel} should be instantiated
-     * @param optimizationContext provides information about the {@link ExecutionTask}
+     * @param task                whose outbound {@link SqlQueryChannel} should be
+     *                            instantiated
+     * @param optimizationContext provides information about the
+     *                            {@link ExecutionTask}
      * @return the {@link SqlQueryChannel.Instance}
      */
-    private SqlQueryChannel.Instance instantiateOutboundChannel(ExecutionTask task,
-                                                                OptimizationContext optimizationContext) {
+    private SqlQueryChannel.Instance instantiateOutboundChannel(final ExecutionTask task,
+            final OptimizationContext optimizationContext) {
         assert task.getNumOuputChannels() == 1 : String.format("Illegal task: %s.", task);
         assert task.getOutputChannel(0) instanceof SqlQueryChannel : String.format("Illegal task: %s.", task);
 
-        SqlQueryChannel outputChannel = (SqlQueryChannel) task.getOutputChannel(0);
-        OptimizationContext.OperatorContext operatorContext = optimizationContext.getOperatorContext(task.getOperator());
+        final SqlQueryChannel outputChannel = (SqlQueryChannel) task.getOutputChannel(0);
+        final OptimizationContext.OperatorContext operatorContext = optimizationContext
+                .getOperatorContext(task.getOperator());
         return outputChannel.createInstance(this, operatorContext, 0);
     }
 
     /**
-     * Instantiates the outbound {@link SqlQueryChannel} of an {@link ExecutionTask}.
+     * Instantiates the outbound {@link SqlQueryChannel} of an
+     * {@link ExecutionTask}.
      *
-     * @param task                       whose outbound {@link SqlQueryChannel} should be instantiated
-     * @param optimizationContext        provides information about the {@link ExecutionTask}
-     * @param predecessorChannelInstance preceeding {@link SqlQueryChannel.Instance} to keep track of lineage
+     * @param task                       whose outbound {@link SqlQueryChannel}
+     *                                   should be instantiated
+     * @param optimizationContext        provides information about the
+     *                                   {@link ExecutionTask}
+     * @param predecessorChannelInstance preceeding {@link SqlQueryChannel.Instance}
+     *                                   to keep track of lineage
      * @return the {@link SqlQueryChannel.Instance}
      */
-    private SqlQueryChannel.Instance instantiateOutboundChannel(ExecutionTask task,
-                                                                OptimizationContext optimizationContext,
-                                                                SqlQueryChannel.Instance predecessorChannelInstance) {
+    private SqlQueryChannel.Instance instantiateOutboundChannel(final ExecutionTask task,
+            final OptimizationContext optimizationContext,
+            final SqlQueryChannel.Instance predecessorChannelInstance) {
         final SqlQueryChannel.Instance newInstance = this.instantiateOutboundChannel(task, optimizationContext);
         newInstance.getLineage().addPredecessor(predecessorChannelInstance.getLineage());
         return newInstance;
@@ -193,29 +209,69 @@ public class JdbcExecutor extends ExecutorTemplate {
      * @param tableName  the table to be queried
      * @param conditions conditions for the {@code WHERE} clause
      * @param projection projection for the {@code SELECT} clause
-     * @param joins join clauses for multiple {@code JOIN} clauses
+     * @param joins      join clauses for multiple {@code JOIN} clauses
      * @return the SQL query
      */
-    protected String createSqlQuery(String tableName, Collection<String> conditions, String projection, Collection<String> joins) {
-        StringBuilder sb = new StringBuilder(1000);
-        String firstTableName = projection.split("\\.")[0]; //this prolly will break on multiple selections 
-                                                            //TODO: add support for multiple selections
-        sb.append("SELECT ").append(projection).append(" FROM ").append(firstTableName);
+    protected String createSqlQuery(final String tableName, final Collection<String> conditions,
+            final String projection,
+            final Collection<String> joins, final String selectStatement) {
+        final StringBuilder sb = new StringBuilder(1000);
+
+        System.out.println("tableName: " + tableName);
+        System.out.println("conditions: " + conditions);
+        System.out.println("projection: " + projection);
+        System.out.println("joins: " + joins);
+
+        final Set<String> projectionTableNames = Arrays.stream(projection.split(","))
+                .map(name -> name.split("\\.")[0])
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        final Set<String> joinTableNames = joins.stream()
+                .map(query -> query.split(" ON ")[0].replace("JOIN ", ""))
+                .collect(Collectors.toSet());
+        final Set<String> leftJoinTableNames = joins.stream()
+                .map(query -> query.split(" ON ")[1].split("=")[0].split("\\.")[0])
+                .collect(Collectors.toSet());
+        final Set<String> rightJoinTableNames = joins.stream()
+                .map(query -> query.split(" ON ")[1].split("=")[1].split("\\.")[0])
+                .collect(Collectors.toSet());
+
+        System.out.println("porject names: ");
+        projectionTableNames.forEach(System.out::println);
+        System.out.println("joinanems");
+        joinTableNames.forEach(System.out::println);
+        System.out.println("printling");
+        System.out.println("left join nameas: " + Arrays.toString(leftJoinTableNames.toArray(String[]::new)));
+
+        System.out.println("right join nameas: " + Arrays.toString(rightJoinTableNames.toArray(String[]::new)));
+        // Union of projectionTableNames, leftJoinTableNames, and rightJoinTableNames
+        final Set<String> unionSet = new HashSet<>();
+        unionSet.addAll(projectionTableNames);
+        unionSet.addAll(leftJoinTableNames);
+        unionSet.addAll(rightJoinTableNames);
+
+        // Remove elements from joinTableNames
+        unionSet.removeAll(joinTableNames);
+
+        final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
+        System.out.println("required table names in from clause: " + requiredFromTableNames);
+        sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
         if (!joins.isEmpty()) {
-            String separator = " ";
-            for (String join : joins) {
+            final String separator = " ";
+            for (final String join : joins) {
                 sb.append(separator).append(join);
             }
         }
         if (!conditions.isEmpty()) {
             sb.append(" WHERE ");
             String separator = "";
-            for (String condition : conditions) {
+            for (final String condition : conditions) {
                 sb.append(separator).append(condition);
                 separator = " AND ";
             }
         }
         sb.append(';');
+        System.out.println("Decompiled into sql query: " + sb.toString());
         return sb.toString();
     }
 
@@ -225,7 +281,7 @@ public class JdbcExecutor extends ExecutorTemplate {
      * @param operator for that the SQL clause should be generated
      * @return the SQL clause
      */
-    private String getSqlClause(Operator operator) {
+    private String getSqlClause(final Operator operator) {
         return ((JdbcExecutionOperator) operator).createSqlClause(this.connection, this.functionCompiler);
     }
 
@@ -233,7 +289,7 @@ public class JdbcExecutor extends ExecutorTemplate {
     public void dispose() {
         try {
             this.connection.close();
-        } catch (SQLException e) {
+        } catch (final SQLException e) {
             this.logger.error("Could not close JDBC connection to PostgreSQL correctly.", e);
         }
     }
@@ -243,14 +299,15 @@ public class JdbcExecutor extends ExecutorTemplate {
         return this.platform;
     }
 
-
-    private void saveResult(FileChannel.Instance outputFileChannelInstance, ResultSet rs) throws IOException, SQLException {
+    private void saveResult(final FileChannel.Instance outputFileChannelInstance, final ResultSet rs)
+            throws IOException, SQLException {
         // Output results.
         final FileSystem outFs = FileSystems.getFileSystem(outputFileChannelInstance.getSinglePath()).get();
-        try (final OutputStreamWriter writer = new OutputStreamWriter(outFs.create(outputFileChannelInstance.getSinglePath()))) {
+        try (final OutputStreamWriter writer = new OutputStreamWriter(
+                outFs.create(outputFileChannelInstance.getSinglePath()))) {
             while (rs.next()) {
-                //System.out.println(rs.getInt(1) + " " + rs.getString(2));
-                ResultSetMetaData rsmd = rs.getMetaData();
+                // System.out.println(rs.getInt(1) + " " + rs.getString(2));
+                final ResultSetMetaData rsmd = rs.getMetaData();
                 for (int i = 1; i <= rsmd.getColumnCount(); i++) {
                     writer.write(rs.getString(i));
                     if (i < rsmd.getColumnCount()) {
@@ -261,7 +318,7 @@ public class JdbcExecutor extends ExecutorTemplate {
                     writer.write('\n');
                 }
             }
-        } catch (UncheckedIOException e) {
+        } catch (final UncheckedIOException e) {
             throw e.getCause();
         }
     }
