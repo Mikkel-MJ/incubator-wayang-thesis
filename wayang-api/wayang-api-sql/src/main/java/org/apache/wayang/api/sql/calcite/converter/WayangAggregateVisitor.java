@@ -20,8 +20,6 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Calc;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
@@ -78,10 +76,10 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                 .map(entry -> columnToTableOrigin.get(entry.getValue()) + "." + entry.getValue().getName())
                 .collect(Collectors.toList());
 
-        final ProjectionDescriptor pd = new ProjectionDescriptor<>(new AddAggCols(aggregateCalls),
+        final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(new AddAggCols(aggregateCalls),
                 Record.class, Record.class, specifiedColumnNames.toArray(String[]::new));
 
-        final MapOperator mapOperator = new MapOperator(pd);
+        final MapOperator<Record, Record> mapOperator = new MapOperator<>(pd);
 
         childOp.connectTo(0, mapOperator, 0);
 
@@ -94,7 +92,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
             aggregateOperator = reduceByOperator;
         } else {
-            final ReduceDescriptor reduceDescriptor = new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),
+            final ReduceDescriptor<Record> reduceDescriptor = new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),
                     DataUnitType.createGrouped(Record.class),
                     DataUnitType.createBasicUnchecked(Record.class));
 
@@ -113,14 +111,14 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
             reduceDescriptor.withSqlImplementation(reductionStatements.stream().collect(Collectors.joining(",")));
 
-            aggregateOperator = new GlobalReduceOperator<>(reduceDescriptor);
+            aggregateOperator = new GlobalReduceOperator<Record>(reduceDescriptor);
         }
 
         mapOperator.connectTo(0, aggregateOperator, 0);
 
-        final ProjectionDescriptor pdAgg = new ProjectionDescriptor<>(new GetResult(aggregateCalls, groupingFields),
+        final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(new GetResult(aggregateCalls, groupingFields),
                 Record.class, Record.class, specifiedColumnNames.toArray(String[]::new));
-        final MapOperator mapOperator2 = new MapOperator(pdAgg);
+        final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);
 
         aggregateOperator.connectTo(0, mapOperator2, 0);
         return mapOperator2;

@@ -78,6 +78,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
                         .getRowType()
                         .getFieldNames()
                         .get(project.left.hashCode())// value: unaliased name
+                        .strip()
                         .replaceAll("[0-9]","") //rm calcite column indexes 
             ));
         System.out.println("unaliasedNames: " + unAliasedNamesMap);
