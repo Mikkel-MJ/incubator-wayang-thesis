@@ -173,7 +173,7 @@ public class SqlToWayangRelTest {
         assert(!result.stream().anyMatch(record -> record.getString(0).equals("test1")));
     }
 
-    //@Test
+    @Test
     public void filterWithLike() throws Exception {
         SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
@@ -185,7 +185,7 @@ public class SqlToWayangRelTest {
         result.stream().forEach(System.out::println);
     }
 
-    //@Test
+    @Test
     public void joinWithLargeLeftTableIndexCorrect() throws Exception {
         SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 

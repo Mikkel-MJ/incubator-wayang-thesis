@@ -40,7 +40,7 @@ public class WayangPlan {
 
     private final Logger logger = LogManager.getLogger(this.getClass());
 
-    private final Collection<Operator> sinks = new LinkedList<>();
+    private final LinkedList<Operator> sinks = new LinkedList<>();
 
     private boolean isLoopsIsolated = false;
 
@@ -223,7 +223,7 @@ public class WayangPlan {
         StringWriter sw = new StringWriter();
 
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(this.getSinks()).getTraversedNodes();
-        operators.forEach(o -> sw.append(o.toString()));
+        operators.forEach(o -> sw.append(o.toString()+"\n"));
         return sw.toString();
     }
 }

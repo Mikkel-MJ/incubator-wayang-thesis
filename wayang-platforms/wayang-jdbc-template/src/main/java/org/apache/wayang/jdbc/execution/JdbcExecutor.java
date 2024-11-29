@@ -145,8 +145,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .filter(task -> task.getOperator() instanceof JdbcGlobalReduceOperator)
                 .collect(Collectors.toList());
 
-        System.out.println("global reduce tasks: " + globalReduceTasks);
-        System.out.println("global reduce task " + this.getSqlClause(globalReduceTasks.iterator().next().getOperator()));
         // Create the SQL query.
         final Stream<String> tableNames = tableSources.map(this::getSqlClause);
         final String joinedTableNames = tableNames.collect(Collectors.joining(","));
@@ -164,7 +162,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                         task -> task,
                         task -> !(task.getInputChannel(0).getProducerOperator() instanceof JdbcJoinOperator)));
 
-        System.out.println("task input is table: " + taskInputIsTableMap);
         // collect projections necessary in select statement
         final String collectedProjections = projectionTasks.stream()
                 .filter(task -> taskInputIsTableMap.get(task))
@@ -198,12 +195,8 @@ public class JdbcExecutor extends ExecutorTemplate {
             .map(task -> this.instantiateOutboundChannel(task, optimizationContext))
             .collect(Collectors.toList()); //
         
-
-        System.out.println("all tasks: " + allTasks);
         allTasks.forEach(task -> System.out.println("task: " + task + " canReach: " + stage.canReachMap().get(task)));
-        System.out.println("reach map keys: " + stage.canReachMap().keySet());
-        System.out.println("reach map values: " + stage.canReachMap().values());
-        System.out.println("stage out: " + stage.getOutboundChannels());
+
         assert outBoundChannels.size() == 1 : "Only one boundary operator is allowed per execution stage, but found " + outBoundChannels.size(); 
 
         // set the string query generated above to each channel
@@ -268,11 +261,6 @@ public class JdbcExecutor extends ExecutorTemplate {
             final Collection<String> joins, final String selectStatement) {
         final StringBuilder sb = new StringBuilder(1000);
 
-        System.out.println("tableName: " + tableName);
-        System.out.println("conditions: " + conditions);
-        System.out.println("projection: " + projection);
-        System.out.println("joins: " + joins);
-
         final Set<String> projectionTableNames = Arrays.stream(projection.split(","))
                 .map(name -> name.split("\\.")[0])
                 .map(String::trim)
@@ -287,33 +275,19 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .map(query -> query.split(" ON ")[1].split("=")[1].split("\\.")[0])
                 .collect(Collectors.toSet());
 
-        System.out.println("porject names: ");
-        projectionTableNames.forEach(System.out::println);
-        System.out.println("joinanems");
-        joinTableNames.forEach(System.out::println);
-        System.out.println("printling");
-        System.out.println("left join nameas: " + Arrays.toString(leftJoinTableNames.toArray(String[]::new)));
-
-        System.out.println("right join nameas: " + Arrays.toString(rightJoinTableNames.toArray(String[]::new)));
         // Union of projectionTableNames, leftJoinTableNames, and rightJoinTableNames
         final Set<String> unionSet = new HashSet<>();
         unionSet.addAll(projectionTableNames);
         unionSet.addAll(leftJoinTableNames);
         unionSet.addAll(rightJoinTableNames);
 
-        System.out.println("after additions: " + unionSet);
         // Remove elements from joinTableNames
         unionSet.removeAll(joinTableNames);
-        System.out.println("post removal: " + unionSet);
-
-        System.out.println("pojection set: " + projectionTableNames);
-        System.out.println("left join set : " + leftJoinTableNames);
-        System.out.println("right join set: " + rightJoinTableNames);
-        System.out.println("union set: " + joinTableNames);
 
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
-        System.out.println("required table names in from clause: " + requiredFromTableNames);
+
         sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
+        
         if (!joins.isEmpty()) {
             final String separator = " ";
             for (final String join : joins) {

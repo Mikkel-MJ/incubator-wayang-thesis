@@ -34,7 +34,6 @@ import java.util.Collections;
 /**
  * Mapping from {@link MapOperator} to {@link JavaMapOperator}.
  */
-@SuppressWarnings("unchecked")
 public class MapMapping implements Mapping {
 
     @Override
@@ -47,7 +46,7 @@ public class MapMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        final OperatorPattern operatorPattern = new OperatorPattern(
+        final OperatorPattern<?> operatorPattern = new OperatorPattern<MapOperator<?,?>>(
                 "map", new MapOperator<>(null, DataSetType.none(), DataSetType.none()), false);
         return SubplanPattern.createSingleton(operatorPattern);
     }
@@ -55,7 +54,7 @@ public class MapMapping implements Mapping {
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<MapOperator<?,?>>(
-                (matchedOperator, epoch) -> {System.out.println("Creating new operator with mapping: " + this + " from operator: " + matchedOperator + " functionDescriptor: " + matchedOperator.getFunctionDescriptor()); return new JavaMapOperator<>(matchedOperator).at(epoch);}
+                (matchedOperator, epoch) -> new JavaMapOperator<>(matchedOperator).at(epoch)
         );
     }
 }

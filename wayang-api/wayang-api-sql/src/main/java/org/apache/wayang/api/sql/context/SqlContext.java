@@ -20,8 +20,11 @@ package org.apache.wayang.api.sql.context;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -34,6 +37,7 @@ import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.core.api.WayangContext;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
@@ -103,9 +107,13 @@ public class SqlContext extends WayangContext {
 
         Optimizer optimizer = Optimizer.create(calciteSchema, configProperties,
                 relDataTypeFactory);
-
+    
         SqlNode sqlNode = optimizer.parseSql(sql);
         SqlNode validatedSqlNode = optimizer.validate(sqlNode);
+
+        System.out.println("sqlNode: " + sqlNode);
+        System.out.println("validated sqlNodes: " + validatedSqlNode);
+
         RelNode relNode = optimizer.convert(validatedSqlNode);
 
         PrintUtils.print("After parsing sql query", relNode);
@@ -117,6 +125,7 @@ public class SqlContext extends WayangContext {
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
                 WayangRules.WAYANG_AGGREGATE_RULE);
+
         RelNode wayangRel = optimizer.optimize(
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
@@ -124,12 +133,16 @@ public class SqlContext extends WayangContext {
 
         PrintUtils.print("After translating logical intermediate plan", wayangRel);
 
+        //Optimizer.getCluster().getPlanner().setRoot(wayangRel);
+        //RelNode wayangRelOptimized = Optimizer.getCluster().getPlanner().findBestExp();
+
         Collection<Record> collector = new ArrayList<>();
         WayangPlan wayangPlan = optimizer.convert(wayangRel, collector);
         PrintUtils.print("After optimiser conversion: ", wayangPlan);
 
         if (udfJars.length == 0) {
             System.out.println("Executing w/o udfJars");
+            //PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node -> {if (!node.isSink()) node.addTargetPlatform(Postgres.platform());});
             this.execute(getJobName(), wayangPlan);
         } else {
             System.out.println("Executing with udfJars: ");

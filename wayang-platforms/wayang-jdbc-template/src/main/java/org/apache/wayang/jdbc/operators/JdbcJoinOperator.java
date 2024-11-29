@@ -64,18 +64,21 @@ public abstract class JdbcJoinOperator<KeyType>
         super(that);
     }
 
+            
     @Override
     public String createSqlClause(Connection connection, FunctionCompiler compiler) {
-        final Tuple<String, String> left = this.keyDescriptor0.getSqlImplementation();
+        final Tuple<String, String> left  = this.keyDescriptor0.getSqlImplementation();
         final Tuple<String, String> right = this.keyDescriptor1.getSqlImplementation();
-        final String leftTableName = left.field0;
-        final String leftKey = left.field1;
-        final String rightTableName = right.field0;
-        final String rightKey = right.field1;
 
+        final String leftTableName = left.field0;
+        final String leftKey       = left.field1;
+
+        final String rightTableName = right.field0;
+        final String rightKey       = right.field1;
+        
         return "JOIN " + leftTableName + " ON " +
-            rightTableName + "." + rightKey
-            + "=" + leftTableName + "." + leftKey;
+            leftTableName + "." + leftKey
+            + "=" + rightTableName + "." + rightKey;
     }
 
     @Override

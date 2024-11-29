@@ -28,6 +28,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MapFunctionImpl;

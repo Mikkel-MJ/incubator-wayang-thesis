@@ -8,6 +8,7 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+
 import org.apache.wayang.api.sql.calcite.converter.WayangProjectVisitor;
 import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteRexSerializable;
 import org.apache.wayang.basic.data.Record;
@@ -20,9 +21,9 @@ public class MapFunctionImpl extends CalciteRexSerializable implements FunctionD
 
     @Override
     public Record apply(final Record record) {
-        List<RexNode> projects = Arrays.asList(super.serializables);
-
+        final List<RexNode> projects       = Arrays.asList(super.serializables);
         final List<Object> projectedRecord = new ArrayList<>();
+
         for (int i = 0; i < projects.size(); i++){
             final RexNode exp = projects.get(i);
             if (exp instanceof RexInputRef) {

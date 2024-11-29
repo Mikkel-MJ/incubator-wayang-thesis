@@ -19,7 +19,6 @@
 package org.apache.wayang.postgres.mapping;
 
 import org.apache.wayang.basic.data.Record;
-import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.mapping.Mapping;
@@ -31,7 +30,6 @@ import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.postgres.operators.PostgresJoinOperator;
 import org.apache.wayang.postgres.platform.PostgresPlatform;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -68,18 +66,9 @@ public class JoinMapping implements Mapping {
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<JoinOperator<Record, Record, Object>>(
-                (matchedOperator, epoch) -> {
-                    return new PostgresJoinOperator<Object>(matchedOperator).at(epoch);
-                }
+            (matchedOperator, epoch) -> {
+                return new PostgresJoinOperator<>(matchedOperator).at(epoch);
+            }
         );
-    }
-
-    /**
-     * generates the sql join string for a given operator & descriptors
-     * @param joinOperator
-     * @return
-     */
-    private String generateSqlImplementation (JoinOperator<?,?,?> joinOperator) {
-        throw new UnsupportedOperationException();
     }
 }

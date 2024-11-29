@@ -18,13 +18,19 @@
 package org.apache.wayang.api.sql.calcite.optimizer;
 
 import com.google.common.collect.ImmutableList;
+
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCostImpl;
+import org.apache.calcite.plan.RelOptSchema;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -48,6 +54,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+
 import org.apache.wayang.api.sql.calcite.converter.WayangRelConverter;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
 import org.apache.wayang.basic.data.Record;
@@ -130,7 +137,7 @@ public class Optimizer {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
-
+    
         SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
                 .withExpand(false);
@@ -142,7 +149,7 @@ public class Optimizer {
                 cluster,
                 StandardConvertletTable.INSTANCE,
                 converterConfig);
-
+    
         return new Optimizer(config, validator, converter, planner);
     }
 

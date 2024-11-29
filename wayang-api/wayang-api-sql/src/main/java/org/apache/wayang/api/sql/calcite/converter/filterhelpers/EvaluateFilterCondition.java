@@ -10,6 +10,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlKind;
+
 import org.apache.wayang.api.sql.calcite.converter.WayangFilterVisitor;
 import org.apache.wayang.basic.data.Record;
 
@@ -24,11 +25,9 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
     @Override
     public Boolean visitCall(final RexCall call) {
         final SqlKind kind = call.getKind();
-
-        if(!kind.belongsTo(WayangFilterVisitor.SUPPORTED_OPS)) {
-            throw new IllegalStateException("Cannot handle this filter predicate yet: " + kind + " during RexCall: " + call);
-        }
-
+                
+        if(!kind.belongsTo(WayangFilterVisitor.SUPPORTED_OPS)) throw new IllegalStateException("Cannot handle this filter predicate yet: " + kind + " during RexCall: " + call);
+        
         switch(kind){
             case IS_NOT_NULL:
                 assert(call.getOperands().size() == 1);
