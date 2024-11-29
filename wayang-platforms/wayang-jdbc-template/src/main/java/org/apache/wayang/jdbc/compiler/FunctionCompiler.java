@@ -21,6 +21,7 @@ package org.apache.wayang.jdbc.compiler;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.PredicateDescriptor;
+import org.apache.wayang.core.function.ReduceDescriptor;
 
 /**
  * Compiles {@link FunctionDescriptor}s to SQL clauses.
@@ -33,7 +34,7 @@ public class FunctionCompiler {
      * @param descriptor describes the predicate
      * @return a compiled SQL {@code WHERE} clause
      */
-    public String compile(PredicateDescriptor descriptor) {
+    public String compile(PredicateDescriptor<?> descriptor) {
         final String sqlImplementation = descriptor.getSqlImplementation();
         assert sqlImplementation != null;
         return sqlImplementation;
@@ -47,5 +48,15 @@ public class FunctionCompiler {
      */
     public String compile(ProjectionDescriptor<?,?> descriptor, ProjectionDescriptor<?,?> descriptor2) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Compile global reduce descriptors to their SQL equivalent
+     * @param descriptor left 
+     * @param descriptor2 right
+     * @return a compiled SQL {@code GlobalReduce} clause
+     */
+    public String compile(ReduceDescriptor<?> descriptor) {
+        return descriptor.getSqlImplementation();
     }
 }
