@@ -18,17 +18,20 @@
 
 package org.apache.wayang.postgres.operators;
 
+import java.sql.Connection;
+
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.jdbc.compiler.FunctionCompiler;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
 
 /**
  * PostgreSQL implementation of the {@link FilterOperator}.
  */
 public class PostgresProjectionOperator extends JdbcProjectionOperator implements PostgresExecutionOperator {
-
+    
     public PostgresProjectionOperator(String... fieldNames) {
         super(fieldNames);
     }
@@ -46,4 +49,9 @@ public class PostgresProjectionOperator extends JdbcProjectionOperator implement
         return new PostgresProjectionOperator(this);
     }
 
+    @Override
+    public String createSqlClause(Connection connection, FunctionCompiler compiler) {
+        //Specify each column reference to its table
+        return String.join(", ", this.getFunctionDescriptor().getFieldNames());
+    }
 }
