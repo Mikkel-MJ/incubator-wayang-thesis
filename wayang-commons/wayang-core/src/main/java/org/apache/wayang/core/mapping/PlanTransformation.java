@@ -180,6 +180,11 @@ public class PlanTransformation {
         }
     }
 
+
+    public String asPrintString(){
+        return "pattern: " + this.pattern + " replacing: " + this.isReplacing + " factory: " + this.replacementFactory;
+    }
+
     public Collection<Platform> getTargetPlatforms() {
         return this.targetPlatforms;
     }
