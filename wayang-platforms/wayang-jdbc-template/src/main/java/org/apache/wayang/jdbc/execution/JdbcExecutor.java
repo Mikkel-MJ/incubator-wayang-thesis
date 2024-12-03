@@ -114,9 +114,6 @@ public class JdbcExecutor extends ExecutorTemplate {
     @Override
     public void execute(final ExecutionStage stage, final OptimizationContext optimizationContext,
             final ExecutionState executionState) {
-        System.out.println("execute <- stage: " + stage);
-        System.out.println("execute <- state: " + executionState);
-
         final Collection<ExecutionTask> startTasks = stage.getStartTasks();
 
         // order all tasks by whether or not a given task is reachable from another
@@ -126,17 +123,10 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
 
-        System.out.println("ordered tasks: " + allTasks);
-
-        System.out.println(stage.getTerminalTasks());
-        System.out.println("executionStage out: " + stage.getOutboundChannels());
-        System.out.println("executionStage int: " + stage.getInboundChannels());
-
         assert startTasks.stream().allMatch(task -> task.getOperator() instanceof TableSource);
 
         final Stream<TableSource> tableSources = startTasks.stream()
                 .map(task -> (TableSource) task.getOperator());
-
         final Collection<ExecutionTask> filterTasks = allTasks.stream()
                 .filter(task -> task.getOperator() instanceof JdbcFilterOperator)
                 .collect(Collectors.toList());
@@ -145,9 +135,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .collect(Collectors.toList());
         final Collection<ExecutionTask> joinTasks = allTasks.stream()
                 .filter(task -> task.getOperator() instanceof JdbcJoinOperator)
-                .collect(Collectors.toList());
-        final Collection<ExecutionTask> globalReduceTasks = allTasks.stream()
-                .filter(task -> task.getOperator() instanceof JdbcGlobalReduceOperator)
                 .collect(Collectors.toList());
 
         // Create the SQL query.
@@ -224,8 +211,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         final Collection<Instance> outBoundChannels = allBoundaryOperators
                 .map(task -> this.instantiateOutboundChannel(task, optimizationContext))
                 .collect(Collectors.toList()); //
-
-        allTasks.forEach(task -> System.out.println("task: " + task + " canReach: " + stage.canReachMap().get(task)));
 
         assert outBoundChannels.size() == 1
                 : "Only one boundary operator is allowed per execution stage, but found " + outBoundChannels.size();
