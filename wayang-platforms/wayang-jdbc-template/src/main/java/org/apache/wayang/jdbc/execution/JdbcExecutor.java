@@ -19,6 +19,7 @@
 package org.apache.wayang.jdbc.execution;
 
 import org.apache.wayang.basic.channels.FileChannel;
+import org.apache.wayang.basic.operators.ReduceOperator;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.exception.WayangException;
@@ -57,7 +58,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -91,17 +92,21 @@ public class JdbcExecutor extends ExecutorTemplate {
         final Map<ExecutionTask, Set<ExecutionTask>> ordering;
 
         /**
-         * A comparator that compares two {@link ExecutionTask}s based on whether or not they are reachable from one or the other.
+         * A comparator that compares two {@link ExecutionTask}s based on whether or not
+         * they are reachable from one or the other.
+         * 
          * @param isReachableMap see {@link ExecutionStage#canReachMap()}.
          */
-        ExecutionTaskOrderingComparator(Map<ExecutionTask, Set<ExecutionTask>> isReachableMap) {
+        ExecutionTaskOrderingComparator(final Map<ExecutionTask, Set<ExecutionTask>> isReachableMap) {
             this.ordering = isReachableMap;
         }
 
         @Override
-        public int compare(ExecutionTask arg0, ExecutionTask arg1) {
-            if(ordering.get(arg0).contains(arg1)) return 1;
-            if(ordering.get(arg1).contains(arg0)) return -1;
+        public int compare(final ExecutionTask arg0, final ExecutionTask arg1) {
+            if (ordering.get(arg0).contains(arg1))
+                return 1;
+            if (ordering.get(arg1).contains(arg0))
+                return -1;
             return 0;
         }
     }
@@ -111,22 +116,22 @@ public class JdbcExecutor extends ExecutorTemplate {
             final ExecutionState executionState) {
         System.out.println("execute <- stage: " + stage);
         System.out.println("execute <- state: " + executionState);
-        
+
         final Collection<ExecutionTask> startTasks = stage.getStartTasks();
 
-        //order all tasks by whether or not a given task is reachable from another
-        //i have to cast it to a list here otherwise java wont maintain ordering
-        final List<ExecutionTask> allTasks = Arrays.stream(stage.getAllTasks().toArray(ExecutionTask[]::new)) 
-            .filter(task -> !(task.getOperator() instanceof TableSource))
-            .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
-            .collect(Collectors.toList());
+        // order all tasks by whether or not a given task is reachable from another
+        // i have to cast it to a list here otherwise java wont maintain ordering
+        final List<ExecutionTask> allTasks = Arrays.stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
+                .filter(task -> !(task.getOperator() instanceof TableSource))
+                .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
+                .collect(Collectors.toList());
 
         System.out.println("ordered tasks: " + allTasks);
 
         System.out.println(stage.getTerminalTasks());
         System.out.println("executionStage out: " + stage.getOutboundChannels());
         System.out.println("executionStage int: " + stage.getInboundChannels());
-            
+
         assert startTasks.stream().allMatch(task -> task.getOperator() instanceof TableSource);
 
         final Stream<TableSource> tableSources = startTasks.stream()
@@ -170,40 +175,88 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .collect(Collectors.joining(","));
 
         final String projection = collectedProjections.equals("") ? joinedTableNames : collectedProjections;
-        String selectStatement = collectedProjections.equals("") ? "*" : collectedProjections;
-        
-        if(globalReduceTasks.size() > 0) {
-            selectStatement = globalReduceTasks.stream().map(ExecutionTask::getOperator).map(this::getSqlClause)
-            .collect(Collectors.joining(","));
-        }
+
         final Collection<String> joins = joinTasks.stream()
                 .map(ExecutionTask::getOperator)
                 .map(this::getSqlClause)
                 .collect(Collectors.toList());
 
+        // build the select statement by looking at the last operator in the boundary
+        // pipeline
+        final List<ExecutionTask> boundaryPipeline = this
+                .dfsProjectionPipeline(stage.getTerminalTasks().iterator().next(), stage);
 
-        final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins, selectStatement);
+        // search each of the boundary operators for distinct sql clauses
+        final List<String> distinctSqlClauses = boundaryPipeline.stream()
+                .map(boundary -> boundary.getOperator())
+                .map(op -> this.getSqlClause(op).replace(" ", "")
+                        .split(","))
+                .flatMap(Arrays::stream)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // n^2
+        // if the clause is already in e.g. a min() statement filter it out
+        // TODO: this doesnt support nested statements
+        final String projectionStatement = distinctSqlClauses.stream()
+                .filter(str -> {
+                    for (final String str2 : distinctSqlClauses) {
+                        if (str2.contains(str) && str2 != str) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                })
+                .collect(Collectors.joining(","));
+
+        final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins,
+                projectionStatement);
 
         // get tasks who have sqlToStream connections:
         final Stream<ExecutionTask> allBoundaryOperators = allTasks.stream()
-                .filter(task -> task.getOutputChannel(0) // this filter finds all operators who have sqltostreamOperators
-                        .getConsumers()                        
+                .filter(task -> task.getOutputChannel(0) // this filter finds all operators who have
+                                                         // sqltostreamOperators
+                        .getConsumers()
                         .stream()
                         .anyMatch(consumer -> consumer.getOperator() instanceof SqlToStreamOperator));
 
         final Collection<Instance> outBoundChannels = allBoundaryOperators
-            .map(task -> this.instantiateOutboundChannel(task, optimizationContext))
-            .collect(Collectors.toList()); //
-        
+                .map(task -> this.instantiateOutboundChannel(task, optimizationContext))
+                .collect(Collectors.toList()); //
+
         allTasks.forEach(task -> System.out.println("task: " + task + " canReach: " + stage.canReachMap().get(task)));
 
-        assert outBoundChannels.size() == 1 : "Only one boundary operator is allowed per execution stage, but found " + outBoundChannels.size(); 
+        assert outBoundChannels.size() == 1
+                : "Only one boundary operator is allowed per execution stage, but found " + outBoundChannels.size();
 
         // set the string query generated above to each channel
         outBoundChannels.forEach(chann -> {
-                    chann.setSqlQuery(query);
-                    executionState.register(chann); // register at this execution stage so it gets executed
-                });
+            chann.setSqlQuery(query);
+            executionState.register(chann); // register at this execution stage so it gets executed
+        });
+    }
+
+    /**
+     * Searches depth-first through all projections, reduces connnected to a
+     * boundary operator
+     * 
+     * @param task  execution task at the boundary
+     * @param stage current execution stage
+     * @return an arraylist pipeline containing all projection & reductions from the
+     *         boundary operator
+     */
+    private ArrayList<ExecutionTask> dfsProjectionPipeline(final ExecutionTask task, final ExecutionStage stage) {
+        final ArrayList<ExecutionTask> pipeline = new ArrayList<>();
+        ExecutionTask current = task;
+        while (current.getOperator() instanceof JdbcGlobalReduceOperator
+                || current.getOperator() instanceof JdbcProjectionOperator) {
+            pipeline.add(current);
+            // System.out.println("at current task: " + task);
+            current = stage.getPreceedingTask(current).iterator().next(); // should only be one task in practice
+        }
+
+        return pipeline;
     }
 
     /**
@@ -287,7 +340,7 @@ public class JdbcExecutor extends ExecutorTemplate {
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
 
         sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
-        
+
         if (!joins.isEmpty()) {
             final String separator = " ";
             for (final String join : joins) {
