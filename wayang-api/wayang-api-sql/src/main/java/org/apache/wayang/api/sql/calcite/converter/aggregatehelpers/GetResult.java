@@ -10,7 +10,8 @@ import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteA
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class GetResult extends CalciteAggSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
+public class GetResult extends CalciteAggSerializable
+        implements FunctionDescriptor.SerializableFunction<Record, Record> {
     private final HashSet<Integer> groupingfields;
 
     public GetResult(final List<AggregateCall> aggregateCalls, final HashSet<Integer> groupingfields) {
@@ -20,31 +21,33 @@ public class GetResult extends CalciteAggSerializable implements FunctionDescrip
 
     @Override
     public Record apply(final Record record) {
-        final List<AggregateCall> aggregateCalls = Arrays.asList(serializables);
+        final List<AggregateCall> aggregateCalls = Arrays.asList(super.serializables);
 
         final int l = record.size();
         final int outputRecordSize = aggregateCalls.size() + groupingfields.size();
+
         final Object[] resValues = new Object[outputRecordSize];
 
-        int i = 0;
-        int j = 0;
-        for (i = 0; j < groupingfields.size(); i++) {
-            if (groupingfields.contains(i)) {
-                resValues[j] = record.getField(i);
-                j++;
-            }
+        final Integer[] groupingFieldsArray = groupingfields.toArray(Integer[]::new);
+        
+        for (int i = 0; i < groupingfields.size(); i++) {
+            resValues[i] = record.getField(groupingFieldsArray[i]);
         }
 
-        i = l - aggregateCalls.size() - 1;
+        final int offset = groupingfields.size() > 0 ? 1 : 0;
+
+        int startingIndex = l - aggregateCalls.size() - offset;
+        int resValuePos = groupingfields.size();
+
         for (final AggregateCall aggregateCall : aggregateCalls) {
             final String name = aggregateCall.getAggregation().getName();
             if (name.equals("AVG")) {
-                resValues[j] = record.getDouble(i) / record.getDouble(l - 1);
+                resValues[resValuePos] = record.getDouble(startingIndex) / record.getDouble(l - 1);
             } else {
-                resValues[j] = record.getField(i);
+                resValues[resValuePos] = record.getField(startingIndex);
             }
-            j++;
-            i++;
+            resValuePos++;
+            startingIndex++;
         }
 
         return new Record(resValues);
