@@ -13,7 +13,7 @@ sudo apt upgrade -y
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
-sudo apt-get install -y python3.11-full python3.11-dev python3-pip
+sudo apt-get install -y python3.11-full python3.11-dev python3-pip postgresql
 python3.11 --version
 
 SHELL_PROFILE="$HOME/.bashrc"

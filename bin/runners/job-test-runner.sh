@@ -22,34 +22,37 @@ output_path="${output_dir}/imdb-output.txt"
 
 cd ${output_dir} && touch imdb-output.txt
 cd ${WORKDIR}
+cd wayang-0.7.1
 
 schema_path=/work/lsbo-paper/data/JOBenchmark/schema
 
-echo "Setting up postgres schema"
+#export PGPASSWORD=ucloud
 
-psql -h postgres -U ucloud -d job -a -f $schema_path/1_schema.sql
+#echo "Setting up postgres schema"
 
-echo "Adding FK indexes"
+#psql -h postgres -U ucloud -d job -a -f $schema_path/1_schema.sql
 
-psql -h postgres -U ucloud -d job -a -f $schema_path/2_fkindexes.sql
+#echo "Adding FK indexes"
 
-echo "Copying data"
+#psql -h postgres -U ucloud -d job -a -f $schema_path/2_fkindexes.sql
 
-psql -h postgres -U ucloud -d job -a -f $schema_path/3_copy_data.sql
+#echo "Copying data"
 
-echo "Add FKs"
+#psql -h postgres -U ucloud -d job -a -f $schema_path/3_copy_data.sql
 
-psql -h postgres -U ucloud -d job -a -f $schema_path/4_add_fks.sql
+#echo "Add FKs"
+
+#psql -h postgres -U ucloud -d job -a -f $schema_path/4_add_fks.sql
 
 # Loop over each file in the directory
 for FILE in "$queries_path"/*.sql
 do
+  echo $FILE
   # Measure the time taken for the wayang-submit command
 
   SECONDS=0
   # Execute the wayang-submit command with the current file as an argument
-  output="$(./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.IMDBJOBenchmark "$FILE" 2>&1 | tail -n 10)"
-
+  output="$(./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.IMDBJOBenchmark "$FILE" 2>&1)"
   # Output the time taken, exit status, and file name
   echo "Time taken: ${SECONDS}s" >> "$output_path"
   echo "Exitcode: {$?}" >> "$output_path"
