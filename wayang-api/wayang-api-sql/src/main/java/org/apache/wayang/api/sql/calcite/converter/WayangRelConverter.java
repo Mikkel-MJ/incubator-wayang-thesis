@@ -21,21 +21,22 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.wayang.api.sql.calcite.rel.*;
+import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
 public class WayangRelConverter {
 
-    public Operator convert(final RelNode node) {
+    public Operator convert(final RelNode node, AliasFinder aliasFinder) {
         if(node instanceof WayangTableScan) {
-            return new WayangTableScanVisitor(this).visit((WayangTableScan)node);
+            return new WayangTableScanVisitor(this, aliasFinder).visit((WayangTableScan)node);
         } else if (node instanceof WayangProject) {
-            return new WayangProjectVisitor(this).visit((WayangProject) node);
+            return new WayangProjectVisitor(this, aliasFinder).visit((WayangProject) node);
         } else if (node instanceof WayangFilter) {
-            return new WayangFilterVisitor(this).visit((WayangFilter) node);
+            return new WayangFilterVisitor(this, aliasFinder).visit((WayangFilter) node);
         } else if (node instanceof WayangJoin) {
-            return new WayangJoinVisitor(this).visit((WayangJoin) node);
+            return new WayangJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
         } else if (node instanceof WayangAggregate) {
-            return new WayangAggregateVisitor(this).visit((WayangAggregate) node);
+            return new WayangAggregateVisitor(this, aliasFinder).visit((WayangAggregate) node);
         }
         throw new IllegalStateException("Operator translation not supported yet");
     }

@@ -21,6 +21,7 @@ package org.apache.wayang.api.sql.calcite.converter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
+import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
 import org.apache.wayang.api.sql.sources.fs.JavaCSVTableSource;
 import org.apache.wayang.core.plan.wayangplan.Operator;
@@ -36,8 +37,8 @@ import java.util.Objects;
 //TODO: create tablesource with column types
 //TODO: support other sources
 public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan> {
-    WayangTableScanVisitor(final WayangRelConverter wayangRelConverter) {
-        super(wayangRelConverter);
+    WayangTableScanVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
+        super(wayangRelConverter, aliasFinder);
     }
 
     @Override
@@ -48,6 +49,7 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
 
         // Get the source platform for this table
         final String tableSource = wayangRelNode.getTable().getQualifiedName().get(0);
+
         if (tableSource.equals("postgres")) {
             return new PostgresTableSource(tableName, columnNames.toArray(new String[]{}));
         }

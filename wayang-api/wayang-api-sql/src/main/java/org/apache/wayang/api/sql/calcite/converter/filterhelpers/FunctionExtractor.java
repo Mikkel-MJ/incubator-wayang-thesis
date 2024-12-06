@@ -11,8 +11,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlKind;
 
-import scala.collection.mutable.StringBuilder;
-
 public class FunctionExtractor extends RexVisitorImpl<String> {
     final List<Integer> columnIndexes;
     final String[] specifiedColumnNames;
@@ -44,23 +42,18 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall(final RexCall call) {
-        System.out.println("call: " + call);
-        System.out.println("call get sqlkind: " + call.getOperator().getKind().sql);
-        System.out.println("call get op: " + call.getOperator().getName());
-        System.out.println("call operands: " + call.operands);
-
         final List<String> subResults = new ArrayList<>();
 
         for (final RexNode operand : call.operands) {
             subResults.add(operand.accept(new FunctionExtractor(true, columnIndexes, specifiedColumnNames)));
         }
 
-        System.out.println("subresults: " + subResults);
-
-        // if the rexCall has just one child like in the case of LIKE with a negation
-        // i.e. NOT LIKE
-        // then we need to prepend the operator name
         if (subResults.size() == 1) {
+            // if the rexCall is (IS *) 
+            if(call.getOperator().getName().contains("IS")) return subResults.get(0) + " " + call.getOperator().getName();
+            // if the rexCall (NOT) has just one child like in the case of LIKE with a negation
+            // i.e. NOT LIKE
+            // then we need to prepend the operator name
             return " " + call.getOperator().getName() + " (" + subResults.get(0) + ")" ;
         }
 

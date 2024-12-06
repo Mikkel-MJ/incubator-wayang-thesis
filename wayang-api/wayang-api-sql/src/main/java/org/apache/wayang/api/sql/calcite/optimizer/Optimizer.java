@@ -57,6 +57,7 @@ import org.apache.calcite.tools.RuleSets;
 
 import org.apache.wayang.api.sql.calcite.converter.WayangRelConverter;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
+import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.LocalCallbackSink;
 import org.apache.wayang.core.plan.wayangplan.Operator;
@@ -251,14 +252,14 @@ public class Optimizer {
     }
 
     public WayangPlan convert(RelNode relNode) {
-        return convert(relNode, new ArrayList<>());
+        return convert(relNode, new ArrayList<>(), null);
     }
 
-    public WayangPlan convert(RelNode relNode, Collection<Record> collector) {
+    public WayangPlan convert(RelNode relNode, Collection<Record> collector, AliasFinder aliasFinder) {
 
         LocalCallbackSink<Record> sink = LocalCallbackSink.createCollectingSink(collector, Record.class);
 
-        Operator op = new WayangRelConverter().convert(relNode);
+        Operator op = new WayangRelConverter().convert(relNode, aliasFinder);
 
         op.connectTo(0, sink, 0);
         return new WayangPlan(sink);

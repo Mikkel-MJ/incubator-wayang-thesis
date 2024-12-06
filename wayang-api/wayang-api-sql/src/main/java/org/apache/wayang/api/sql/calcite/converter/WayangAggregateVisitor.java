@@ -21,11 +21,13 @@ package org.apache.wayang.api.sql.calcite.converter;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataTypeField;
+
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
+import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
@@ -45,14 +47,13 @@ import java.util.stream.Collectors;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
-    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter) {
-        super(wayangRelConverter);
+    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
+        super(wayangRelConverter, aliasFinder);
     }
 
     @Override
     Operator visit(final WayangAggregate wayangRelNode) {
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
-        Operator aggregateOperator;
+        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
         final List<AggregateCall> aggregateCalls = ((Aggregate) wayangRelNode).getAggCallList();
         final int groupCount = wayangRelNode.getGroupCount();
@@ -66,33 +67,43 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                                 .getInput()
                                 .getRowType()
                                 .getFieldList()
-                                .get(agg.left.getArgList().get(0))// value: unaliased name
+                                .get(agg.left.getArgList().get(0))// value: unaliased
+                                                                  // name
                 ));
 
         final Map<RelDataTypeField, String> columnToTableOrigin = CalciteSources
                 .createColumnToTableOriginMap(wayangRelNode.getInput());
 
+        final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
+
         final List<String> specifiedColumnNames = unAliasedNamesMap.entrySet().stream()
-                .map(entry -> columnToTableOrigin.get(entry.getValue()) + "." + entry.getValue().getName())
+                .map(entry -> columnToTableOrigin.get(entry.getValue()) + "."
+                        + entry.getValue().getName())
+                .map(badName -> CalciteSources.findSqlName(badName, catalog))
                 .collect(Collectors.toList());
 
-        final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(new AddAggCols(aggregateCalls),
+        final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
+                new AddAggCols(aggregateCalls),
                 Record.class, Record.class, specifiedColumnNames.toArray(String[]::new));
 
         final MapOperator<Record, Record> mapOperator = new MapOperator<>(pd);
 
         childOp.connectTo(0, mapOperator, 0);
 
+        Operator aggregateOperator;
+
         if (groupCount > 0) {
             ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
-                    new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class, Object.class),
+                    new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class,
+                            Object.class),
                     new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),
                             DataUnitType.createGrouped(Record.class),
                             DataUnitType.createBasicUnchecked(Record.class)));
 
             aggregateOperator = reduceByOperator;
         } else {
-            final ReduceDescriptor<Record> reduceDescriptor = new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),
+            final ReduceDescriptor<Record> reduceDescriptor = new ReduceDescriptor<>(
+                    new AggregateFunction(aggregateCalls),
                     DataUnitType.createGrouped(Record.class),
                     DataUnitType.createBasicUnchecked(Record.class));
 
@@ -106,22 +117,25 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
             // we have an assumption that the ordering is maintained between each list
             for (int i = 0; i < reductionFunctions.size(); i++) {
-                reductionStatements.add(reductionFunctions.get(i) + "(" + specifiedColumnNames.get(i) + ")");
+                reductionStatements.add(
+                        reductionFunctions.get(i) + "(" + specifiedColumnNames.get(i) + ")");
             }
 
-            reduceDescriptor.withSqlImplementation(reductionStatements.stream().collect(Collectors.joining(",")));
+            reduceDescriptor.withSqlImplementation(
+                    reductionStatements.stream().collect(Collectors.joining(",")));
 
             aggregateOperator = new GlobalReduceOperator<Record>(reduceDescriptor);
         }
 
         mapOperator.connectTo(0, aggregateOperator, 0);
 
-        final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(new GetResult(aggregateCalls, groupingFields),
+        final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(
+                new GetResult(aggregateCalls, groupingFields),
                 Record.class, Record.class, specifiedColumnNames.toArray(String[]::new));
+
         final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);
 
         aggregateOperator.connectTo(0, mapOperator2, 0);
         return mapOperator2;
-
     }
 }

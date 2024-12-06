@@ -21,6 +21,7 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
+import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
@@ -44,30 +45,21 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
-    WayangProjectVisitor(final WayangRelConverter wayangRelConverter) {
-        super(wayangRelConverter);
+    WayangProjectVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
+        super(wayangRelConverter, aliasFinder);
     }
 
     @Override
     Operator visit(final WayangProject wayangRelNode) {
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
+        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
         final Map<?, ?> fieldToTableOrigin = CalciteSources.createColumnToTableOriginMap(wayangRelNode);
 
         final List<RelDataTypeField> projectFields = wayangRelNode // get columns to be projected
                 .getRowType()
                 .getFieldList();
-        System.out.println("field dump: ");
-        projectFields.stream().map(node -> node.getIndex()).forEach(System.out::println);
 
-        System.out.println("child rows: " + wayangRelNode.getInput().getRowType().getFieldList());
-        System.out.println("project fields: " + projectFields);
-        System.out.println("field names: " + wayangRelNode.getRowType().getFieldNames());
-        System.out.println("projects: " + wayangRelNode.getProjects());
-        System.out.println("field list: " + wayangRelNode.getRowType().getFieldList());
-        System.out.println("named projects: " + wayangRelNode.getNamedProjects());
-        System.out.println(wayangRelNode.getProjects().get(0).getType());
-        System.out.println("input field names: "  + wayangRelNode.getInput().getRowType().getFieldNames());
+        System.out.println("input field list: " + wayangRelNode.getInput().getRowType().getFieldList());
 
         final Map<String, String> unAliasedNamesMap = wayangRelNode.getNamedProjects()
             .stream()
@@ -78,30 +70,25 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
                         .getRowType()
                         .getFieldNames()
                         .get(project.left.hashCode())// value: unaliased name
-                        .strip()
-                        .replaceAll("[0-9]","") //rm calcite column indexes 
             ));
-        System.out.println("unaliasedNames: " + unAliasedNamesMap);
+
+        final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
+
+        
         //convert the columns in projection to a naming schema of table.column for jdbc-usage. Move l8r.
-        final String[] projectNames = projectFields 
+        /*         final String[] projectNames = projectFields 
                 .stream()
                 .map(field -> fieldToTableOrigin.get(field) + "." + unAliasedNamesMap.get(field.getName()))
+                .map(badName -> CalciteSources.findSqlName(badName, catalog))
                 .toArray(String[]::new);
-
-        System.out.println("projection debuggign: ");
-        System.out.println(projectFields);
-        System.out.println(Arrays.toString(projectNames));
-        System.out.println("map: " + fieldToTableOrigin);
-
-        System.out.println("fields:");
-        wayangRelNode.getRowType().getFieldList().stream().map(field -> field.getIndex()).forEach(System.out::println);
-        wayangRelNode.getRowType().getFieldList().stream().map(field -> field.getName()).forEach(System.out::println);
-
-        System.out.println("printing projections details: ");
-        System.out.println(Arrays.toString(projectNames));
+        */
+        final String[] projectNames = projectFields 
+            .stream()
+            .map(field -> fieldToTableOrigin.get(field) + "." + unAliasedNamesMap.get(field.getName()))
+            .map(badName -> CalciteSources.findSqlName(badName, catalog))
+            .toArray(String[]::new);
 
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
-        System.out.println("mapFunc projects: " + projects);
 
         final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
                 new MapFunctionImpl(projects),
@@ -109,7 +96,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
                 Record.class,
                 projectNames // names of projected columns
         );
-
+        
         final MapOperator<Record, Record> projection = new MapOperator<Record, Record>(pd);
 
         childOp.connectTo(0, projection, 0);
