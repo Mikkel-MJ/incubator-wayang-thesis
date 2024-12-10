@@ -35,8 +35,8 @@ import java.util.Optional;
  * PostgreSQL implementation for the {@link JoinOperator}.
  */
 public abstract class JdbcJoinOperator<KeyType>
-    extends JoinOperator<Record, Record, KeyType>
-    implements JdbcExecutionOperator {
+        extends JoinOperator<Record, Record, KeyType>
+        implements JdbcExecutionOperator {
 
     /**
      * Creates a new instance.
@@ -44,15 +44,13 @@ public abstract class JdbcJoinOperator<KeyType>
      * @see JoinOperator#JoinOperator(Record, Record...)
      */
     public JdbcJoinOperator(
-        TransformationDescriptor<Record, KeyType> keyDescriptor0,
-        TransformationDescriptor<Record, KeyType> keyDescriptor1
-    ) {
+            TransformationDescriptor<Record, KeyType> keyDescriptor0,
+            TransformationDescriptor<Record, KeyType> keyDescriptor1) {
         super(
-            keyDescriptor0,
-            keyDescriptor1,
-            DataSetType.createDefault(Record.class),
-            DataSetType.createDefault(Record.class)
-        );
+                keyDescriptor0,
+                keyDescriptor1,
+                DataSetType.createDefault(Record.class),
+                DataSetType.createDefault(Record.class));
     }
 
     /**
@@ -64,21 +62,32 @@ public abstract class JdbcJoinOperator<KeyType>
         super(that);
     }
 
-            
     @Override
     public String createSqlClause(Connection connection, FunctionCompiler compiler) {
-        final Tuple<String, String> left  = this.keyDescriptor0.getSqlImplementation();
+        final Tuple<String, String> left = this.keyDescriptor0.getSqlImplementation();
         final Tuple<String, String> right = this.keyDescriptor1.getSqlImplementation();
 
-        final String leftTableName = left.field0;
-        final String leftKey       = left.field1;
+        // LHS of join condition:
+        final String leftTableName = left.field0.strip();
+        final String leftKey = left.field1.strip();
 
-        final String rightTableName = right.field0;
-        final String rightKey       = right.field1;
-        
-        return "JOIN " + leftTableName + " ON " +
-            leftTableName + "." + leftKey
-            + "=" + rightTableName + "." + rightKey;
+        // RHS of join condition
+        final String rightTableName = right.field0.strip();
+        final String rightKey = right.field1.strip();
+
+
+        // TODO: this aliasing should be handled more smoothly mb it could be a field?
+        if (leftTableName.contains(" AS ")) {
+            final String unaliasedName = leftTableName.split(" AS ")[0].strip();
+            return "JOIN " + leftTableName + " ON " + unaliasedName + "." + leftKey + "=" + rightTableName + "."
+                    + rightKey;
+        } else if (rightTableName.contains(" AS ")) {
+            final String unaliasedName = rightTableName.split(" AS ")[0].strip();
+            return "JOIN " + rightTableName + " ON " + leftTableName + "." + leftKey + "=" + unaliasedName + "."
+                    + rightKey;
+        }
+
+        return "JOIN " + leftTableName + " ON " + leftTableName + "." + leftKey + "=" + rightTableName + "." + rightKey;
     }
 
     @Override
@@ -88,8 +97,8 @@ public abstract class JdbcJoinOperator<KeyType>
 
     @Override
     public Optional<LoadProfileEstimator> createLoadProfileEstimator(Configuration configuration) {
-        final Optional<LoadProfileEstimator> optEstimator =
-                JdbcExecutionOperator.super.createLoadProfileEstimator(configuration);
+        final Optional<LoadProfileEstimator> optEstimator = JdbcExecutionOperator.super.createLoadProfileEstimator(
+                configuration);
         LoadProfileEstimators.nestUdfEstimator(optEstimator, this.keyDescriptor0, configuration);
         LoadProfileEstimators.nestUdfEstimator(optEstimator, this.keyDescriptor1, configuration);
         return optEstimator;
