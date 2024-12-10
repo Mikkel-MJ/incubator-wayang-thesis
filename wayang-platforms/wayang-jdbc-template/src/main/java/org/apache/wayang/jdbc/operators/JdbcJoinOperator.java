@@ -78,11 +78,11 @@ public abstract class JdbcJoinOperator<KeyType>
 
         // TODO: this aliasing should be handled more smoothly mb it could be a field?
         if (leftTableName.contains(" AS ")) {
-            final String unaliasedName = leftTableName.split(" AS ")[0].strip();
+            final String unaliasedName = leftTableName.split(" AS ")[1].strip();
             return "JOIN " + leftTableName + " ON " + unaliasedName + "." + leftKey + "=" + rightTableName + "."
                     + rightKey;
         } else if (rightTableName.contains(" AS ")) {
-            final String unaliasedName = rightTableName.split(" AS ")[0].strip();
+            final String unaliasedName = rightTableName.split(" AS ")[1].strip();
             return "JOIN " + rightTableName + " ON " + leftTableName + "." + leftKey + "=" + unaliasedName + "."
                     + rightKey;
         }

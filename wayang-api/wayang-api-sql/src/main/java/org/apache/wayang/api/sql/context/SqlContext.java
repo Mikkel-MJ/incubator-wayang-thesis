@@ -20,13 +20,9 @@ package org.apache.wayang.api.sql.context;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.sql2rel.SqlToRelConverter.SqlIdentifierFinder;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
@@ -35,13 +31,11 @@ import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
-import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.core.api.WayangContext;
-import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
@@ -51,12 +45,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.List;
-import java.util.Map;
 
 public class SqlContext extends WayangContext {
 
@@ -126,7 +117,7 @@ public class SqlContext extends WayangContext {
         visitor.visit(relNode, 0, null);
 
         final AliasFinder aliasFinder = new AliasFinder(visitor);
-        
+
         PrintUtils.print("After parsing sql query", relNode);
 
         final RuleSet rules = RuleSets.ofList(

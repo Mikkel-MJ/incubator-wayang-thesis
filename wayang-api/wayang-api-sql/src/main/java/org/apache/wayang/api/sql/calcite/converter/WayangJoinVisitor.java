@@ -19,6 +19,7 @@
 package org.apache.wayang.api.sql.calcite.converter;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,7 +51,7 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 
 public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
 
-    WayangJoinVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
+    WayangJoinVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
         super(wayangRelConverter, aliasFinder);
     }
 
@@ -82,15 +83,14 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final scala.Tuple2<Integer, Integer> keyExtractor = this.determineKeyExtractionDirection(leftKeyIndex,
                 rightKeyIndex, wayangRelNode);
 
-        final String leftFieldName = wayangRelNode.getInput(0) // get left col name
-                .getRowType()
-                .getFieldNames()
-                .get(keyExtractor._1());
+        final RelDataTypeField leftField = wayangRelNode.getLeft().getRowType().getFieldList().get(keyExtractor._1());
+        final RelDataTypeField rightField = wayangRelNode.getRight().getRowType().getFieldList().get(keyExtractor._2());
 
-        final String rightFieldName = wayangRelNode.getInput(1) // right col name
-                .getRowType()
-                .getFieldNames()
-                .get(keyExtractor._2());
+        // get left col name
+        final String leftFieldName = leftField.getName();
+
+        // right col name
+        final String rightFieldName = rightField.getName();
 
         // fetch table names from joining columns
         final Map<RelDataTypeField, String> columnToOriginMapLeft = CalciteSources
@@ -101,10 +101,9 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 .createColumnToTableOriginMap(wayangRelNode); // TODO: move, since this is only used for
                                                               // sql platforms
 
-        final String leftTableName = columnToOriginMapLeft
-                .get(wayangRelNode.getLeft().getRowType().getFieldList().get(keyExtractor._1()));
-        final String rightTableName = columnToOriginMapRight
-                .get(wayangRelNode.getRight().getRowType().getFieldList().get(keyExtractor._2()));
+        final String leftTableName = columnToOriginMapLeft.get(leftField);
+        final String rightTableName = columnToOriginMapRight.get(rightField);
+
         // TODO: move, used for sql string building
         final List<String> affectedTables = wayangRelNode.getRowType().getFieldList().stream()
                 .map(joinTableOrigins::get)
@@ -120,15 +119,21 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String cleanedRightFieldName = CalciteSources
                 .findSqlName(rightTableName + "." + rightFieldName, catalog).split("\\.")[1];
 
+        // find the sql table alias for the left and right table, so it can be used in
+        // the transform descriptor
+        final String leftTableAlias = aliasFinder.columnIndexToTableName.get(leftKeyIndex);
+        final String rightTableAlias = aliasFinder.columnIndexToTableName.get(rightKeyIndex);
+
+        // if join is joining the LHS of a join condition "JOIN left ON left = right" then we pick the
+        // first case, otherwise the 2nd "JOIN right ON left = right"
         final JoinOperator<Record, Record, SqlField> join = joiningTableName == leftTableName
                 ? this.getJoinOperator(keyExtractor._1(), keyExtractor._2(), wayangRelNode,
-                        leftTableName, cleanedLeftFieldName, rightTableName,
+                        leftTableName + " AS " + leftTableAlias, cleanedLeftFieldName, rightTableAlias,
                         cleanedRightFieldName)
                 : this.getJoinOperator(keyExtractor._1(), keyExtractor._2(), wayangRelNode,
-                        rightTableName, cleanedRightFieldName, leftTableName,
+                        rightTableName + " AS " + rightTableAlias, cleanedRightFieldName, leftTableAlias,
                         cleanedLeftFieldName);
 
-        // call connectTo on both operators (left and right)
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
@@ -136,6 +141,13 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String[] joinTableNames = { leftTableName + "." + leftFieldName,
                 rightTableName + "." + rightFieldName };
 
+        System.out.println("join table names: " + Arrays.toString(joinTableNames));
+        System.out.println("left key ex " + keyExtractor._1() + ", left field index: " + leftField.getIndex());
+        System.out.println("right key ex " + keyExtractor._2() + ", right key index: " + rightField.getIndex());
+        System.out.println("left key index: " + leftKeyIndex + ", right key index: " + rightKeyIndex);
+        System.out.println("leftTableName: " + leftTableName + ", alias: "
+                + aliasFinder.columnIndexToTableName.get(leftKeyIndex) + ", rightTableName: " + rightTableName
+                + ", alias: " + aliasFinder.columnIndexToTableName.get(rightKeyIndex));
         // Join returns Tuple2 - map to a Record
         final SerializableFunction<Tuple2, Record> mp = new MapFunctionImpl();
 
@@ -203,22 +215,12 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final TransformationDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(leftKeyIndex),
                 Record.class, SqlField.class, leftFieldName)
-                .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName); // for
-                                                                                                      // jdbc
-                                                                                                      // usage
-                                                                                                      // mb
-                                                                                                      // move
-                                                                                                      // l8r
+                .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName);
 
         final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(rightKeyIndex),
                 Record.class, SqlField.class, rightFieldName)
-                .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName); // for
-                                                                                                        // jdbc
-                                                                                                        // usage
-                                                                                                        // mb
-                                                                                                        // move
-                                                                                                        // l8r
+                .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName);
 
         final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
                 leftProjectionDescriptor,

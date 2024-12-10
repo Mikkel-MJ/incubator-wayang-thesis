@@ -38,7 +38,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
@@ -53,7 +52,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
     Operator visit(final WayangProject wayangRelNode) {
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
-        final Map<?, ?> fieldToTableOrigin = CalciteSources.createColumnToTableOriginMap(wayangRelNode);
+        final Map<RelDataTypeField, String> fieldToTableOrigin = CalciteSources.createColumnToTableOriginMap(wayangRelNode);
 
         final List<RelDataTypeField> projectFields = wayangRelNode // get columns to be projected
                 .getRowType()
@@ -71,17 +70,15 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
                         .getFieldNames()
                         .get(project.left.hashCode())// value: unaliased name
             ));
+        List<Integer> columnIndexes = wayangRelNode.getProjects().stream().map(proj -> proj.hashCode()).collect(Collectors.toList());
+        List<RelDataTypeField> fields = columnIndexes.stream().map(colindex -> wayangRelNode.getInput().getRowType().getFieldList().get(colindex)).collect(Collectors.toList());
+        System.out.println("proj oclumn indexes: " + columnIndexes);
+        System.out.println("proj fields: " + fields);
+        System.out.println("aliased: " + fields.stream().map(field -> aliasFinder.columnIndexToTableName.get(field.getIndex())).collect(Collectors.toList()));
 
         final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
 
-        
-        //convert the columns in projection to a naming schema of table.column for jdbc-usage. Move l8r.
-        /*         final String[] projectNames = projectFields 
-                .stream()
-                .map(field -> fieldToTableOrigin.get(field) + "." + unAliasedNamesMap.get(field.getName()))
-                .map(badName -> CalciteSources.findSqlName(badName, catalog))
-                .toArray(String[]::new);
-        */
+        System.out.println("project catalog: " + catalog);
         final String[] projectNames = projectFields 
             .stream()
             .map(field -> fieldToTableOrigin.get(field) + "." + unAliasedNamesMap.get(field.getName()))

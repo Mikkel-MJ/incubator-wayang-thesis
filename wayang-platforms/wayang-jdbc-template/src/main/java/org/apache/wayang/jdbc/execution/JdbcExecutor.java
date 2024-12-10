@@ -19,12 +19,9 @@
 package org.apache.wayang.jdbc.execution;
 
 import org.apache.wayang.basic.channels.FileChannel;
-import org.apache.wayang.basic.operators.ReduceOperator;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.core.api.Job;
-import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.optimizer.OptimizationContext;
-import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.plan.executionplan.ExecutionStage;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
 import org.apache.wayang.core.plan.wayangplan.Operator;
@@ -32,7 +29,6 @@ import org.apache.wayang.core.platform.ExecutionState;
 import org.apache.wayang.core.platform.Executor;
 import org.apache.wayang.core.platform.ExecutorTemplate;
 import org.apache.wayang.core.platform.Platform;
-import org.apache.wayang.core.util.WayangCollections;
 import org.apache.wayang.core.util.fs.FileSystem;
 import org.apache.wayang.core.util.fs.FileSystems;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel;
@@ -43,7 +39,6 @@ import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
 import org.apache.wayang.jdbc.operators.JdbcGlobalReduceOperator;
 import org.apache.wayang.jdbc.operators.JdbcJoinOperator;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
-import org.apache.wayang.jdbc.operators.JdbcTableSource;
 import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
 import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
 
@@ -118,7 +113,11 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         // order all tasks by whether or not a given task is reachable from another
         // i have to cast it to a list here otherwise java wont maintain ordering
-        final List<ExecutionTask> allTasks = Arrays.stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
+        final List<ExecutionTask> allTasksWithTableSources = Arrays.stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
+                .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
+                .collect(Collectors.toList());
+
+        final List<ExecutionTask> allTasks = allTasksWithTableSources.stream()
                 .filter(task -> !(task.getOperator() instanceof TableSource))
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
@@ -156,7 +155,7 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         // collect projections necessary in select statement
         final String collectedProjections = projectionTasks.stream()
-                .filter(task -> taskInputIsTableMap.get(task))
+                .filter(taskInputIsTableMap::get)
                 .map(task -> task.getOperator())
                 .map(this::getSqlClause)
                 .collect(Collectors.joining(","));
@@ -176,15 +175,14 @@ public class JdbcExecutor extends ExecutorTemplate {
         // search each of the boundary operators for distinct sql clauses
         final List<String> distinctSqlClauses = boundaryPipeline.stream()
                 .map(boundary -> boundary.getOperator())
-                .map(op -> this.getSqlClause(op).replace(" ", "")
-                        .split(","))
+                .map(op -> this.getSqlClause(op).replace(" ", "").split(","))
                 .flatMap(Arrays::stream)
                 .distinct()
                 .collect(Collectors.toList());
 
         // n^2
         // if the clause is already in e.g. a min() statement filter it out
-        // TODO: this doesnt support nested statements
+        // TODO: this doesnt support nested select statements
         final String projectionStatement = distinctSqlClauses.stream()
                 .filter(str -> {
                     for (final String str2 : distinctSqlClauses) {
@@ -197,13 +195,16 @@ public class JdbcExecutor extends ExecutorTemplate {
                 })
                 .collect(Collectors.joining(","));
 
+        final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
+
         final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins,
-                projectionStatement);
+                selectStatement);
 
         // get tasks who have sqlToStream connections:
-        final Stream<ExecutionTask> allBoundaryOperators = allTasks.stream()
-                .filter(task -> task.getOutputChannel(0) // this filter finds all operators who have
-                                                         // sqltostreamOperators
+        // this filter finds all operators who have
+        // sqltostreamOperator
+        final Stream<ExecutionTask> allBoundaryOperators = allTasksWithTableSources.stream()
+                .filter(task -> task.getOutputChannel(0)
                         .getConsumers()
                         .stream()
                         .anyMatch(consumer -> consumer.getOperator() instanceof SqlToStreamOperator));
@@ -212,7 +213,7 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .map(task -> this.instantiateOutboundChannel(task, optimizationContext))
                 .collect(Collectors.toList()); //
 
-        assert outBoundChannels.size() == 1
+        assert outBoundChannels.size() <= 1
                 : "Only one boundary operator is allowed per execution stage, but found " + outBoundChannels.size();
 
         // set the string query generated above to each channel
@@ -304,7 +305,10 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .map(String::trim)
                 .collect(Collectors.toSet());
         final Set<String> joinTableNames = joins.stream()
-                .map(query -> query.split(" ON ")[0].replace("JOIN ", ""))
+                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[0])
+                .collect(Collectors.toSet());
+        final Set<String> joinTableAliases = joins.stream()
+                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[1])
                 .collect(Collectors.toSet());
         final Set<String> leftJoinTableNames = joins.stream()
                 .map(query -> query.split(" ON ")[1].split("=")[0].split("\\.")[0])
@@ -319,9 +323,16 @@ public class JdbcExecutor extends ExecutorTemplate {
         unionSet.addAll(leftJoinTableNames);
         unionSet.addAll(rightJoinTableNames);
 
-        // Remove elements from joinTableNames
+        // Remove tables that will be joined on, from the from clause
         unionSet.removeAll(joinTableNames);
-
+        // Remove aliases from the from statement:
+        unionSet.removeAll(joinTableAliases);
+        System.out.println("aliases: " + joinTableAliases);
+        System.out.println("projections: " + projectionTableNames);
+        System.out.println("left joins: " + leftJoinTableNames);
+        System.out.println("right joins: " + rightJoinTableNames);
+        System.out.println("joins: " + joinTableNames);
+        System.out.println(unionSet);
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
 
         sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);

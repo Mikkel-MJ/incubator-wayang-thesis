@@ -137,5 +137,6 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
         aggregateOperator.connectTo(0, mapOperator2, 0);
         return mapOperator2;
+
     }
 }
