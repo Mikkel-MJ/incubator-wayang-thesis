@@ -173,12 +173,14 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .dfsProjectionPipeline(stage.getTerminalTasks().iterator().next(), stage);
 
         // search each of the boundary operators for distinct sql clauses
+        /* 
         final List<String> distinctSqlClauses = boundaryPipeline.stream()
                 .map(boundary -> boundary.getOperator())
                 .map(op -> this.getSqlClause(op).split(","))
                 .flatMap(Arrays::stream)
                 .distinct()
                 .collect(Collectors.toList());
+        */
 
         // search each of the boundary operators for distinct sql clauses
         final List<String> nonDistinctSqlClauses = boundaryPipeline.stream()

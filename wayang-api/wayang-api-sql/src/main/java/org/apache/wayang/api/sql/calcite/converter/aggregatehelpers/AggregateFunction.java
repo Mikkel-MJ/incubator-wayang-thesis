@@ -57,8 +57,6 @@ public class AggregateFunction extends CalciteAggSerializable implements Functio
             counter++;
         }
     
-        System.out.println("left: " + record1 + ", right: " + record2);
-        System.out.println("got value: " + Arrays.toString(resValues));
         return new Record(resValues);
     }
 
