@@ -175,16 +175,24 @@ public class JdbcExecutor extends ExecutorTemplate {
         // search each of the boundary operators for distinct sql clauses
         final List<String> distinctSqlClauses = boundaryPipeline.stream()
                 .map(boundary -> boundary.getOperator())
-                .map(op -> this.getSqlClause(op).replace(" ", "").split(","))
+                .map(op -> this.getSqlClause(op).split(","))
                 .flatMap(Arrays::stream)
                 .distinct()
                 .collect(Collectors.toList());
 
+        // search each of the boundary operators for distinct sql clauses
+        final List<String> nonDistinctSqlClauses = boundaryPipeline.stream()
+                .map(boundary -> boundary.getOperator())
+                .map(op -> this.getSqlClause(op).split(", "))
+                .flatMap(Arrays::stream)
+                .collect(Collectors.toList());
+
+        System.out.println("non distinct: " + nonDistinctSqlClauses);
         // n^2
         // if the clause is already in e.g. a min() statement filter it out
         // TODO: this doesnt support nested select statements
-        final String projectionStatement = distinctSqlClauses.stream()
-                .filter(str -> {
+        final String projectionStatement = nonDistinctSqlClauses.stream()
+         /*        .filter(str -> {
                     for (final String str2 : distinctSqlClauses) {
                         if (str2.contains(str) && str2 != str) {
                             return false;
@@ -192,9 +200,9 @@ public class JdbcExecutor extends ExecutorTemplate {
                     }
 
                     return true;
-                })
+                } )*/
                 .collect(Collectors.joining(","));
-
+        System.out.println("projection statement: " + projectionStatement);
         final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
 
         final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins,
