@@ -40,10 +40,11 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.types.DataUnitType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
@@ -53,38 +54,46 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
     @Override
     Operator visit(final WayangAggregate wayangRelNode) {
+        // fetch the indexes of colmuns affected, in calcite aggregates and projections
+        // have their own catalog, we need to find the column indexes in the global
+        // catalog
+        final List<Integer> columnIndexes = wayangRelNode.getAggCallList().stream()
+                .map(agg -> agg.getArgList().get(0))
+                .collect(Collectors.toList());
+
+        // calcite's projections and aggregates use aliased fields this fetches the
+        // dealiased fields, from global catalog
+        final List<RelDataTypeField> dealiasedFields = AliasFinder.getGlobalCatalogColumnName(wayangRelNode, columnIndexes);
+
+        // Local catalog for removing calcite's column identifier
+        final List<String> dealiasedCatalog = CalciteSources.getSqlColumnNames(wayangRelNode);
+
+        // we specify the dealised fields with their table name in a table.column manner
+        final List<String> tableSpecifiedFields = dealiasedFields.stream()
+                .map(field -> aliasFinder.columnIndexToTableName.get(field.getIndex()) + "." + field.getName())
+                .map(badName -> CalciteSources.findSqlName(badName, dealiasedCatalog))
+                .collect(Collectors.toList());
+
+        // we add the alias back so we have table.column AS alias
+        final String[] aliasedFields = IntStream.range(0, tableSpecifiedFields.size())
+                .mapToObj(index -> tableSpecifiedFields.get(index) + " AS "
+                        + wayangRelNode.getRowType().getFieldList().get(index).getName())
+                .toArray(String[]::new);
+        
+        System.out.println("dealiased catalog: " + dealiasedCatalog);
+        System.out.println("dealiased: " + dealiasedFields);
+        System.out.println("table specs: " + tableSpecifiedFields);
+        System.out.println("aggregate visitor fields: " + Arrays.toString(aliasedFields));
+
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
         final List<AggregateCall> aggregateCalls = ((Aggregate) wayangRelNode).getAggCallList();
         final int groupCount = wayangRelNode.getGroupCount();
         final HashSet<Integer> groupingFields = new HashSet<>(wayangRelNode.getGroupSet().asSet());
 
-        final Map<String, RelDataTypeField> unAliasedNamesMap = wayangRelNode.getNamedAggCalls()
-                .stream()
-                .collect(Collectors.toMap(
-                        agg -> agg.right, // key: project column index
-                        agg -> wayangRelNode
-                                .getInput()
-                                .getRowType()
-                                .getFieldList()
-                                .get(agg.left.getArgList().get(0))// value: unaliased
-                                                                  // name
-                ));
-
-        final Map<RelDataTypeField, String> columnToTableOrigin = CalciteSources
-                .createColumnToTableOriginMap(wayangRelNode.getInput());
-
-        final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
-
-        final List<String> specifiedColumnNames = unAliasedNamesMap.entrySet().stream()
-                .map(entry -> columnToTableOrigin.get(entry.getValue()) + "."
-                        + entry.getValue().getName())
-                .map(badName -> CalciteSources.findSqlName(badName, catalog))
-                .collect(Collectors.toList());
-
         final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
                 new AddAggCols(aggregateCalls),
-                Record.class, Record.class, specifiedColumnNames.toArray(String[]::new));
+                Record.class, Record.class, aliasedFields);
 
         final MapOperator<Record, Record> mapOperator = new MapOperator<>(pd);
 
@@ -112,13 +121,21 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
             final List<String> reductionStatements = new ArrayList<>();
 
-            assert reductionFunctions.size() == specifiedColumnNames.size()
+            assert reductionFunctions.size() == aliasedFields.length
                     : "Expected that the amount of reduction functions in reduce statement was eqaul to the amount of used tables";
 
             // we have an assumption that the ordering is maintained between each list
             for (int i = 0; i < reductionFunctions.size(); i++) {
-                reductionStatements.add(
-                        reductionFunctions.get(i) + "(" + specifiedColumnNames.get(i) + ")");
+                // unpacking alias
+                final String[] unpackedAlias = aliasedFields[i].split(" AS ");
+
+                if (aliasedFields.length == 2) {
+                    reductionStatements.add(
+                            reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")" + " AS " + unpackedAlias[1]);
+                } else {
+                    reductionStatements.add(
+                        reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");  
+                }
             }
 
             reduceDescriptor.withSqlImplementation(
@@ -131,7 +148,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
         final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(
                 new GetResult(aggregateCalls, groupingFields),
-                Record.class, Record.class, specifiedColumnNames.toArray(String[]::new));
+                Record.class, Record.class, aliasedFields);
 
         final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);
 

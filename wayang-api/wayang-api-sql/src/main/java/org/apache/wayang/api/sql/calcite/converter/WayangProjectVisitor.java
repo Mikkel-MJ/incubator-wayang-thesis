@@ -38,10 +38,11 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
     WayangProjectVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
@@ -52,48 +53,42 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
     Operator visit(final WayangProject wayangRelNode) {
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
-        final Map<RelDataTypeField, String> fieldToTableOrigin = CalciteSources.createColumnToTableOriginMap(wayangRelNode);
+        // fetch the indexes of colmuns affected, in calcite aggregates and projections
+        // have their own catalog, we need to find the column indexes in the global
+        // catalog
+        final List<Integer> columnIndexes = wayangRelNode.getProjects().stream().map(proj -> proj.hashCode())
+                .collect(Collectors.toList());
 
-        final List<RelDataTypeField> projectFields = wayangRelNode // get columns to be projected
-                .getRowType()
-                .getFieldList();
+        // calcite's projections and aggregates use aliased fields this fetches the
+        // dealiased fields, from global catalog
+        final List<RelDataTypeField> dealiasedFields = AliasFinder.getGlobalCatalogColumnName(wayangRelNode, columnIndexes);
 
-        System.out.println("input field list: " + wayangRelNode.getInput().getRowType().getFieldList());
+        // Local catalog for removing calcite's column identifier
+        final List<String> dealiasedCatalog = CalciteSources.getSqlColumnNames(wayangRelNode);
 
-        final Map<String, String> unAliasedNamesMap = wayangRelNode.getNamedProjects()
-            .stream()
-            .collect(Collectors.toMap(
-                    project -> project.right, // key: project column index
-                    project -> wayangRelNode
-                        .getInput()
-                        .getRowType()
-                        .getFieldNames()
-                        .get(project.left.hashCode())// value: unaliased name
-            ));
-        List<Integer> columnIndexes = wayangRelNode.getProjects().stream().map(proj -> proj.hashCode()).collect(Collectors.toList());
-        List<RelDataTypeField> fields = columnIndexes.stream().map(colindex -> wayangRelNode.getInput().getRowType().getFieldList().get(colindex)).collect(Collectors.toList());
-        System.out.println("proj oclumn indexes: " + columnIndexes);
-        System.out.println("proj fields: " + fields);
-        System.out.println("aliased: " + fields.stream().map(field -> aliasFinder.columnIndexToTableName.get(field.getIndex())).collect(Collectors.toList()));
+        // we specify the dealised fields with their table name in a table.column manner
+        final List<String> tableSpecifiedFields = dealiasedFields.stream()
+                .map(field -> aliasFinder.columnIndexToTableName.get(field.getIndex()) + "." + CalciteSources.findSqlName(field.getName(), dealiasedCatalog))
+                .map(badName -> CalciteSources.findSqlName(badName, dealiasedCatalog))
+                .collect(Collectors.toList());
+        
+                // we add the alias back so we have table.column AS alias
+        final String[] aliasedFields = IntStream.range(0, tableSpecifiedFields.size())
+                .mapToObj(index -> tableSpecifiedFields.get(index) + " AS "
+                        + wayangRelNode.getRowType().getFieldList().get(index).getName())
+                .toArray(String[]::new);
 
-        final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
-
-        System.out.println("project catalog: " + catalog);
-        final String[] projectNames = projectFields 
-            .stream()
-            .map(field -> fieldToTableOrigin.get(field) + "." + unAliasedNamesMap.get(field.getName()))
-            .map(badName -> CalciteSources.findSqlName(badName, catalog))
-            .toArray(String[]::new);
-
+        System.out.println("aliased fields in project: " + Arrays.toString(aliasedFields));
+        // list of projects passed to the serializable function, for java & others usage
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
 
         final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
                 new MapFunctionImpl(projects),
                 Record.class,
                 Record.class,
-                projectNames // names of projected columns
+                aliasedFields // names of projected columns
         );
-        
+
         final MapOperator<Record, Record> projection = new MapOperator<Record, Record>(pd);
 
         childOp.connectTo(0, projection, 0);
