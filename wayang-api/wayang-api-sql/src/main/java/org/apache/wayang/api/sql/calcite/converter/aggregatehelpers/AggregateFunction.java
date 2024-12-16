@@ -19,44 +19,46 @@ public class AggregateFunction extends CalciteAggSerializable implements Functio
 
     @Override
     public Record apply(final Record record1, final Record record2) {
-        List<AggregateCall> aggregateCalls = Arrays.asList(super.serializables);
+        final List<AggregateCall> aggregateCalls = Arrays.asList(super.serializables);
         
         final int l = record1.size();
         final Object[] resValues = new Object[l];
-        int i;
         final boolean countDone = false;
     
-        for (i = 0; i < l - aggregateCalls.size() - 1; i++) {
+        for (int i = 0; i < l - aggregateCalls.size() - 1; i++) {
             resValues[i] = record1.getField(i);
         }
-    
+
+        int counter = l - aggregateCalls.size();
         for (final AggregateCall aggregateCall : aggregateCalls) {
             final String name = aggregateCall.getAggregation().getName();
-            final Object field1 = record1.getField(i);
-            final Object field2 = record2.getField(i);
+            final Object field1 = record1.getField(counter);
+            final Object field2 = record2.getField(counter);
             
             switch (name) {
                 case "SUM":
-                    resValues[i] = this.castAndMap(field1, field2, null, Long::sum, Integer::sum, Double::sum);
+                    resValues[counter] = this.castAndMap(field1, field2, null, Long::sum, Integer::sum, Double::sum);
                     break;
                 case "MIN":
-                    resValues[i] = this.castAndMap(field1, field2, SqlFunctions::least, SqlFunctions::least, SqlFunctions::least, SqlFunctions::least);
+                    resValues[counter] = this.castAndMap(field1, field2, SqlFunctions::least, SqlFunctions::least, SqlFunctions::least, SqlFunctions::least);
                     break;
                 case "MAX":
-                    resValues[i] = this.castAndMap(field1, field2, SqlFunctions::greatest, SqlFunctions::greatest, SqlFunctions::greatest, SqlFunctions::greatest);
+                    resValues[counter] = this.castAndMap(field1, field2, SqlFunctions::greatest, SqlFunctions::greatest, SqlFunctions::greatest, SqlFunctions::greatest);
                     break;
                 case "COUNT":
-                    resValues[i] = this.castAndMap(field1, field2, null, null, null, null);
+                    resValues[counter] = this.castAndMap(field1, field2, null, null, null, null);
                     break;
                 case "AVG":
-                    resValues[i] = this.castAndMap(field1, field2, null, null, null, null);
+                    resValues[counter] = this.castAndMap(field1, field2, null, null, null, null);
                     break;
                 default:
                     throw new IllegalStateException("Unsupported operation: " + name);
             }
-            i++;
+            counter++;
         }
     
+        System.out.println("left: " + record1 + ", right: " + record2);
+        System.out.println("got value: " + Arrays.toString(resValues));
         return new Record(resValues);
     }
 
