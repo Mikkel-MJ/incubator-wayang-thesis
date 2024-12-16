@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
@@ -109,9 +110,10 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 .map(joinTableOrigins::get)
                 .distinct()
                 .collect(Collectors.toList());
-
-        final String joiningTableName = affectedTables.get(affectedTables.size() - 1);
-
+        // TODO: prolly breaks on bushy joins
+        final String joiningTableName = wayangRelNode.getLeft() instanceof TableScan ? wayangRelNode.getLeft().getTable().getQualifiedName().get(1) : wayangRelNode.getRight().getTable().getQualifiedName().get(1);
+        //final String joiningTableName = affectedTables.get(affectedTables.size() - 1);
+        System.out.println("joining table: " + joiningTableName);
         // remove calcite unique integer identifiers in table.column0 type of names
         final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
         final String cleanedLeftFieldName = CalciteSources
@@ -120,9 +122,11 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 .findSqlName(rightTableName + "." + rightFieldName, catalog).split("\\.")[1];
 
         // find the sql table alias for the left and right table, so it can be used in
-        // the transform descriptor
-        final String leftTableAlias = aliasFinder.columnIndexToTableName.get(leftKeyIndex);
-        final String rightTableAlias = aliasFinder.columnIndexToTableName.get(rightKeyIndex);
+        // the transform descriptor, this depends when each statement shows up in the condition
+        // if the leftKeyIndex is less than the right key index this is the normal case, where
+        // JOIN x AS x' ON x'.x* = y'.y*, else we need to switch 
+        final String leftTableAlias = leftKeyIndex < rightKeyIndex ? aliasFinder.columnIndexToTableName.get(leftKeyIndex) : aliasFinder.columnIndexToTableName.get(rightKeyIndex);
+        final String rightTableAlias = leftKeyIndex < rightKeyIndex ? aliasFinder.columnIndexToTableName.get(rightKeyIndex) : aliasFinder.columnIndexToTableName.get(leftKeyIndex);
 
         // if join is joining the LHS of a join condition "JOIN left ON left = right" then we pick the
         // first case, otherwise the 2nd "JOIN right ON left = right"
