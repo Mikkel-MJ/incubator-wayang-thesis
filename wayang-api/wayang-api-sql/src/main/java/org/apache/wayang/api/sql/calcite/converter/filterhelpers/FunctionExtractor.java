@@ -16,7 +16,9 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
     final String[] specifiedColumnNames;
 
     /**
-     * 
+     * This visitor, visits the various subnodes of a filter function,
+     * and collects the filter functions, literals and columns in a 
+     * sql-like string representation.
      * @param isDeep
      */
     public FunctionExtractor(final Boolean isDeep, final List<Integer> columnIndexes,
@@ -30,6 +32,7 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
     public String visitInputRef(final RexInputRef inputRef) {
         // map rexInputRef to its column name
         final int listIndex = columnIndexes.indexOf(inputRef.getIndex());
+        
         final String fieldName = specifiedColumnNames[listIndex];
 
         return fieldName;
