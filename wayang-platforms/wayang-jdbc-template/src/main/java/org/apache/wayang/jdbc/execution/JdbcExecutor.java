@@ -57,10 +57,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -113,7 +116,8 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         // order all tasks by whether or not a given task is reachable from another
         // i have to cast it to a list here otherwise java wont maintain ordering
-        final List<ExecutionTask> allTasksWithTableSources = Arrays.stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
+        final List<ExecutionTask> allTasksWithTableSources = Arrays
+                .stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
 
@@ -173,38 +177,43 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .dfsProjectionPipeline(stage.getTerminalTasks().iterator().next(), stage);
 
         // search each of the boundary operators for distinct sql clauses
-        /* 
-        final List<String> distinctSqlClauses = boundaryPipeline.stream()
-                .map(boundary -> boundary.getOperator())
-                .map(op -> this.getSqlClause(op).split(","))
-                .flatMap(Arrays::stream)
-                .distinct()
-                .collect(Collectors.toList());
-        */
+        /*
+         * final List<String> distinctSqlClauses = boundaryPipeline.stream()
+         * .map(boundary -> boundary.getOperator())
+         * .map(op -> this.getSqlClause(op).split(","))
+         * .flatMap(Arrays::stream)
+         * .distinct()
+         * .collect(Collectors.toList());
+         */
 
         // search each of the boundary operators for distinct sql clauses
+
+        // TODO: find a way of making sure that we dont select on too many tables
+        // in the sql selection statement
         final List<String> nonDistinctSqlClauses = boundaryPipeline.stream()
                 .map(boundary -> boundary.getOperator())
                 .map(op -> this.getSqlClause(op).split(", "))
                 .flatMap(Arrays::stream)
+                .distinct()
                 .collect(Collectors.toList());
 
-        System.out.println("non distinct: " + nonDistinctSqlClauses);
         // n^2
         // if the clause is already in e.g. a min() statement filter it out
         // TODO: this doesnt support nested select statements
         final String projectionStatement = nonDistinctSqlClauses.stream()
-         /*        .filter(str -> {
-                    for (final String str2 : distinctSqlClauses) {
-                        if (str2.contains(str) && str2 != str) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                } )*/
+                /*
+                 * .filter(str -> {
+                 * for (final String str2 : distinctSqlClauses) {
+                 * if (str2.contains(str) && str2 != str) {
+                 * return false;
+                 * }
+                 * }
+                 * 
+                 * return true;
+                 * } )
+                 */
                 .collect(Collectors.joining(","));
-        System.out.println("projection statement: " + projectionStatement);
+
         final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
 
         final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins,
@@ -343,6 +352,26 @@ public class JdbcExecutor extends ExecutorTemplate {
         System.out.println("right joins: " + rightJoinTableNames);
         System.out.println("joins: " + joinTableNames);
         System.out.println(unionSet);
+
+        // match JOIN x AS x* ON x*.col = y.col
+        // group1: x
+        // group2: x*
+        // group3: x*.col
+        // group4: y.col
+        final String regex = "JOIN\\s+(?<joiningTable>\\w+)(?:\\s+AS\\s+(?<alias>\\w+))?\\s+ON\\s+(?<left>\\w+\\.\\w+)\\s*=\\s*(?<right>\\w+\\.\\w+)";
+        final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+
+        final Matcher matcher = pattern.matcher(joins.stream().findFirst().orElse(""));
+
+        matcher.find();
+
+        final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0]) ? matcher.group(4) : matcher.group(3);
+        unionSet.add(nonUsedTable.split("\\.")[0]);
+        System.out.println("matcher 1: " + matcher.group(1));
+        System.out.println("matcher 3: " + matcher.group(3));
+        System.out.println("non used table: " + nonUsedTable);
+        System.out.println("first join: " + joins.stream().findFirst().get());
+
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
 
         sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
