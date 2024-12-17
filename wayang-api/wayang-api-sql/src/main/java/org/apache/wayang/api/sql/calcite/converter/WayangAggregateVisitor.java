@@ -61,28 +61,8 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                 .map(agg -> agg.getArgList().get(0))
                 .collect(Collectors.toList());
 
-        // calcite's projections and aggregates use aliased fields this fetches the
-        // dealiased fields, from global catalog
-        final List<RelDataTypeField> dealiasedFields = AliasFinder.getGlobalCatalogColumnName(wayangRelNode, columnIndexes);
-
-        // Local catalog for removing calcite's column identifier
-        final List<String> dealiasedCatalog = CalciteSources.getSqlColumnNames(wayangRelNode);
-
-        // we specify the dealised fields with their table name in a table.column manner
-        final List<String> tableSpecifiedFields = dealiasedFields.stream()
-                .map(field -> aliasFinder.columnIndexToTableName.get(field.getIndex()) + "." + field.getName())
-                .map(badName -> CalciteSources.findSqlName(badName, dealiasedCatalog))
-                .collect(Collectors.toList());
-
-        // we add the alias back so we have table.column AS alias
-        final String[] aliasedFields = IntStream.range(0, tableSpecifiedFields.size())
-                .mapToObj(index -> tableSpecifiedFields.get(index) + " AS "
-                        + wayangRelNode.getRowType().getFieldList().get(index).getName())
-                .toArray(String[]::new);
+        final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
         
-        System.out.println("dealiased catalog: " + dealiasedCatalog);
-        System.out.println("dealiased: " + dealiasedFields);
-        System.out.println("table specs: " + tableSpecifiedFields);
         System.out.println("aggregate visitor fields: " + Arrays.toString(aliasedFields));
 
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
