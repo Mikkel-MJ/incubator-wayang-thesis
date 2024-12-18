@@ -19,7 +19,6 @@
 package org.apache.wayang.api.sql.calcite.converter;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,13 +26,10 @@ import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.sql.validate.SqlValidatorUtil;
+
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MapFunctionImpl;
@@ -58,13 +54,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-        /*
-         * assert wayangRelNode.getInputs().stream().anyMatch(input -> input instanceof
-         * TableScan) :
-         * "Currently Wayang only supports if a join has a direct table source, so no bushy joins, found: "
-         * + wayangRelNode.getInputs();
-         */
-
         final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
         final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), super.aliasFinder);
 
@@ -74,7 +63,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
             throw new UnsupportedOperationException(
                     "Only equality joins supported but got: " + condition.getKind()
                             + " from relNode: " + wayangRelNode + ", with inputs: "
-                            + wayangRelNode.getInputs());
+                            + wayangRelNode.getInputs() + ", joinType: "
+                            + wayangRelNode.getJoinType());
         }
 
         final int leftKeyIndex = condition.accept(new KeyIndex(false, Child.LEFT));
@@ -84,8 +74,10 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final scala.Tuple2<Integer, Integer> keyExtractor = this.determineKeyExtractionDirection(leftKeyIndex,
                 rightKeyIndex, wayangRelNode);
 
-        final RelDataTypeField leftField = wayangRelNode.getLeft().getRowType().getFieldList().get(keyExtractor._1());
-        final RelDataTypeField rightField = wayangRelNode.getRight().getRowType().getFieldList().get(keyExtractor._2());
+        final RelDataTypeField leftField = wayangRelNode.getLeft().getRowType().getFieldList()
+                .get(keyExtractor._1());
+        final RelDataTypeField rightField = wayangRelNode.getRight().getRowType().getFieldList()
+                .get(keyExtractor._2());
 
         // get left col name
         final String leftFieldName = leftField.getName();
@@ -110,10 +102,12 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 .map(joinTableOrigins::get)
                 .distinct()
                 .collect(Collectors.toList());
+
         // TODO: prolly breaks on bushy joins
-        final String joiningTableName = wayangRelNode.getLeft() instanceof TableScan ? wayangRelNode.getLeft().getTable().getQualifiedName().get(1) : wayangRelNode.getRight().getTable().getQualifiedName().get(1);
-        //final String joiningTableName = affectedTables.get(affectedTables.size() - 1);
-        System.out.println("joining table: " + joiningTableName);
+        final String joiningTableName = wayangRelNode.getLeft() instanceof TableScan
+                ? wayangRelNode.getLeft().getTable().getQualifiedName().get(1)
+                : wayangRelNode.getRight().getTable().getQualifiedName().get(1);
+
         // remove calcite unique integer identifiers in table.column0 type of names
         final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
         final String cleanedLeftFieldName = CalciteSources
@@ -122,20 +116,29 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 .findSqlName(rightTableName + "." + rightFieldName, catalog).split("\\.")[1];
 
         // find the sql table alias for the left and right table, so it can be used in
-        // the transform descriptor, this depends when each statement shows up in the condition
-        // if the leftKeyIndex is less than the right key index this is the normal case, where
-        // JOIN x AS x' ON x'.x* = y'.y*, else we need to switch 
-        final String leftTableAlias = leftKeyIndex < rightKeyIndex ? aliasFinder.columnIndexToTableName.get(leftKeyIndex) : aliasFinder.columnIndexToTableName.get(rightKeyIndex);
-        final String rightTableAlias = leftKeyIndex < rightKeyIndex ? aliasFinder.columnIndexToTableName.get(rightKeyIndex) : aliasFinder.columnIndexToTableName.get(leftKeyIndex);
+        // the transform descriptor, this depends when each statement shows up in the
+        // condition
+        // if the leftKeyIndex is less than the right key index this is the normal case,
+        // where
+        // JOIN x AS x' ON x'.x* = y'.y*, else we need to switch
+        final String leftTableAlias = leftKeyIndex < rightKeyIndex
+                ? aliasFinder.columnIndexToTableName.get(leftKeyIndex)
+                : aliasFinder.columnIndexToTableName.get(rightKeyIndex);
+        final String rightTableAlias = leftKeyIndex < rightKeyIndex
+                ? aliasFinder.columnIndexToTableName.get(rightKeyIndex)
+                : aliasFinder.columnIndexToTableName.get(leftKeyIndex);
 
-        // if join is joining the LHS of a join condition "JOIN left ON left = right" then we pick the
+        // if join is joining the LHS of a join condition "JOIN left ON left = right"
+        // then we pick the
         // first case, otherwise the 2nd "JOIN right ON left = right"
         final JoinOperator<Record, Record, SqlField> join = joiningTableName == leftTableName
                 ? this.getJoinOperator(keyExtractor._1(), keyExtractor._2(), wayangRelNode,
-                        leftTableName + " AS " + leftTableAlias, cleanedLeftFieldName, rightTableAlias,
+                        leftTableName + " AS " + leftTableAlias, cleanedLeftFieldName,
+                        rightTableAlias,
                         cleanedRightFieldName)
                 : this.getJoinOperator(keyExtractor._1(), keyExtractor._2(), wayangRelNode,
-                        rightTableName + " AS " + rightTableAlias, cleanedRightFieldName, leftTableAlias,
+                        rightTableName + " AS " + rightTableAlias, cleanedRightFieldName,
+                        leftTableAlias,
                         cleanedLeftFieldName);
 
         childOpLeft.connectTo(0, join, 0);
@@ -145,13 +148,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String[] joinTableNames = { leftTableName + "." + leftFieldName,
                 rightTableName + "." + rightFieldName };
 
-        System.out.println("join table names: " + Arrays.toString(joinTableNames));
-        System.out.println("left key ex " + keyExtractor._1() + ", left field index: " + leftField.getIndex());
-        System.out.println("right key ex " + keyExtractor._2() + ", right key index: " + rightField.getIndex());
-        System.out.println("left key index: " + leftKeyIndex + ", right key index: " + rightKeyIndex);
-        System.out.println("leftTableName: " + leftTableName + ", alias: "
-                + aliasFinder.columnIndexToTableName.get(leftKeyIndex) + ", rightTableName: " + rightTableName
-                + ", alias: " + aliasFinder.columnIndexToTableName.get(rightKeyIndex));
         // Join returns Tuple2 - map to a Record
         final SerializableFunction<Tuple2, Record> mp = new MapFunctionImpl();
 
