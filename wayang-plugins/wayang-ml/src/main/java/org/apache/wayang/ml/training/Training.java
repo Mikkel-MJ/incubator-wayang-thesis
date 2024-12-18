@@ -30,14 +30,21 @@ import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.optimizer.OptimizationContext;
+import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.ml.util.CardinalitySampler;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.Level;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.ElementaryOperator;
+import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.OperatorBase;
+import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimate;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.lang.reflect.Constructor;
 import java.util.Set;
+import java.util.Collection;
 import java.time.Instant;
 import java.time.Duration;
 import java.util.Comparator;
@@ -64,6 +71,11 @@ public class Training {
             FileWriter fw = new FileWriter(args[2], true);
             BufferedWriter writer = new BufferedWriter(fw);
 
+            String[] jars = new String[]{
+                ReflectionUtils.getDeclaringJar(Training.class),
+                ReflectionUtils.getDeclaringJar(createdJob.getClass()),
+            };
+
             boolean skipConversions = false;
 
             if (args.length == 5) {
@@ -83,6 +95,17 @@ public class Training {
             PlanBuilder builder = quanta.getPlanBuilder();
             WayangContext context = builder.getWayangContext();
             Configuration config = context.getConfiguration();
+            config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty("spark.master", "spark://spark-cluster:7077");
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.flink.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.master", "flink-cluster");
+            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.executor.memory", "16g");
+
             WayangPlan plan = builder.build();
 
             /*int hashCode = new HashCodeBuilder(17, 37).append(plan).toHashCode();
@@ -92,7 +115,7 @@ public class Training {
             //if (overwriteCardinalities) {
                 //CardinalitySampler.configureWriteToFile(config, path);
                 //
-            Job wayangJob = context.createJob("", plan, "");
+            Job wayangJob = context.createJob("", plan, jars);
             ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
             OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
             TreeNode wayangNode = TreeEncoder.encode(plan);
@@ -101,19 +124,33 @@ public class Training {
 
             quanta = createdJob.buildPlan(jobArgs);
             builder = quanta.getPlanBuilder();
-              context = builder.getWayangContext();
-              context.setLogLevel(Level.INFO);
-              plan = builder.build();
-              Instant start = Instant.now();
-              context.execute(plan, "");
-              Instant end = Instant.now();
-              execTime = Duration.between(start, end).toMillis();
+            context = builder.getWayangContext();
+            context.setLogLevel(Level.INFO);
+            config = context.getConfiguration();
+            config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty("spark.master", "spark://spark-cluster:7077");
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.flink.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.master", "flink-cluster");
+            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.executor.memory", "16g");
+            plan = builder.build();
 
-              //CardinalitySampler.readFromFile(path);
+            /*
+            Instant start = Instant.now();
+            context.execute(plan, jars);
+            Instant end = Instant.now();
+            execTime = Duration.between(start, end).toMillis();*/
 
-              writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
-              writer.newLine();
-              writer.flush();
+            //CardinalitySampler.readFromFile(path);
+
+            //writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
+            writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), 1_000_000));
+            writer.newLine();
+            writer.flush();
           } catch(Exception e) {
               e.printStackTrace();
           }

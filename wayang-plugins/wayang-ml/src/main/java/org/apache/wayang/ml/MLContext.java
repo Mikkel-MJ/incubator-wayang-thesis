@@ -75,10 +75,11 @@ public class MLContext extends WayangContext {
         Job wayangJob = this.createJob("", wayangPlan, udfJars);
         OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
 
-        wayangJob.execute();
-
         Configuration config = this.getConfiguration();
         Configuration jobConfig = wayangJob.getConfiguration();
+
+        wayangJob.execute();
+
         if (config.getBooleanProperty("wayang.ml.experience.enabled")) {
             String original;
 
@@ -107,24 +108,35 @@ public class MLContext extends WayangContext {
     public void executeVAE(WayangPlan wayangPlan, String ...udfJars) {
         try {
             Job job = this.createJob("", wayangPlan, udfJars);
+            Configuration jobConfig = job.getConfiguration();
             //job.prepareWayangPlan();
             job.estimateKeyFigures();
             OneHotMappings.setOptimizationContext(job.getOptimizationContext());
             OneHotMappings.encodeIds = true;
 
+            // Log Encoding time
             Instant start = Instant.now();
             TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
-            OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
-            Tuple<WayangPlan, TreeNode> resultTuple = model.runVAE(wayangPlan, wayangNode);
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
-
             Logging.writeToFile(
-                String.format("%d", execTime),
+                String.format("Encoding: %d", execTime),
                 this.getConfiguration().getStringProperty("wayang.ml.optimizations.file")
             );
+            OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
+            // Log inference time
+            start = Instant.now();
+            Tuple<WayangPlan, TreeNode> resultTuple = model.runVAE(wayangPlan, wayangNode);
+            end = Instant.now();
+            execTime = Duration.between(start, end).toMillis();
 
             WayangPlan platformPlan = resultTuple.field0;
+            execTime = Duration.between(start, end).toMillis();
+
+            /*Logging.writeToFile(
+                String.format("Optimization: %d", execTime),
+                this.getConfiguration().getStringProperty("wayang.ml.optimizations.file")
+            )*/;
 
             this.getConfiguration().setProperty(
                 "wayang.ml.experience.original",

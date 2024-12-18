@@ -105,6 +105,7 @@ public class OneHotMappings {
 
         int platformIndex = -1;
         int offset = operatorsCount;
+
         for (int i = offset; i < platformsCount + offset && platformIndex == -1; i++) {
             if(encoded[i] == 1)  {
                 platformIndex = i;

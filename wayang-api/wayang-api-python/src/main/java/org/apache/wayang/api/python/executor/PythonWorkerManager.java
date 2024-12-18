@@ -19,12 +19,16 @@
 package org.apache.wayang.api.python.executor;
 
 import com.google.protobuf.ByteString;
+
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.exception.WayangException;
+import org.apache.wayang.core.util.ReflectionUtils;
 
 public class PythonWorkerManager<Input, Output> {
 
     private ByteString serializedUDF;
     private Iterable<Input> inputIterator;
+    private Configuration configuration;
 
     public PythonWorkerManager(
             ByteString serializedUDF,
@@ -32,10 +36,22 @@ public class PythonWorkerManager<Input, Output> {
     ){
         this.serializedUDF = serializedUDF;
         this.inputIterator = input;
+        this.configuration = new Configuration();
+        this.configuration.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
+    }
+
+    public PythonWorkerManager(
+            ByteString serializedUDF,
+            Iterable<Input> input,
+            Configuration configuration
+    ){
+        this.serializedUDF = serializedUDF;
+        this.inputIterator = input;
+        this.configuration = configuration;
     }
 
     public Iterable<Output> execute(){
-        PythonProcessCaller worker = new PythonProcessCaller(this.serializedUDF);
+        PythonProcessCaller worker = new PythonProcessCaller(this.serializedUDF, this.configuration);
 
         if(worker.isReady()){
             ProcessFeeder<Input, Output> feed = new ProcessFeeder<>(
@@ -43,6 +59,7 @@ public class PythonWorkerManager<Input, Output> {
                 this.serializedUDF,
                 this.inputIterator
             );
+
             feed.send();
             ProcessReceiver<Output> r = new ProcessReceiver<>(worker.getSocket());
             return r.getIterable();

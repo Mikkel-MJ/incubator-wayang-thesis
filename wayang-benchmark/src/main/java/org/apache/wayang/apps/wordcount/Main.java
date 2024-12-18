@@ -44,7 +44,10 @@ public class Main {
                 System.exit(1);
             }
 
-            WayangContext wayangContext = new WayangContext();
+            Configuration configuration = new Configuration();
+            configuration.setProperty("spark.master", "spark://spark-cluster:7077");
+
+            WayangContext wayangContext = new WayangContext(configuration);
 
             for (String platform : args[0].split(",")) {
                 switch (platform) {

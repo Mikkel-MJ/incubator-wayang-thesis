@@ -78,14 +78,18 @@ public class SparkPlatform extends Platform {
             "spark.kryo.registrator",
             "spark.local.dir",
             "spark.logConf",
+            "spark.driver.bindAddress",
             "spark.driver.host",
             "spark.driver.port",
             "spark.driver.maxResultSize",
             "spark.ui.showConsoleProgress",
             "spark.io.compression.codec",
             "spark.driver.memory",
+            "spark.executor.memory",
             "spark.executor.heartbeatInterval",
-            "spark.network.timeout"
+            "spark.rpc.message.maxSize",
+            "spark.network.timeout",
+            "spark.deploy.mode",
             // "spark.extraListeners"
     };
 

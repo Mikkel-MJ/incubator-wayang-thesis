@@ -33,7 +33,7 @@ public class ProcessReceiver<Output> {
     public ProcessReceiver(Socket socket){
         try{
             //TODO use config buffer size
-            int BUFFER_SIZE = 8192;
+            int BUFFER_SIZE = 65536;
 
             DataInputStream stream = new DataInputStream(new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE));
             this.iterator = new ReaderIterator<>(stream);
