@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.TableScan;
@@ -90,18 +89,9 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 .createColumnToTableOriginMap(wayangRelNode.getInput(0));
         final Map<RelDataTypeField, String> columnToOriginMapRight = CalciteSources
                 .createColumnToTableOriginMap(wayangRelNode.getInput(1));
-        final Map<RelDataTypeField, String> joinTableOrigins = CalciteSources
-                .createColumnToTableOriginMap(wayangRelNode); // TODO: move, since this is only used for
-                                                              // sql platforms
 
         final String leftTableName = columnToOriginMapLeft.get(leftField);
         final String rightTableName = columnToOriginMapRight.get(rightField);
-
-        // TODO: move, used for sql string building
-        final List<String> affectedTables = wayangRelNode.getRowType().getFieldList().stream()
-                .map(joinTableOrigins::get)
-                .distinct()
-                .collect(Collectors.toList());
 
         // TODO: prolly breaks on bushy joins
         final String joiningTableName = wayangRelNode.getLeft() instanceof TableScan
@@ -117,10 +107,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
         // find the sql table alias for the left and right table, so it can be used in
         // the transform descriptor, this depends when each statement shows up in the
-        // condition
-        // if the leftKeyIndex is less than the right key index this is the normal case,
-        // where
-        // JOIN x AS x' ON x'.x* = y'.y*, else we need to switch
+        // condition if the leftKeyIndex is less than the right key index this is the normal case,
+        // where JOIN x AS x' ON x'.x* = y'.y*, else we need to switch
         final String leftTableAlias = leftKeyIndex < rightKeyIndex
                 ? aliasFinder.columnIndexToTableName.get(leftKeyIndex)
                 : aliasFinder.columnIndexToTableName.get(rightKeyIndex);
@@ -129,8 +117,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 : aliasFinder.columnIndexToTableName.get(leftKeyIndex);
 
         // if join is joining the LHS of a join condition "JOIN left ON left = right"
-        // then we pick the
-        // first case, otherwise the 2nd "JOIN right ON left = right"
+        // then we pick the first case, otherwise the 2nd "JOIN right ON left = right"
         final JoinOperator<Record, Record, SqlField> join = joiningTableName == leftTableName
                 ? this.getJoinOperator(keyExtractor._1(), keyExtractor._2(), wayangRelNode,
                         leftTableName + " AS " + leftTableAlias, cleanedLeftFieldName,
