@@ -309,6 +309,7 @@ public class Job extends OneTimeExecutable {
 
 
             // Take care of the execution.
+            /*
             Instant start = Instant.now();
             while (!this.execute(executionPlan, executionId)) {
                 this.optimizationRound.start();
@@ -355,7 +356,7 @@ public class Job extends OneTimeExecutable {
             this.stopWatch.start("Post-processing");
             if (this.configuration.getBooleanProperty("wayang.core.log.enabled")) {
                 this.logExecution();
-            }
+            }*/
         } catch (WayangException e) {
             throw e;
         } catch (Throwable t) {
@@ -492,7 +493,7 @@ public class Job extends OneTimeExecutable {
                     true
                 );
                 BufferedWriter writer = new BufferedWriter(fw);
-                writer.write(String.format("%d", execTime));
+                writer.write(String.format("Conversion: %d", execTime));
                 writer.newLine();
                 writer.flush();
             } catch(Exception e) {

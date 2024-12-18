@@ -13,7 +13,9 @@ export PATH="$PATH:${GIRAPH_HOME}/bin"
 cd ${WORKDIR}
 cd wayang-0.7.1
 
-bvae_path=/work/lsbo-paper/data/models/retrained/bvae.onnx
+bvae25_path=/work/lsbo-paper/data/models/retrained/bvae-25.onnx
+bvae50_path=/work/lsbo-paper/data/models/retrained/bvae-50.onnx
+bvae75_path=/work/lsbo-paper/data/models/retrained/bvae-75.onnx
 cost_path=/work/lsbo-paper/data/models/cost.onnx
 
 data_path=/work/lsbo-paper/data
@@ -21,15 +23,16 @@ experience_path=/work/lsbo-paper/data/experience/
 
 echo "Benchmarking Test data with native optimizer"
 
-for query in {801..900}; do
-    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/ $query
-done
-
 #for query in {801..900}; do
-#    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/retrained/ $query bvae $bvae_path $experience_path
+#    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/ $query
 #done
+
+for query in {801..900}; do
+    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/optimization/ $query bvae $bvae25_path $experience_path
+done
 
 #echo "Benchmarking Test data with Cost model"
 #for query in {801..900}; do
 #    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/ $query cost $cost_path $experience_path
 #done
+

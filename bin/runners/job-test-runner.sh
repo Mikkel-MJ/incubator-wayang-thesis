@@ -10,6 +10,9 @@ export GIRAPH_VERSION=1.3.0
 export GIRAPH_HOME=/opt/giraph
 export PATH="$PATH:${GIRAPH_HOME}/bin"
 
+sudo apt update
+sudo apt-get install -y postgresql
+
 cd ${WORKDIR}
 cd wayang-0.7.1
 
@@ -26,7 +29,7 @@ cd wayang-0.7.1
 
 schema_path=/work/lsbo-paper/data/JOBenchmark/schema
 
-#export PGPASSWORD=ucloud
+export PGPASSWORD=ucloud
 
 #echo "Setting up postgres schema"
 
@@ -51,6 +54,7 @@ do
   # Measure the time taken for the wayang-submit command
 
   SECONDS=0
+
   # Execute the wayang-submit command with the current file as an argument
   output="$(./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.IMDBJOBenchmark "$FILE" 2>&1)"
   # Output the time taken, exit status, and file name

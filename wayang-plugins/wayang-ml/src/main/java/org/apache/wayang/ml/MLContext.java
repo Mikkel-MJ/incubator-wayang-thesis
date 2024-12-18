@@ -114,19 +114,29 @@ public class MLContext extends WayangContext {
             OneHotMappings.setOptimizationContext(job.getOptimizationContext());
             OneHotMappings.encodeIds = true;
 
+            // Log Encoding time
             Instant start = Instant.now();
             TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
-            OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
-            Tuple<WayangPlan, TreeNode> resultTuple = model.runVAE(wayangPlan, wayangNode);
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
-
             Logging.writeToFile(
-                String.format("%d", execTime),
+                String.format("Encoding: %d", execTime),
                 this.getConfiguration().getStringProperty("wayang.ml.optimizations.file")
             );
+            OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
+            // Log inference time
+            start = Instant.now();
+            Tuple<WayangPlan, TreeNode> resultTuple = model.runVAE(wayangPlan, wayangNode);
+            end = Instant.now();
+            execTime = Duration.between(start, end).toMillis();
 
             WayangPlan platformPlan = resultTuple.field0;
+            execTime = Duration.between(start, end).toMillis();
+
+            /*Logging.writeToFile(
+                String.format("Optimization: %d", execTime),
+                this.getConfiguration().getStringProperty("wayang.ml.optimizations.file")
+            )*/;
 
             this.getConfiguration().setProperty(
                 "wayang.ml.experience.original",

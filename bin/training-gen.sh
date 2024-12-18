@@ -15,7 +15,7 @@ cd wayang-0.7.1
 
 echo "DataFarming Training data"
 for i in {0..700}; do
-    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.training.Training java,spark,flink file://${WORKDIR}/data/ ${WORKDIR}/data/generated/train.txt $i true
+    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.training.Training java,spark,flink file://${WORKDIR}/data/ ${WORKDIR}/data/generated/train-bvae.txt $i true
 done
 
 echo "DataFarming Validation data"

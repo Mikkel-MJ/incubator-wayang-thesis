@@ -139,14 +139,16 @@ public class Training {
             config.setProperty("spark.executor.memory", "16g");
             plan = builder.build();
 
+            /*
             Instant start = Instant.now();
             context.execute(plan, jars);
             Instant end = Instant.now();
-            execTime = Duration.between(start, end).toMillis();
+            execTime = Duration.between(start, end).toMillis();*/
 
             //CardinalitySampler.readFromFile(path);
 
-            writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
+            //writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
+            writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), 1_000_000));
             writer.newLine();
             writer.flush();
           } catch(Exception e) {

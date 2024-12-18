@@ -21,6 +21,7 @@ package org.apache.wayang.ml.benchmarks;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.ml.MLContext;
@@ -49,8 +50,12 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedList;
 import scala.collection.Seq;
 import scala.collection.JavaConversions;
+import java.util.Collection;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 
 public class GeneratableBenchmarks {
 
@@ -80,6 +85,7 @@ public class GeneratableBenchmarks {
             config.setProperty("wayang.flink.port", "6123");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
             config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("spark.driver.maxResultSize", "4G");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
             if (args.length > 4) {
@@ -118,6 +124,9 @@ public class GeneratableBenchmarks {
             PlanBuilder builder = quanta.getPlanBuilder();
             WayangPlan plan = builder.build();
 
+            //Set sink to be on Java
+            ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
+
             String[] jars = new String[]{
                 ReflectionUtils.getDeclaringJar(GeneratableBenchmarks.class),
                 ReflectionUtils.getDeclaringJar(DataQuanta.class),
@@ -126,6 +135,23 @@ public class GeneratableBenchmarks {
 
             System.out.println("Jars:" + Arrays.toString(jars));
 
+
+            /*
+            FileWriter fw = new FileWriter(
+                "/var/www/html/data/benchmarks/operators.txt",
+                true
+            );
+            BufferedWriter writer = new BufferedWriter(fw);
+
+            final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
+
+            System.out.println("Operators: " + operators.size());
+
+            writer.write(args[3] + ": " + operators.size());
+            writer.newLine();
+            writer.flush();
+            writer.close();
+            */
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);

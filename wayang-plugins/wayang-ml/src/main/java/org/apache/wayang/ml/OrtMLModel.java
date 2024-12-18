@@ -23,6 +23,7 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
+import ai.onnxruntime.providers.OrtCUDAProviderOptions;
 import ai.onnxruntime.TensorInfo;
 import ai.onnxruntime.OrtSession.Result;
 import org.apache.wayang.core.api.Configuration;
@@ -33,6 +34,9 @@ import org.apache.wayang.ml.encoding.OrtTensorDecoder;
 import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeNode;
+import org.apache.wayang.ml.util.Logging;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaDeviceProp;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +47,8 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.time.Instant;
+import java.time.Duration;
 
 public class OrtMLModel {
 
@@ -50,6 +56,7 @@ public class OrtMLModel {
 
     private OrtSession session;
     private OrtEnvironment env;
+    private Configuration configuration;
 
     private final Map<String, OnnxTensor> inputMap = new HashMap<>();
     private final Set<String> requestedOutputs = new HashSet<>();
@@ -63,6 +70,7 @@ public class OrtMLModel {
     }
 
     private OrtMLModel(Configuration configuration) throws OrtException {
+        this.configuration = configuration;
         this.loadModel(configuration.getStringProperty("wayang.ml.model.file"));
     }
 
@@ -72,10 +80,36 @@ public class OrtMLModel {
             this.env.setTelemetry(false);
         }
 
+        /*
+        JCuda.setExceptionsEnabled(true);
+
+        int[] deviceCount = new int[1];
+        JCuda.cudaGetDeviceCount(deviceCount);
+
+        System.out.println("Number of CUDA devices: " + deviceCount[0]);
+
+        for (int i = 0; i < deviceCount[0]; i++) {
+            cudaDeviceProp deviceProp = new cudaDeviceProp();
+            JCuda.cudaGetDeviceProperties(deviceProp, i);
+            System.out.println("Device " + i + ": " + deviceProp);
+        }*/
+
         if (this.session == null) {
+            /*
+            OrtCUDAProviderOptions cudaProviderOptions = new OrtCUDAProviderOptions(0);
+            cudaProviderOptions.add("gpu_mem_limit","2147483648");
+            cudaProviderOptions.add("arena_extend_strategy","kSameAsRequested");
+            cudaProviderOptions.add("cudnn_conv_algo_search","DEFAULT");
+            cudaProviderOptions.add("do_copy_in_default_stream","1");
+            cudaProviderOptions.add("cudnn_conv_use_max_workspace","1");
+            cudaProviderOptions.add("cudnn_conv1d_pad_to_nc1d","1");
+            */
+
             OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+
             options.setInterOpNumThreads(16);
             options.setIntraOpNumThreads(16);
+            //options.addCUDA(cudaProviderOptions);
             this.session = env.createSession(filePath, options);
         }
     }
@@ -100,6 +134,7 @@ public class OrtMLModel {
         long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
+        Instant start = Instant.now();
         float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
         long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
 
@@ -135,8 +170,16 @@ public class OrtMLModel {
             }
         };
 
+
         try (Result r = session.run(inputMap, requestedOutputs)) {
             costPrediction = unwrapFunc.apply(r, "output");
+            Instant end = Instant.now();
+            long execTime = Duration.between(start, end).toMillis();
+
+            Logging.writeToFile(
+                String.format("%d", execTime),
+                this.configuration.getStringProperty("wayang.ml.optimizations.file")
+            );
         } catch(Exception e) {
             e.printStackTrace();
             return 0;
@@ -244,6 +287,8 @@ public class OrtMLModel {
         long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
+        Instant start = Instant.now();
+
         float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
         long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
         //long[][][] inputIndexStructure = new long[1][encoded.getTreeSize()][(int) input2Dims[2]];
@@ -282,8 +327,20 @@ public class OrtMLModel {
             }
         };
 
+
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
+
+            Instant end = Instant.now();
+            long execTime = Duration.between(start, end).toMillis();
+
+            Logging.writeToFile(
+                String.format("Inference: %d", execTime),
+                this.configuration.getStringProperty("wayang.ml.optimizations.file")
+            );
+
+
+            start = Instant.now();
             long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
             for (int i = 0; i < resultTensor[0].length; i++)  {
                 for (int j = 0; j < resultTensor[0][i].length; j++) {
@@ -295,12 +352,37 @@ public class OrtMLModel {
             ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
             mlResult.add(longResult[0]);
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
+            end = Instant.now();
+            execTime = Duration.between(start, end).toMillis();
+
+            Logging.writeToFile(
+                String.format("Unpacking: %d", execTime),
+                this.configuration.getStringProperty("wayang.ml.optimizations.file")
+            );
+
+            start = Instant.now();
             TreeNode decoded = decoder.decode(decoderInput);
             decoded.softmax();
+            end = Instant.now();
 
+            execTime = Duration.between(start, end).toMillis();
+            Logging.writeToFile(
+                String.format("Decoding: %d", execTime),
+                this.configuration.getStringProperty("wayang.ml.optimizations.file")
+            );
             // Now set the platforms on the wayangPlan
+            start = Instant.now();
             TreeNode reconstructed = encoded.withPlatformChoicesFrom(decoded);
             WayangPlan decodedPlan = TreeDecoder.decode(reconstructed);
+            end = Instant.now();
+
+            execTime = Duration.between(start, end).toMillis();
+            /*Logging.writeToFile(
+                String.format("Reconstruction: %d", execTime),
+                this.configuration.getStringProperty("wayang.ml.optimizations.file")
+            )*/;
+
+
 
             return new Tuple<WayangPlan, TreeNode>(decodedPlan, reconstructed);
         } catch(Exception e) {
