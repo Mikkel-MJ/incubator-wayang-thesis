@@ -31,7 +31,9 @@ public class Mappings {
     public static final Collection<Mapping> ALL = Arrays.asList(
             new FilterMapping(),
             new JoinMapping(),
-            new ProjectionMapping()
+            new ProjectionMapping(),
+            new FlattenMapping(),
+            new GlobalReduceMapping()
     );
 
 }

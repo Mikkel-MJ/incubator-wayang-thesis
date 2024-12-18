@@ -20,198 +20,120 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataTypeField;
+
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
+import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
+import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.GlobalReduceOperator;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.operators.ReduceByOperator;
-import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.ReduceDescriptor;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.types.DataUnitType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
-    WayangAggregateVisitor(WayangRelConverter wayangRelConverter) {
-        super(wayangRelConverter);
+    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
+        super(wayangRelConverter, aliasFinder);
     }
 
     @Override
-    Operator visit(WayangAggregate wayangRelNode) {
-        Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
-        Operator aggregateOperator;
+    Operator visit(final WayangAggregate wayangRelNode) {
+        // fetch the indexes of colmuns affected, in calcite aggregates and projections
+        // have their own catalog, we need to find the column indexes in the global
+        // catalog
+        final List<Integer> columnIndexes = wayangRelNode.getAggCallList().stream()
+                .map(agg -> agg.getArgList().get(0))
+                .collect(Collectors.toList());
 
-        List<AggregateCall> aggregateCalls = ((Aggregate) wayangRelNode).getAggCallList();
-        int groupCount = wayangRelNode.getGroupCount();
-        Set<Integer> groupingFields = wayangRelNode.getGroupSet().asSet();
+        final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
+        
+        System.out.println("aggregate visitor fields: " + Arrays.toString(aliasedFields));
 
-        MapOperator mapOperator = new MapOperator(
-                new addAggCols(aggregateCalls),
-                Record.class,
-                Record.class
-        );
+        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+
+        final List<AggregateCall> aggregateCalls = ((Aggregate) wayangRelNode).getAggCallList();
+        final int groupCount = wayangRelNode.getGroupCount();
+        final HashSet<Integer> groupingFields = new HashSet<>(wayangRelNode.getGroupSet().asSet());
+
+        final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
+                new AddAggCols(aggregateCalls),
+                Record.class, Record.class, aliasedFields);
+
+        final MapOperator<Record, Record> mapOperator = new MapOperator<>(pd);
+
         childOp.connectTo(0, mapOperator, 0);
 
-        if(groupCount > 0){
-            ReduceByOperator<Record, Object> reduceByOperator;
-            reduceByOperator = new ReduceByOperator<>(
-                    new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class, Object.class),
-                    new ReduceDescriptor<>(new aggregateFunction(aggregateCalls),
+        Operator aggregateOperator;
+
+        if (groupCount > 0) {
+            ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
+                    new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class,
+                            Object.class),
+                    new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),
                             DataUnitType.createGrouped(Record.class),
-                            DataUnitType.createBasicUnchecked(Record.class))
-            );
+                            DataUnitType.createBasicUnchecked(Record.class)));
+
             aggregateOperator = reduceByOperator;
-        }
-        else{
-            GlobalReduceOperator<Record> globalReduceOperator;
-            globalReduceOperator = new GlobalReduceOperator<>(
-                    new ReduceDescriptor<>(new aggregateFunction(aggregateCalls),
-                            DataUnitType.createGrouped(Record.class),
-                            DataUnitType.createBasicUnchecked(Record.class))
-            );
-            aggregateOperator = globalReduceOperator;
+        } else {
+            final ReduceDescriptor<Record> reduceDescriptor = new ReduceDescriptor<>(
+                    new AggregateFunction(aggregateCalls),
+                    DataUnitType.createGrouped(Record.class),
+                    DataUnitType.createBasicUnchecked(Record.class));
+
+            final List<String> reductionFunctions = wayangRelNode.getNamedAggCalls().stream()
+                    .map(agg -> agg.left.getAggregation().getName()).collect(Collectors.toList());
+
+            final List<String> reductionStatements = new ArrayList<>();
+
+            assert reductionFunctions.size() == aliasedFields.length
+                    : "Expected that the amount of reduction functions in reduce statement was eqaul to the amount of used tables";
+
+            // we have an assumption that the ordering is maintained between each list
+            for (int i = 0; i < reductionFunctions.size(); i++) {
+                // unpacking alias
+                final String[] unpackedAlias = aliasedFields[i].split(" AS ");
+
+                if (aliasedFields.length == 2) {
+                    reductionStatements.add(
+                            reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")" + " AS " + unpackedAlias[1]);
+                } else {
+                    reductionStatements.add(
+                        reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");  
+                }
+            }
+
+            reduceDescriptor.withSqlImplementation(
+                    reductionStatements.stream().collect(Collectors.joining(",")));
+
+            aggregateOperator = new GlobalReduceOperator<Record>(reduceDescriptor);
         }
 
         mapOperator.connectTo(0, aggregateOperator, 0);
 
-        MapOperator mapOperator2 = new MapOperator(
-                new getResult(aggregateCalls, groupingFields),
-                Record.class,
-                Record.class
-        );
-        aggregateOperator.connectTo(0,mapOperator2,0);
+        final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(
+                new GetResult(aggregateCalls, groupingFields),
+                Record.class, Record.class, aliasedFields);
+
+        final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);
+
+        aggregateOperator.connectTo(0, mapOperator2, 0);
         return mapOperator2;
 
-    }
-}
-
-class KeyExtractor implements FunctionDescriptor.SerializableFunction<Record, Object> {
-    private Set<Integer> indexSet;
-
-    public KeyExtractor(Set<Integer> indexSet){
-        this.indexSet = indexSet;
-    }
-
-    public Object apply(final Record record) {
-        List<Object> keys = new ArrayList<>();
-        for(Integer index : indexSet){
-            keys.add(record.getField(index));
-        }
-        return keys;
-    }
-}
-
-class addAggCols implements FunctionDescriptor.SerializableFunction<Record, Record> {
-    private final List<AggregateCall> aggregateCalls;
-    public addAggCols(List<AggregateCall> aggregateCalls)  {
-        this.aggregateCalls = aggregateCalls;
-    }
-    @Override
-    public Record apply(final Record record) {
-        int l = record.size();
-        int newRecordSize = l+aggregateCalls.size() +1;
-        Object[] resValues = new Object[newRecordSize];
-        int i;
-        for(i=0; i<l; i++){
-            resValues[i] = record.getField(i);
-        }
-        for(AggregateCall aggregateCall : aggregateCalls) {
-            String name = aggregateCall.getAggregation().getName();
-            if(name.equals("COUNT")){
-                resValues[i] = 1;
-            }
-            else{
-                resValues[i] = record.getField(aggregateCall.getArgList().get(0));
-            }
-            i++;
-        }
-        resValues[newRecordSize-1] = 1;
-        return new Record(resValues);
-    }
-}
-
-class getResult implements FunctionDescriptor.SerializableFunction<Record, Record> {
-    private final List<AggregateCall> aggregateCallList;
-    private Set<Integer> groupingfields;
-    public getResult(List<AggregateCall> aggregateCalls, Set<Integer> groupingfields) {
-        this.aggregateCallList = aggregateCalls;
-        this.groupingfields = groupingfields;
-    }
-
-    @Override
-    public Record apply(final Record record) {
-        int l = record.size();
-        int outputRecordSize = aggregateCallList.size() + groupingfields.size();
-        Object[] resValues = new Object[outputRecordSize];
-
-        int i = 0;
-        int j = 0;
-        for(i=0; j<groupingfields.size(); i++){
-            if(groupingfields.contains(i)){
-                resValues[j] = record.getField(i);
-                j++;
-            }
-        }
-
-        i = l - aggregateCallList.size() -1;
-        for(AggregateCall aggregateCall : aggregateCallList){
-            String name = aggregateCall.getAggregation().getName();
-            if (name.equals("AVG")){
-                resValues[j] = record.getDouble(i)/record.getDouble(l-1);
-            }
-            else{
-                resValues[j] = record.getField(i);
-            }
-            j++;
-            i++;
-        }
-
-        return new Record(resValues);
-    }
-}
-
-class aggregateFunction implements FunctionDescriptor.SerializableBinaryOperator<Record> {
-    private final List<AggregateCall> aggregateCallList;
-    public aggregateFunction(List<AggregateCall> aggregateCalls) {
-        this.aggregateCallList = aggregateCalls;
-    }
-    @Override
-    public Record apply(Record record, Record record2) {
-        int l = record.size();
-        Object[] resValues = new Object[l];
-        int i;
-        boolean countDone = false;
-        for(i=0; i<l-aggregateCallList.size() -1; i++){
-            resValues[i] = record.getField(i);
-        }
-        for(AggregateCall aggregateCall : aggregateCallList) {
-            String name = aggregateCall.getAggregation().getName();
-            double val1 = record.getDouble(i);
-            double val2 = record2.getDouble(i);
-            if (name.equals("SUM")) {
-                resValues[i] = val1 + val2;
-            }
-            else if (name.equals("MIN")) {
-                resValues[i] = Math.min(val1, val2);
-            }
-            else if (name.equals("MAX")) {
-                resValues[i] = Math.max(val1, val2);
-            }
-            else if (name.equals("COUNT")){
-                resValues[i] = val1 + val2;
-            }
-            else if (name.equals("AVG")){
-                resValues[i] = val1 + val2;
-                if(!countDone) {
-                    resValues[l-1] = record.getInt(l-1) + record2.getInt(l-1);
-                    countDone = true;
-                }
-            }
-            i++;
-        }
-        return new Record(resValues);
     }
 }

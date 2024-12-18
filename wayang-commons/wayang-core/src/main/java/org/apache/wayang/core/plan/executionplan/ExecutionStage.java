@@ -30,18 +30,29 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Resides within a {@link PlatformExecution} and represents the minimum execution unit that is controlled by Wayang.
- * <p>The purpose of stages is to allow to do only a part of work that is to be done by a single
- * {@link PlatformExecution} and invoke a further {@link PlatformExecution} to proceed working with the results
- * of this stage. Also, this allows to consume data with a {@link PlatformExecution} only when it is needed, i.e.,
- * at a deferred stage. However, the level of control that can be imposed by Wayang can vary between {@link Platform}s</p>
- * <p>Note that this class is immutable, i.e., it does not comprise any execution state.</p>
+ * Resides within a {@link PlatformExecution} and represents the minimum
+ * execution unit that is controlled by Wayang.
+ * <p>
+ * The purpose of stages is to allow to do only a part of work that is to be
+ * done by a single
+ * {@link PlatformExecution} and invoke a further {@link PlatformExecution} to
+ * proceed working with the results
+ * of this stage. Also, this allows to consume data with a
+ * {@link PlatformExecution} only when it is needed, i.e.,
+ * at a deferred stage. However, the level of control that can be imposed by
+ * Wayang can vary between {@link Platform}s
+ * </p>
+ * <p>
+ * Note that this class is immutable, i.e., it does not comprise any execution
+ * state.
+ * </p>
  */
 public class ExecutionStage {
 
@@ -80,9 +91,9 @@ public class ExecutionStage {
      */
     private final int sequenceNumber;
 
-
     /**
-     * Create a new instance and register it with the given {@link PlatformExecution}.
+     * Create a new instance and register it with the given
+     * {@link PlatformExecution}.
      */
     ExecutionStage(PlatformExecution platformExecution, ExecutionStageLoop executionStageLoop, int sequenceNumber) {
         this.platformExecution = platformExecution;
@@ -95,7 +106,8 @@ public class ExecutionStage {
     }
 
     /**
-     * Mutually register a predecessor/successor relationship among this and the given instance.
+     * Mutually register a predecessor/successor relationship among this and the
+     * given instance.
      *
      * @param that a new successor of this instance
      */
@@ -123,7 +135,8 @@ public class ExecutionStage {
     }
 
     /**
-     * Notify the {@link #executionStageLoop} that there is a new {@link ExecutionTask} in this instance, which might
+     * Notify the {@link #executionStageLoop} that there is a new
+     * {@link ExecutionTask} in this instance, which might
      * comprise the {@link LoopHeadOperator}.
      *
      * @param task
@@ -135,16 +148,19 @@ public class ExecutionStage {
     }
 
     /**
-     * Determine if this instance is the loop head of its {@link ExecutionStageLoop}.
+     * Determine if this instance is the loop head of its
+     * {@link ExecutionStageLoop}.
      *
-     * @return {@code true} if the above condition is fulfilled or there is no {@link ExecutionStageLoop}
+     * @return {@code true} if the above condition is fulfilled or there is no
+     *         {@link ExecutionStageLoop}
      */
     public boolean isLoopHead() {
         return this.executionStageLoop != null && this.executionStageLoop.getLoopHead() == this;
     }
 
     /**
-     * Retrieve the (innermost) {@link ExecutionStageLoop} that this instance is part of.
+     * Retrieve the (innermost) {@link ExecutionStageLoop} that this instance is
+     * part of.
      *
      * @return the said {@link ExecutionStageLoop} or {@code null} if none
      */
@@ -153,7 +169,8 @@ public class ExecutionStage {
     }
 
     /**
-     * Retrieves the {@link LoopHeadOperator} {@link ExecutionTask} in this instance. This instance must be a
+     * Retrieves the {@link LoopHeadOperator} {@link ExecutionTask} in this
+     * instance. This instance must be a
      * loop head.
      *
      * @return the {@link LoopHeadOperator} {@link ExecutionTask}
@@ -165,7 +182,8 @@ public class ExecutionStage {
     }
 
     /**
-     * Tells whether this instance is in a {@link ExecutionStageLoop} that has finished iterating.
+     * Tells whether this instance is in a {@link ExecutionStageLoop} that has
+     * finished iterating.
      *
      * @return whether this instance is in a finished {@link ExecutionStageLoop}
      * @see #isLoopHead()
@@ -174,7 +192,8 @@ public class ExecutionStage {
         if (this.executionStageLoop == null) {
             return false;
         }
-        final LoopHeadOperator loopHeadOperator = (LoopHeadOperator) this.executionStageLoop.getLoopHead().getLoopHeadTask().getOperator();
+        final LoopHeadOperator loopHeadOperator = (LoopHeadOperator) this.executionStageLoop.getLoopHead()
+                .getLoopHeadTask().getOperator();
         return loopHeadOperator.getState() == LoopHeadOperator.State.FINISHED;
     }
 
@@ -222,26 +241,26 @@ public class ExecutionStage {
     }
 
     /**
-     * @return all {@link Channel}s of this instance that connect to other {@link ExecutionStage}s
+     * @return all {@link Channel}s of this instance that connect to other
+     *         {@link ExecutionStage}s
      */
     public Collection<Channel> getOutboundChannels() {
         return this.getAllTasks().stream()
                 .flatMap(
-                        task -> Arrays.stream(task.getOutputChannels()).filter(Channel::isBetweenStages)
-                ).collect(Collectors.toList());
+                        task -> Arrays.stream(task.getOutputChannels()).filter(Channel::isBetweenStages))
+                .collect(Collectors.toList());
 
     }
 
     /**
-     * @return all {@link Channel}s of this instance that connect from other {@link ExecutionStage}s
+     * @return all {@link Channel}s of this instance that connect from other
+     *         {@link ExecutionStage}s
      */
     public Collection<Channel> getInboundChannels() {
         return this.getAllTasks().stream()
-                .flatMap(task ->
-                        Arrays.stream(task.getInputChannels()).filter(
-                                channel -> channel.getProducer().getStage() != this
-                        )
-                ).collect(Collectors.toList());
+                .flatMap(task -> Arrays.stream(task.getInputChannels()).filter(
+                        channel -> channel.getProducer().getStage() != this))
+                .collect(Collectors.toList());
 
     }
 
@@ -263,12 +282,14 @@ public class ExecutionStage {
     public String getPlanAsString(String indent) {
         final StringBuilder sb = new StringBuilder();
         this.getPlanAsString(sb, indent);
-        if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') sb.setLength(sb.length() - 1);
+        if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n')
+            sb.setLength(sb.length() - 1);
         return sb.toString();
     }
 
     /**
-     * Appends this instance's {@link ExecutionTask}s and {@link Channel}s to the given {@link StringBuilder}.
+     * Appends this instance's {@link ExecutionTask}s and {@link Channel}s to the
+     * given {@link StringBuilder}.
      *
      * @param sb     to which the representation should be appended
      * @param indent will be used to indent every line of the textual representation
@@ -287,12 +308,16 @@ public class ExecutionStage {
         }
     }
 
-    private void toExtensiveStringAux(ExecutionTask task, Set<ExecutionTask> seenTasks, StringBuilder sb, String indent) {
+    private void toExtensiveStringAux(ExecutionTask task, Set<ExecutionTask> seenTasks, StringBuilder sb,
+            String indent) {
         if (!seenTasks.add(task)) {
             return;
         }
+
         for (Channel channel : task.getOutputChannels()) {
             for (ExecutionTask consumer : channel.getConsumers()) {
+                System.out.println("consumer " + consumer + " stage equals?: " + (consumer.getStage() == this)
+                        + " stage: " + consumer.getStage());
                 if (consumer.getStage() == this) {
                     sb.append(indent)
                             .append("    ")
@@ -323,7 +348,7 @@ public class ExecutionStage {
         for (ExecutionTask startTask : this.startTasks) {
             this.toJsonMapAux(startTask, seenTasks, operators);
         }
-        return  jsonMap;
+        return jsonMap;
     }
 
     private void toJsonMapAux(ExecutionTask task, Set<ExecutionTask> seenTasks, ArrayList operators) {
@@ -331,28 +356,29 @@ public class ExecutionStage {
             return;
         }
         HashMap operator = new HashMap();
-        HashMap<String, ArrayList<HashMap<String, Object>>>  jsonConnectsTo = new HashMap<>();
+        HashMap<String, ArrayList<HashMap<String, Object>>> jsonConnectsTo = new HashMap<>();
         operator.put("name", task.getOperator().getName());
-        operator.put("is_terminal", this.terminalTasks.contains(task) ? 1:0);
-        operator.put("is_start", this.startTasks.contains(task) ? 1:0);
+        operator.put("is_terminal", this.terminalTasks.contains(task) ? 1 : 0);
+        operator.put("is_start", this.startTasks.contains(task) ? 1 : 0);
         operator.put("java_class", task.getOperator().getClass().getName());
 
         /*
-            connects_to should look like this:
-            "connects_to": {"0": [{"via": "CollectionChannel", "javaFlatMapOperator": 0}]}
+         * connects_to should look like this:
+         * "connects_to": {"0": [{"via": "CollectionChannel", "javaFlatMapOperator":
+         * 0}]}
          */
         operator.put("connects_to", jsonConnectsTo);
         operators.add(operator);
 
         for (Channel channel : task.getOutputChannels()) {
             ArrayList<HashMap<String, Object>> perOutputThatList = new ArrayList<>();
-            Integer thisOutIndex = channel.getProducerSlot()==null ? 0 : channel.getProducerSlot().getIndex();
+            Integer thisOutIndex = channel.getProducerSlot() == null ? 0 : channel.getProducerSlot().getIndex();
             jsonConnectsTo.put(thisOutIndex.toString(), perOutputThatList);
 
             for (ExecutionTask consumer : channel.getConsumers()) {
                 HashMap<String, Object> jsonThatOp = new HashMap<>();
                 jsonThatOp.put(consumer.getOperator().getName(),
-                        (consumer.getInputSlotFor(channel)==null) ? 0 : consumer.getInputSlotFor(channel).getIndex());
+                        (consumer.getInputSlotFor(channel) == null) ? 0 : consumer.getInputSlotFor(channel).getIndex());
                 jsonThatOp.put("via", prettyPrint(channel));
                 perOutputThatList.add(jsonThatOp);
                 if (consumer.getStage() == this)
@@ -380,17 +406,135 @@ public class ExecutionStage {
             final ExecutionTask task = nextTasks.poll();
             assert task.getStage() == this;
             if (allTasks.add(task) && !this.terminalTasks.contains(task)) {
-                Arrays.stream(task.getOutputChannels())
-                        .flatMap(channel -> channel.getConsumers().stream())
-                        .filter(consumer -> consumer.getStage() == this)
-                        .forEach(nextTasks::add);
+                this.getNextTask(task).forEach(nextTasks::add);
             }
         }
         return allTasks;
     }
 
+    /**
+     * A map that maps an {@link ExecutionTask} in an {@link ExecutionStage} to
+     * whatever nodes it can reach
+     * via DFS starting from the terminal task. Unlike {@link #getAllTasks()} also
+     * contains terminal tasks.
+     */
+    public Map<ExecutionTask, Set<ExecutionTask>> canReachMap() {
+        final HashMap<ExecutionTask, Set<ExecutionTask>> canReachHashMap = new HashMap<>(); //init hash map
+        final Queue<ExecutionTask> nextTasks = new LinkedList<>();
+
+        for (final ExecutionTask startTask : startTasks) {
+            // add the nextTask from the starting task as the starting task will be handled
+            // below
+            this.getNextTask(startTask).forEach(nextTasks::add);
+
+            // init startTask, in map
+            canReachHashMap.put(startTask, new HashSet<>()); // starting task reaches no subsequent tasks
+
+            while (!nextTasks.isEmpty()) {
+                final ExecutionTask nextTask = nextTasks.poll(); // fetch the next task in the dfs
+                
+                // very cumbersome way of getting the preceeding task's reachable nodes:
+                final Set<ExecutionTask> reachableNodes = this.getPreceedingTask(nextTask)
+                        .stream()
+                        .map(reachable -> canReachHashMap.getOrDefault(reachable, new HashSet<>()))
+                        .flatMap(Set::stream)
+                        .collect(Collectors.toSet());
+
+                reachableNodes.addAll(this.getPreceedingTask(nextTask)); //add the preceeding task
+
+                reachableNodes.addAll(this.getPreceedingTask(nextTask)); // Add the preceding tasks themselves
+
+                canReachHashMap.computeIfAbsent(nextTask, k -> new HashSet<>()).addAll(reachableNodes);
+
+                this.getNextTask(nextTask).forEach(nextTasks::add); // add all proceeding tasks to nexttasks so they
+            }
+        }
+
+        return canReachHashMap;
+    }
+
+    /**
+     * A map that maps an {@link ExecutionTask} in an {@link ExecutionStage} to
+     * whatever nodes it can reach
+     * via DFS starting from the terminal task. Unlike {@link #getAllTasks()} also
+     * contains terminal tasks.
+     */
+    public Map<ExecutionTask, Set<ExecutionTask>> canReachMap2() {
+        final HashMap<ExecutionTask, Set<ExecutionTask>> canReachHashMap = new HashMap<>();
+        final Queue<ExecutionTask> nextTasks = new LinkedList<>(this.terminalTasks);
+        final Set<ExecutionTask> allTasks = new HashSet<>(this.getAllTasks());
+
+        // init sets for all tasks in hashmap
+        allTasks.forEach(task -> canReachHashMap.put(task, new HashSet<>()));
+
+        // setup the starting task and its reachable nodes, which should be all since it
+        // is the terminal node
+        final ExecutionTask startingTask = nextTasks.poll();
+        canReachHashMap.put(startingTask, new HashSet<>(allTasks));
+        canReachHashMap.get(startingTask).remove(startingTask);
+        this.getPreceedingTask(startingTask).forEach(nextTasks::add);
+
+        while (!nextTasks.isEmpty()) {
+            final ExecutionTask task = nextTasks.poll(); // fetch the next task in the dfs
+            assert task.getStage() == this;
+            // very cumbersome way of getting the next task's reachable nodes:
+            final Set<ExecutionTask> reachableNodes = this.getNextTask(task)
+                    .stream()
+                    .map(reachable -> canReachHashMap.get(reachable))
+                    .flatMap(Set::stream)
+                    .collect(Collectors.toSet());
+
+
+            // remove this node from reachable,
+            // this should finalize our set of the nodes reachable from the current task
+            reachableNodes.remove(task);
+
+            // add all tasks so far found by dfs to the
+            // reachable set
+            canReachHashMap.get(task).addAll(reachableNodes);
+
+            // add all proceeding tasks to nexttasks so they
+            // will be iterated
+            this.getPreceedingTask(task).forEach(nextTasks::add);
+
+        }
+
+        return canReachHashMap;
+
+    }
+
+    /**
+     * Retrieves the follow-up {@link ExecutionTask} of the given {@code task}, in
+     * this stage.
+     * 
+     * @param task ExecutionTask whose follow up you want to find.
+     */
+    public Set<ExecutionTask> getNextTask(ExecutionTask task) {
+        assert task.getStage() == this;
+        return Arrays.stream(task.getOutputChannels())
+                .map(Channel::getConsumers)
+                .flatMap(List::stream)
+                .filter(consumer -> consumer.getStage() == this)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Retrieves the preceding {@link ExecutionTask} of the given {@code task}, in
+     * this stage.
+     * See also {@link #getNextTask(ExecutionTask)}.
+     * 
+     * @param task ExecutionTask whose preceeding task you want to find.
+     */
+    public Set<ExecutionTask> getPreceedingTask(ExecutionTask task) {
+        assert task.getStage() == this;
+        return Arrays.stream(task.getInputChannels())
+                .map(Channel::getProducer)
+                .filter(consumer -> consumer.getStage() == this)
+                .collect(Collectors.toSet());
+    }
+
     public void retainSuccessors(Set<ExecutionStage> retainableStages) {
-        for (Iterator<ExecutionStage> i = this.successors.iterator(); i.hasNext(); ) {
+        for (Iterator<ExecutionStage> i = this.successors.iterator(); i.hasNext();) {
             final ExecutionStage successor = i.next();
             if (!retainableStages.contains(successor)) {
                 i.remove();

@@ -17,31 +17,222 @@
 
 package org.apache.wayang.api.sql;
 
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
+import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteSerializable;
+import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FilterPredicateImpl;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
+import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchemaBuilder;
 import org.apache.wayang.api.sql.calcite.schema.WayangTable;
 import org.apache.wayang.api.sql.calcite.schema.WayangTableBuilder;
+import org.apache.wayang.api.sql.calcite.utils.ModelParser;
+import org.apache.wayang.api.sql.context.SqlContext;
+import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.json.simple.parser.ParseException;
+import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Properties;
 
 
 public class SqlToWayangRelTest {
+    //@Test
+    public void rexSerializationTest() throws Exception {
+        //create filterPredicateImpl for serialisation
+        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        RexBuilder rb                  = new RexBuilder(typeFactory);
+        RexNode leftOperand            = rb.makeInputRef(typeFactory.createSqlType(SqlTypeName.VARCHAR), 0);
+        RexNode rightOperand           = rb.makeLiteral("test");
+        RexNode cond                   = rb.makeCall(SqlStdOperatorTable.EQUALS, leftOperand, rightOperand);
+        CalciteSerializable fpImpl     = (CalciteSerializable) new FilterPredicateImpl(cond);
+        
+        //setup the optimizer as calcite serialization requires the schema to be ready before serialisation
+        Properties configProperties           = Optimizer.ConfigProperties.getDefaults();
+        RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
+        String calciteModelPath               = SqlAPI.class.getResource("/model-example-min.json").getPath();
+        Configuration configuration           = new ModelParser(new Configuration(), calciteModelPath).setProperties();
+        CalciteSchema calciteSchema           = SchemaUtils.getSchema(configuration);
+        Optimizer optimizer                   = Optimizer.create(calciteSchema, configProperties, relDataTypeFactory);
 
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject((CalciteSerializable) fpImpl);
+        objectOutputStream.close();
+        System.out.println("Serialized object: " + byteArrayOutputStream.toString());
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+        CalciteSerializable deserializedObject = (CalciteSerializable) objectInputStream.readObject();
+        objectInputStream.close();
+        System.out.println("Deserialised object serialisables: " + deserializedObject);
+
+        assert(((FilterPredicateImpl) deserializedObject).test(new Record("test")));
+    }
+
+    //@Test
+    public void filterIsNull() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA IS NULL)" //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+        assert(result.size() == 0);
+    }
+
+    //@Test
+    public void filterIsNotValue() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA <> 'test1')" //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+        assert(!result.stream().anyMatch(record -> record.getField(0).equals("test1")));
+    }
+
+    private SqlContext createSqlContext(String calciteResourceName, String tableResourceName) throws IOException, ParseException, SQLException {
+        String calciteModelPath = SqlAPI.class.getResource(calciteResourceName).getPath();
+        
+        System.out.println("loading calcite model: " + calciteModelPath);
+        Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
+
+        String dataPath = SqlAPI.class.getResource(tableResourceName).getPath();
+        configuration.setProperty("wayang.fs.table.url", dataPath);
+
+        configuration.setProperty(
+                "wayang.ml.executions.file",
+                "mle" + ".txt"
+            );
+
+        configuration.setProperty(
+        "wayang.ml.optimizations.file",
+        "mlo" + ".txt"
+        );
+
+        configuration.setProperty("wayang.ml.experience.enabled", "false");
+
+        SqlContext sqlContext = new SqlContext(configuration);
+        return sqlContext;
+    }
+
+    //@Test
+    public void filterIsNotNull() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA IS NOT NULL)" //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+        assert(!result.stream().anyMatch(record -> record.getField(0).equals(null)));
+    }
+
+    //@Test
+    public void filterWithNotLike() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA NOT LIKE '_est1')" //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+        assert(!result.stream().anyMatch(record -> record.getString(0).equals("test1")));
+    }
+
+    @Test
+    public void filterWithLike() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA LIKE '_est1' OR largeLeftTableIndex.NAMEA LIKE 't%')" //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+    }
+
+    @Test
+    public void joinWithLargeLeftTableIndexCorrect() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex AS na INNER JOIN fs.largeLeftTableIndex AS nb ON na.NAMEB = nb.NAMEA " //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+    }
+
+    //@Test
+    public void joinWithLargeLeftTableIndexMirrorAlias() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.largeLeftTableIndex AS na INNER JOIN fs.largeLeftTableIndex AS nb ON nb.NAMEB = na.NAMEA " //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+    }
+
+    //@Test
+    public void exampleFilterTableRefToTableRef() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleRefToRef.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT * FROM fs.exampleRefToRef WHERE exampleRefToRef.NAMEA = exampleRefToRef.NAMEB" //
+        );
+
+        System.out.println("Printing results");
+        result.stream().forEach(System.out::println);
+    }
+
+    //@Test
+    public void exampleMinWithStrings() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleMin.csv");
+
+        Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
+            "SELECT MIN(exampleMin.NAME) FROM fs.exampleMin" //
+        );
+
+        assert(result.stream().findAny().get().getString(0).equals("AA"));
+    }
+    
+    //@Test
     public void test_simple_sql() throws Exception {
         WayangTable customer = WayangTableBuilder.build("customer")
                 .addField("id", SqlTypeName.INTEGER)

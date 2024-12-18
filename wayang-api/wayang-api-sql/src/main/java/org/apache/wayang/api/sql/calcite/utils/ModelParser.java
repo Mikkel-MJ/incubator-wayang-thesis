@@ -34,13 +34,29 @@ public class ModelParser {
     private JSONObject json;
 
     public ModelParser() throws IOException, ParseException {
-        Object obj = new JSONParser().parse(new FileReader("wayang-api/wayang-api-sql/src/main/resources/model.json"));
+        Object obj = new JSONParser().parse(new FileReader("/var/www/html/wayang-api/wayang-api-sql/target/test-classes/model-example-min.json"));
+        this.json = (JSONObject) obj;
+    }
+
+    /**
+     * 
+     * @param configuration
+     * @param calciteModelPath path to json object containingcalcite model/schemax
+     * @throws IOException
+     * @throws ParseException
+     */
+    public ModelParser(Configuration configuration, String calciteModelPath) throws IOException, ParseException {
+        this.configuration = configuration;
+        FileReader fr = new FileReader(calciteModelPath);
+        Object obj = new JSONParser().parse(fr);
+
+        System.out.println("Parsed CalciteModel: " + obj);
         this.json = (JSONObject) obj;
     }
 
     public ModelParser(Configuration configuration) throws IOException, ParseException {
         this.configuration = configuration;
-        Object obj = new JSONParser().parse(new FileReader("wayang-api/wayang-api-sql/src/main/resources/model.json"));
+        Object obj = new JSONParser().parse(new FileReader("/var/www/html/wayang-api/wayang-api-sql/target/test-classes/model-example-min.json"));
         this.json = (JSONObject) obj;
 
     }

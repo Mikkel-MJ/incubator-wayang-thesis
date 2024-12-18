@@ -26,9 +26,11 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
+import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
+import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
@@ -41,6 +43,7 @@ import org.apache.wayang.spark.Spark;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,7 +59,7 @@ public class SqlContext extends WayangContext {
         this(new Configuration());
     }
 
-    public SqlContext(Configuration configuration) throws SQLException {
+    public SqlContext(final Configuration configuration) throws SQLException {
         super(configuration.fork(String.format("SqlContext(%s)", configuration.getName())));
 
         this.withPlugin(Java.basicPlugin());
@@ -66,58 +69,95 @@ public class SqlContext extends WayangContext {
         calciteSchema = SchemaUtils.getSchema(configuration);
     }
 
-    public SqlContext(Configuration configuration, List<Plugin> plugins) throws SQLException {
+    public SqlContext(final Configuration configuration, final List<Plugin> plugins) throws SQLException {
         super(configuration.fork(String.format("SqlContext(%s)", configuration.getName())));
 
-        for (Plugin plugin : plugins) {
+        for (final Plugin plugin : plugins) {
             this.withPlugin(plugin);
         }
 
         calciteSchema = SchemaUtils.getSchema(configuration);
     }
 
-    public Collection<Record> executeSql(String sql) throws SqlParseException {
+    public SqlContext(final Configuration configuration, final Plugin... plugins) throws SQLException {
+        super(configuration.fork(String.format("SqlContext(%s)", configuration.getName())));
 
-        Properties configProperties = Optimizer.ConfigProperties.getDefaults();
-        RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
+        for (final Plugin plugin : plugins) {
+            this.withPlugin(plugin);
+        }
 
-        Optimizer optimizer = Optimizer.create(calciteSchema, configProperties,
+        calciteSchema = SchemaUtils.getSchema(configuration);
+    }
+
+    /**
+     * Executes sql with varargs udfJars. udfJars can help in serialisation contexts
+     * where the
+     * jars need to be used for serialisation remotely, in use cases like Spark and
+     * Flink.
+     * udfJars can be given by: {@code ReflectionUtils.getDeclaringJar(Foo.class)}
+     * 
+     * @param sql     string sql without ";"
+     * @param udfJars varargs of your udf jars, typically just the calling class
+     * @return collection of sql records
+     * @throws SqlParseException
+     */
+    public Collection<Record> executeSql(final String sql, final String... udfJars) throws SqlParseException {
+        final Properties configProperties = Optimizer.ConfigProperties.getDefaults();
+        final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
+
+        final Optimizer optimizer = Optimizer.create(calciteSchema, configProperties,
                 relDataTypeFactory);
 
-        SqlNode sqlNode = optimizer.parseSql(sql);
-        SqlNode validatedSqlNode = optimizer.validate(sqlNode);
-        RelNode relNode = optimizer.convert(validatedSqlNode);
+        final SqlNode sqlNode = optimizer.parseSql(sql);
+        final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
+
+        final RelNode relNode = optimizer.convert(validatedSqlNode);
+
+        final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
+        visitor.visit(relNode, 0, null);
+
+        final AliasFinder aliasFinder = new AliasFinder(visitor);
 
         PrintUtils.print("After parsing sql query", relNode);
 
-
-        RuleSet rules = RuleSets.ofList(
+        final RuleSet rules = RuleSets.ofList(
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE
-        );
-        RelNode wayangRel = optimizer.optimize(
+                WayangRules.WAYANG_AGGREGATE_RULE);
+
+        final RelNode wayangRel = optimizer.optimize(
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
-                rules
-        );
+                rules);
 
         PrintUtils.print("After translating logical intermediate plan", wayangRel);
 
+        // Optimizer.getCluster().getPlanner().setRoot(wayangRel);
+        // RelNode wayangRelOptimized =
+        // Optimizer.getCluster().getPlanner().findBestExp();
 
-        Collection<Record> collector = new ArrayList<>();
-        WayangPlan wayangPlan = optimizer.convert(wayangRel, collector);
-        this.execute(getJobName(), wayangPlan);
+        final Collection<Record> collector = new ArrayList<>();
+        final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
+        PrintUtils.print("After optimiser conversion: ", wayangPlan);
+
+        if (udfJars.length == 0) {
+            System.out.println("Executing w/o udfJars");
+            // PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node
+            // -> {if (!node.isSink()) node.addTargetPlatform(Postgres.platform());});
+            this.execute(getJobName(), wayangPlan);
+        } else {
+            System.out.println("Executing with udfJars: ");
+            Arrays.stream(udfJars).forEach(System.out::println);
+            this.execute(getJobName(), wayangPlan, udfJars);
+        }
 
         return collector;
     }
 
     private static String getJobName() {
-        return "SQL["+jobId.incrementAndGet()+"]";
+        return "SQL[" + jobId.incrementAndGet() + "]";
     }
-
-
 }

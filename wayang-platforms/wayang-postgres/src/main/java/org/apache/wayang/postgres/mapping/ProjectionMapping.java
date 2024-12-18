@@ -37,7 +37,6 @@ import java.util.Collections;
  * /**
  * Mapping from {@link MapOperator} to {@link PostgresProjectionOperator}.
  */
-@SuppressWarnings("unchecked")
 public class ProjectionMapping implements Mapping {
 
     @Override
@@ -56,17 +55,20 @@ public class ProjectionMapping implements Mapping {
                         null,
                         DataSetType.createDefault(Record.class),
                         DataSetType.createDefault(Record.class)
-                ),
+                        ),
                 false
         )
-                .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
-                .withAdditionalTest(op -> op.getNumInputs() == 1); // No broadcasts.
+        .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
+        .withAdditionalTest(op -> op.getNumInputs() == 1); // No broadcasts.
+        
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<MapOperator<Record, Record>>(
-                (matchedOperator, epoch) -> new PostgresProjectionOperator(matchedOperator).at(epoch)
+                (matchedOperator, epoch) -> {
+                        return new PostgresProjectionOperator(matchedOperator).at(epoch);
+                }
         );
     }
 }

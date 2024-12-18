@@ -59,18 +59,16 @@ public class JoinMapping implements Mapping {
                 ),
                 false
         )
-            .withAdditionalTest(op -> op.getKeyDescriptor0() instanceof TransformationDescriptor)
-            .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor)
-            .withAdditionalTest(op -> op.getKeyDescriptor0().getSqlImplementation() != null)
-            .withAdditionalTest(op -> op.getKeyDescriptor1().getSqlImplementation() != null);
+        .withAdditionalTest(op -> op.getKeyDescriptor0() instanceof TransformationDescriptor)
+        .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor);
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<JoinOperator<Record, Record, Object>>(
-                (matchedOperator, epoch) -> {
-                    return new PostgresJoinOperator<Object>(matchedOperator).at(epoch);
-                }
+            (matchedOperator, epoch) -> {
+                return new PostgresJoinOperator<>(matchedOperator).at(epoch);
+            }
         );
     }
 }
