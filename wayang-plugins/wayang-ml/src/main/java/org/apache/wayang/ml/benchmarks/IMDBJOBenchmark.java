@@ -1,7 +1,6 @@
 package org.apache.wayang.ml.benchmarks;
 
 import com.amazonaws.services.iot.model.SqlParseException;
-import com.google.common.io.Resources;
 
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.commons.lang.StringUtils;
@@ -13,11 +12,11 @@ import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.spark.Spark;
 
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 public class IMDBJOBenchmark {
     /**
@@ -28,14 +27,30 @@ public class IMDBJOBenchmark {
      * 
      * @param args args[0]: path to calcite-job-ready-queries/*.sql
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         try {
-            Configuration configuration = new Configuration();
+            final Configuration configuration = new Configuration();
 
-            String calciteModel = Resources.toString(
-                    IMDBJOBenchmark.class.getResource("/calcite-model.json"),
-                    Charset.defaultCharset());
+            final String calciteModel = "{\n" +
+                    "    \"version\": \"1.0\",\n" +
+                    "    \"defaultSchema\": \"wayang\",\n" +
+                    "    \"schemas\": [\n" +
+                    "        {\n" +
+                    "            \"name\": \"postgres\",\n" +
+                    "            \"type\": \"custom\",\n" +
+                    "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
+                    "            \"operand\": {\n" +
+                    "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
+                    "                \"jdbcUrl\": \"jdbc:postgresql://host.docker.internal:5432/job\",\n" +
+                    "                \"jdbcUser\": \"postgres\",\n" +
+                    "                \"jdbcPassword\": \"postgres\"\n" +
+                    "            }\n" +
+                    "        }\n" +
+                    "    ]\n" +
+                    "}";
 
+                
+            configuration.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
             configuration.setProperty("wayang.calcite.model", calciteModel);
             configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://host.docker.internal:5432/job");
             configuration.setProperty("wayang.postgres.jdbc.user", "postgres");
@@ -51,8 +66,8 @@ public class IMDBJOBenchmark {
 
             configuration.setProperty("wayang.ml.experience.enabled", "false");
 
-            SqlContext sqlContext = new SqlContext(configuration, Java.basicPlugin(), Java.channelConversionPlugin(),
-                    Postgres.plugin(), Postgres.conversionPlugin());
+            final SqlContext sqlContext = new SqlContext(configuration, Spark.basicPlugin(), Postgres.plugin(),
+                    Java.basicPlugin(), Flink.basicPlugin());
             // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
             // Flink.basicPlugin(), Flink.conversionPlugin(),
             // Java.channelConversionPlugin());
@@ -62,31 +77,30 @@ public class IMDBJOBenchmark {
             // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
             // Java.channelConversionPlugin());
 
-            Path pathToQuery = Paths.get(args[0]);
-            String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off the last
+            final Path pathToQuery = Paths.get(args[0]);
+            final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off the last
                                                                                             // ';' otherwise sqlContext
                                                                                             // cant parse it
             System.out.println("Read query: " + query);
 
-            Collection<Record> result = sqlContext.executeSql(
+            final Collection<Record> result = sqlContext.executeSql(
                     query);
 
-
+            System.out.println(result.stream().limit(50).collect(Collectors.toList()));
             System.out.println("\nResults: " + " amount of records: " + result.size());
-            result.stream().forEach(e -> System.out.println(e));
-        } catch (IndexOutOfBoundsException e) {
+        } catch (final IndexOutOfBoundsException e) {
             e.printStackTrace();
             System.exit(1);
-        } catch (CalciteException e) {
+        } catch (final CalciteException e) {
             e.printStackTrace();
             System.exit(2);
-        } catch (SqlParseException e) {
+        } catch (final SqlParseException e) {
             e.printStackTrace();
             System.exit(3);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
             System.exit(4);
-        } catch (Error e) {
+        } catch (final Error e) {
             e.printStackTrace();
             System.exit(5);
         }
