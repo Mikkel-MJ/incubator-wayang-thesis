@@ -32,9 +32,16 @@ public class OrtTensorEncoder {
      * @return returns a tuple of (flatTrees, indexes)
      */
     public Tuple<ArrayList<long[][]>,ArrayList<long[][]>> prepareTrees(ArrayList<TreeNode> trees){
-        ArrayList<long[][]> flatTrees = trees.stream()
+        ArrayList<long[][]> flatTrees = new ArrayList<>();
+
+        for (TreeNode tree : trees) {
+            flatTrees.add(this.flatten(tree));
+        }
+
+        /*
+            trees.stream()
                 .map(this::flatten)
-                .collect(Collectors.toCollection(ArrayList::new));
+                .collect(Collectors.toCollection(ArrayList::new));*/
 
         flatTrees = padAndCombine(flatTrees);
 
@@ -102,14 +109,14 @@ public class OrtTensorEncoder {
      * An array containing the nodes ordered by their index.
      * @return
      */
-    private ArrayList<TreeNode> orderedNodes = new ArrayList<>();
+    private static ArrayList<TreeNode> orderedNodes = new ArrayList<>();
 
     /**
      * transforms a tree into a tree of preorder indexes
      * @return
      * @param idx needs to default to one.
      */
-    private TreeNode preorderIndexes(TreeNode root, long idx){ //this method is very scary
+    private TreeNode preorderIndexes(TreeNode root, long idx){ //this method is very scary - Mads, early 2024 | - True, Juri, late 2024
         if (root == null) {
             return null;
         }
@@ -117,16 +124,13 @@ public class OrtTensorEncoder {
         orderedNodes.add(root);
 
         if (root.isLeaf()) {
-            return new TreeNode(new long[]{idx},null,null);
+            return new TreeNode(new long[]{idx}, null, null);
         }
 
-        TreeNode leftSubTree = null;
         TreeNode rightSubTree = null;
+        TreeNode leftSubTree = root.left != null ? preorderIndexes(root.left, idx+1) : null;
 
-        if (root.left != null) {
-            leftSubTree = preorderIndexes(root.left, idx+1);
-        }
-
+        // Not that shrimple
         if (root.right != null) {
             long maxIndexInLeftSubTree = rightMost(leftSubTree);
             rightSubTree = preorderIndexes(root.right, maxIndexInLeftSubTree + 1);
@@ -136,16 +140,20 @@ public class OrtTensorEncoder {
     }
 
     private long rightMost(TreeNode root){
+        // this null
         if (root == null) return 0;
 
+        // left null, right null
         if (root.isLeaf()) {
             return root.encoded[0];
         }
 
-        if (root.right == null) {
-            return root.left.encoded[0];
+        // left non null, right null
+        if (root.right == null && root.left != null) {
+            return rightMost(root.left);
         }
 
+        // left non null, right non null, this non null
         return rightMost(root.right);
     }
 
@@ -154,6 +162,9 @@ public class OrtTensorEncoder {
      * @return
      */
     private ArrayList<long[][]> padAndCombine(List<long[][]> flatTrees) {
+        assert flatTrees.size() >= 1;
+        assert flatTrees.get(0).length == 2;
+
         ArrayList<long[][]> vecs = new ArrayList<>();
 
         if (flatTrees.get(0).length == 0) {
@@ -164,7 +175,6 @@ public class OrtTensorEncoder {
         int maxFirstDim = flatTrees.stream()
                 .map(a -> a.length)
                 .max(Integer::compare).get(); //we are trying to find the largest flat tree
-
 
         for (long[][] tree : flatTrees) {
             long[][] padding = new long[maxFirstDim][secondDim];
@@ -181,14 +191,13 @@ public class OrtTensorEncoder {
 
     public static Tuple<ArrayList<long[][]>, ArrayList<long[][]>> encode(TreeNode node) {
         //matrix transpose test
-
         OrtTensorEncoder testo = new OrtTensorEncoder();
 
         assert node != null : "Node is null and can't be encoded";
 
 
-        testo.treeConvIndexes(node);
-        testo.preorderIndexes(node,1);
+        //testo.treeConvIndexes(node);
+        //testo.preorderIndexes(node,1);
 
         ArrayList<TreeNode> testArr = new ArrayList<>();
         testArr.add(node);
@@ -222,7 +231,7 @@ public class OrtTensorEncoder {
 
         // Remove the 0th item - its the Id
         long[] values = Arrays.copyOf(v.encoded, v.encoded.length);
-        values[0] = 0;
+        //values[0] = 0;
         acc.add(values);
 
         if (v.isLeaf()) {

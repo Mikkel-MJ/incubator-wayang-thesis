@@ -59,7 +59,6 @@
             <artifactId>wayang-java</artifactId>
             <version>${wayang.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>tensorflow-core-platform</artifactId>

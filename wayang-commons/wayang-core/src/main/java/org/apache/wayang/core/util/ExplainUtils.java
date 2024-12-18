@@ -108,6 +108,8 @@ public class ExplainUtils {
             System.out.println(StringUtils.repeat(ExplainUtils.INDENT, level) + "-+ " + current);
         }
 
+        System.out.println("Platforms: " + current.getTargetPlatforms());
+
         if (visited.containsKey(current)) {
             return null;
         }

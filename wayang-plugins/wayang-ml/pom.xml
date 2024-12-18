@@ -36,10 +36,20 @@
     </properties>
 
     <dependencies>
-        <dependency>
+        <!--dependency>
             <groupId>com.microsoft.onnxruntime</groupId>
             <artifactId>onnxruntime</artifactId>
             <version>1.16.3</version>
+        </dependency-->
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime_gpu</artifactId>
+            <version>1.18.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jcuda</groupId>
+            <artifactId>jcuda</artifactId>
+            <version>11.7.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.wayang</groupId>
@@ -87,6 +97,11 @@
           <version>0.7.1</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.wayang</groupId>
+            <artifactId>wayang-api-python</artifactId>
+            <version>0.7.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-dbcp2</artifactId>
             <version>2.7.0</version>
@@ -106,8 +121,12 @@
           <artifactId>spark-mllib_2.12</artifactId>
           <version>${spark.version}</version>
         </dependency>
-    </dependencies>
-
+        <dependency>
+          <groupId>com.google.protobuf</groupId>
+          <artifactId>protobuf-java</artifactId>
+          <version>3.16.3</version>
+        </dependency>
+      </dependencies>
     <build>
         <resources>
             <resource>
