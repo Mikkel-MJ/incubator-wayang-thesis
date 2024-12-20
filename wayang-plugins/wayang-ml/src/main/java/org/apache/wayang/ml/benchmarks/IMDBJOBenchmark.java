@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class IMDBJOBenchmark {
-    public static WayangPlan getWayangPlan(final String path, final Configuration configuration,
-            final String calciteModelJSON, final Plugin[] plugins, final String... udfJars)
+    public static WayangPlan getWayangPlan(final String path, final Configuration configuration, final Plugin[] plugins,
+            final String... udfJars)
             throws SQLException, IOException, org.apache.calcite.sql.parser.SqlParseException {
         final SqlContext sqlContext = new SqlContext(configuration, plugins);
         final Path pathToQuery = Paths.get(path);
