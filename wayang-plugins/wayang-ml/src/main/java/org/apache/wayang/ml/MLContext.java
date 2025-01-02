@@ -36,6 +36,7 @@ import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.EnumerationStrategy;
 import org.apache.wayang.ml.util.Logging;
 import org.apache.wayang.core.util.Tuple;
+import org.apache.logging.log4j.Level;
 
 import java.io.IOException;
 import java.io.BufferedWriter;
@@ -72,6 +73,7 @@ public class MLContext extends WayangContext {
      */
     @Override
     public void execute(WayangPlan wayangPlan, String... udfJars) {
+        this.setLogLevel(Level.ERROR);
         Job wayangJob = this.createJob("", wayangPlan, udfJars);
         OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
 
@@ -106,6 +108,7 @@ public class MLContext extends WayangContext {
     }
 
     public void executeVAE(WayangPlan wayangPlan, String ...udfJars) {
+        this.setLogLevel(Level.ERROR);
         try {
             Job job = this.createJob("", wayangPlan, udfJars);
             Configuration jobConfig = job.getConfiguration();

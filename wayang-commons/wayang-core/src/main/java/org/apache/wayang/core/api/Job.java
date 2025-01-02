@@ -244,7 +244,6 @@ public class Job extends OneTimeExecutable {
     @Override
     public void execute() throws WayangException {
         try {
-            System.out.println("executing: " + this.wayangPlan.asPrintString());
             super.execute();
         } catch (WayangException e) {
             throw e;
@@ -272,7 +271,7 @@ public class Job extends OneTimeExecutable {
             e.printStackTrace();
         }
     }
-    
+
     @Override
     protected void doExecute() {
         // Make sure that each job is only executed once.
@@ -311,7 +310,6 @@ public class Job extends OneTimeExecutable {
 
 
             // Take care of the execution.
-            /*
             Instant start = Instant.now();
             while (!this.execute(executionPlan, executionId)) {
                 this.optimizationRound.start();
@@ -358,7 +356,7 @@ public class Job extends OneTimeExecutable {
             this.stopWatch.start("Post-processing");
             if (this.configuration.getBooleanProperty("wayang.core.log.enabled")) {
                 this.logExecution();
-            }*/
+            }
         } catch (WayangException e) {
             throw e;
         } catch (Throwable t) {
@@ -387,10 +385,8 @@ public class Job extends OneTimeExecutable {
         // Apply the mappings to the plan to form a hyperplan.
         this.optimizationRound.start("Prepare", "Transformations");
         final Collection<PlanTransformation> transformations = this.gatherTransformations();
-        System.out.println("wayang plan before transformation: " + wayangPlan.asPrintString());
         this.wayangPlan.applyTransformations(transformations);
         this.optimizationRound.stop("Prepare", "Transformations");
-        System.out.println("WayangPlan after transformation: " + wayangPlan.asPrintString());
         this.optimizationRound.start("Prepare", "Sanity");
         assert this.wayangPlan.isSane();
         this.optimizationRound.stop("Prepare", "Sanity");
@@ -474,7 +470,6 @@ public class Job extends OneTimeExecutable {
         this.optimizationRound.start("Create Initial Execution Plan", "Split Stages");
         final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(this.planImplementation);
         final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, this.stageSplittingCriterion);
-        System.out.println("created initial execution plan: \n" + executionPlan.toExtensiveString());
         this.optimizationRound.stop("Create Initial Execution Plan", "Split Stages");
 
         this.planImplementation.mergeJunctionOptimizationContexts();
@@ -522,8 +517,6 @@ public class Job extends OneTimeExecutable {
                 executedStages
             );
         this.logger.info("Picked {} as best plan.", bestPlanImplementation);
-        System.out.println("traversal test " + bestPlanImplementation.getOperators());
-        System.out.println("this planImpl: " + this.planImplementation + ", bestPlan: " + bestPlanImplementation);
         return this.planImplementation = bestPlanImplementation;
     }
 

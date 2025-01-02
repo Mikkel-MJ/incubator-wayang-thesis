@@ -26,16 +26,18 @@ if [ ! -d venv ]; then
     ./venv/bin/python3.11 -m pip install -r requirements.txt
 fi
 
-queries=(1 3 6 10 12 14 19)
+queries=(901 950 999)
 
 bvae_path=/work/lsbo-paper/data/models/bvae.onnx
 
 data_path=/work/lsbo-paper/data
 experience_path=/work/lsbo-paper/data/experience/
 
-#for query in ${queries[@]}; do
-for query in {900..1000}; do
+for query in ${queries[@]}; do
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph file:///work/lsbo-paper/data/'
+    #./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph file:///work/lsbo-paper/data/' --parameters="./src/HyperparameterLogs/zdim/BVAE-16.json" --model-path="./src/Models/zdim/bvae-16.onnx" --zdim 16 --stats="./src/Data/splits/tpch/bvae/stats/zdim/stats-16"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph file:///work/lsbo-paper/data/' --parameters="./src/HyperparameterLogs/zdim/BVAE-31.json" --model-path="./src/Models/zdim/bvae-31.onnx" --zdim 31 --stats="./src/Data/splits/tpch/bvae/zdim/stats-31.txt"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph file:///work/lsbo-paper/data/' --parameters="./src/HyperparameterLogs/zdim/BVAE-64.json" --model-path="./src/Models/zdim/bvae-64.onnx" --zdim 64 --stats="./src/Data/splits/tpch/bvae/zdim/stats-64.txt"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph file:///work/lsbo-paper/data/' --parameters="./src/HyperparameterLogs/zdim/BVAE-128.json" --model-path="./src/Models/zdim/bvae-128.onnx" --zdim 128 --stats="./src/Data/splits/tpch/bvae/zdim/stats-128.txt"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,giraph file:///work/lsbo-paper/data/' --parameters="./src/HyperparameterLogs/zdim/BVAE-256.json" --model-path="./src/Models/zdim/bvae-256.onnx" --zdim 256 --stats="./src/Data/splits/tpch/bvae/zdim/stats-256.txt"
 done
-

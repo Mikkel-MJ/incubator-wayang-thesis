@@ -95,6 +95,7 @@ public class LSBORunner {
         config.setProperty("wayang.flink.master", "flink-cluster");
         config.setProperty("wayang.flink.port", "6123");
         config.setProperty("spark.executor.memory", "16g");
+        config.setProperty("spark.driver.maxResultSize", "4G");
 
         String[] jars = new String[]{
             ReflectionUtils.getDeclaringJar(LSBORunner.class),

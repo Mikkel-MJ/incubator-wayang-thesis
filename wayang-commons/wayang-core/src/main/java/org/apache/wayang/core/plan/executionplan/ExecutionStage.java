@@ -316,8 +316,6 @@ public class ExecutionStage {
 
         for (Channel channel : task.getOutputChannels()) {
             for (ExecutionTask consumer : channel.getConsumers()) {
-                System.out.println("consumer " + consumer + " stage equals?: " + (consumer.getStage() == this)
-                        + " stage: " + consumer.getStage());
                 if (consumer.getStage() == this) {
                     sb.append(indent)
                             .append("    ")
@@ -432,7 +430,7 @@ public class ExecutionStage {
 
             while (!nextTasks.isEmpty()) {
                 final ExecutionTask nextTask = nextTasks.poll(); // fetch the next task in the dfs
-                
+
                 // very cumbersome way of getting the preceeding task's reachable nodes:
                 final Set<ExecutionTask> reachableNodes = this.getPreceedingTask(nextTask)
                         .stream()
@@ -506,7 +504,7 @@ public class ExecutionStage {
     /**
      * Retrieves the follow-up {@link ExecutionTask} of the given {@code task}, in
      * this stage.
-     * 
+     *
      * @param task ExecutionTask whose follow up you want to find.
      */
     public Set<ExecutionTask> getNextTask(ExecutionTask task) {
@@ -522,7 +520,7 @@ public class ExecutionStage {
      * Retrieves the preceding {@link ExecutionTask} of the given {@code task}, in
      * this stage.
      * See also {@link #getNextTask(ExecutionTask)}.
-     * 
+     *
      * @param task ExecutionTask whose preceeding task you want to find.
      */
     public Set<ExecutionTask> getPreceedingTask(ExecutionTask task) {

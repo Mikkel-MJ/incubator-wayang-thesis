@@ -27,6 +27,8 @@ import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.java.platform.JavaPlatform;
 import org.apache.wayang.spark.Spark;
+import org.apache.wayang.flink.Flink;
+import org.apache.logging.log4j.Level;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -48,6 +50,7 @@ public class Main {
             configuration.setProperty("spark.master", "spark://spark-cluster:7077");
 
             WayangContext wayangContext = new WayangContext(configuration);
+            wayangContext.setLogLevel(Level.ERROR);
 
             for (String platform : args[0].split(",")) {
                 switch (platform) {
@@ -56,6 +59,9 @@ public class Main {
                         break;
                     case "spark":
                         wayangContext.register(Spark.basicPlugin());
+                        break;
+                    case "flink":
+                        wayangContext.register(Flink.basicPlugin());
                         break;
                     default:
                         System.err.format("Unknown platform: \"%s\"\n", platform);

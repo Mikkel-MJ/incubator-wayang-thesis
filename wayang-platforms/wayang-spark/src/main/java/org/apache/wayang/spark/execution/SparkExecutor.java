@@ -83,6 +83,7 @@ public class SparkExecutor extends PushExecutorTemplate {
         this.sparkContextReference = this.platform.getSparkContext(job);
         this.sparkContextReference.noteObtainedReference();
         this.sc = this.sparkContextReference.get();
+        this.sc.setLogLevel("ERROR");
         if (this.sc.getConf().contains("spark.executor.cores")) {
             this.numDefaultPartitions = 2 * this.sc.getConf().getInt("spark.executor.cores", -1);
         } else {

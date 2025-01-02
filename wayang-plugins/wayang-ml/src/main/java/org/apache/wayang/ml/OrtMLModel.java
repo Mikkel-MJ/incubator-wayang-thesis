@@ -35,8 +35,6 @@ import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.Logging;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaDeviceProp;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -79,20 +77,6 @@ public class OrtMLModel {
             this.env = OrtEnvironment.getEnvironment("org.apache.wayang.ml");
             this.env.setTelemetry(false);
         }
-
-        /*
-        JCuda.setExceptionsEnabled(true);
-
-        int[] deviceCount = new int[1];
-        JCuda.cudaGetDeviceCount(deviceCount);
-
-        System.out.println("Number of CUDA devices: " + deviceCount[0]);
-
-        for (int i = 0; i < deviceCount[0]; i++) {
-            cudaDeviceProp deviceProp = new cudaDeviceProp();
-            JCuda.cudaGetDeviceProperties(deviceProp, i);
-            System.out.println("Device " + i + ": " + deviceProp);
-        }*/
 
         if (this.session == null) {
             /*
