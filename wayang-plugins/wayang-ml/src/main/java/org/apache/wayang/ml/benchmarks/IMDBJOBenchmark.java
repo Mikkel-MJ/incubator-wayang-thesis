@@ -7,18 +7,34 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
+import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.flink.Flink;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.spark.Spark;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class IMDBJOBenchmark {
+    public static WayangPlan getWayangPlan(final String path, final Configuration configuration, final Plugin[] plugins,
+            final String... udfJars)
+            throws SQLException, IOException, org.apache.calcite.sql.parser.SqlParseException {
+        final SqlContext sqlContext = new SqlContext(configuration, plugins);
+        final Path pathToQuery = Paths.get(path);
+
+        // need to chop off the last ';' otherwise sqlContext cant parse it
+        final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
+
+        return sqlContext.buildWayangPlan(query, udfJars);
+    }
+
     /**
      * Benchmarking tool for the imdb/jo benchmark, Calcite dictates that every jo
      * query follows
@@ -49,7 +65,10 @@ public class IMDBJOBenchmark {
                     "    ]\n" +
                     "}";
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7b839df9b34fb6e7fd9ab3032bfd96c3585bb52b
             configuration.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
             configuration.setProperty("wayang.calcite.model", calciteModel);
             configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");
@@ -78,9 +97,10 @@ public class IMDBJOBenchmark {
             // Java.channelConversionPlugin());
 
             final Path pathToQuery = Paths.get(args[0]);
-            final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off the last
-                                                                                            // ';' otherwise sqlContext
-                                                                                            // cant parse it
+            final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off
+                                                                                                  // the last
+            // ';' otherwise sqlContext
+            // cant parse it
             System.out.println("Read query: " + query);
 
             final Collection<Record> result = sqlContext.executeSql(
