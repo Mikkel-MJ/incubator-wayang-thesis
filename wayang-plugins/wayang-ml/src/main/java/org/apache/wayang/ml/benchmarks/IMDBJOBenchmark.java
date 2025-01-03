@@ -24,7 +24,7 @@ public class IMDBJOBenchmark {
      * query follows
      * the schema, "schema_name.table_name". The tool searches for the queries in
      * resources/calcite-ready-job-queries
-     * 
+     *
      * @param args args[0]: path to calcite-job-ready-queries/*.sql
      */
     public static void main(final String[] args) throws Exception {
@@ -41,7 +41,7 @@ public class IMDBJOBenchmark {
                     "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
                     "            \"operand\": {\n" +
                     "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
-                    "                \"jdbcUrl\": \"jdbc:postgresql://host.docker.internal:5432/job\",\n" +
+                    "                \"jdbcUrl\": \"jdbc:postgresql://job:5432/job\",\n" +
                     "                \"jdbcUser\": \"postgres\",\n" +
                     "                \"jdbcPassword\": \"postgres\"\n" +
                     "            }\n" +
@@ -49,10 +49,10 @@ public class IMDBJOBenchmark {
                     "    ]\n" +
                     "}";
 
-                
+
             configuration.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
             configuration.setProperty("wayang.calcite.model", calciteModel);
-            configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://host.docker.internal:5432/job");
+            configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");
             configuration.setProperty("wayang.postgres.jdbc.user", "postgres");
             configuration.setProperty("wayang.postgres.jdbc.password", "postgres");
 

@@ -92,7 +92,7 @@ public class JdbcExecutor extends ExecutorTemplate {
         /**
          * A comparator that compares two {@link ExecutionTask}s based on whether or not
          * they are reachable from one or the other.
-         * 
+         *
          * @param isReachableMap see {@link ExecutionStage#canReachMap()}.
          */
         ExecutionTaskOrderingComparator(final Map<ExecutionTask, Set<ExecutionTask>> isReachableMap) {
@@ -105,7 +105,7 @@ public class JdbcExecutor extends ExecutorTemplate {
                 return 1;
             if (ordering.get(arg1).contains(arg0))
                 return -1;
-            return 0;
+            return -1;
         }
     }
 
@@ -208,7 +208,7 @@ public class JdbcExecutor extends ExecutorTemplate {
                  * return false;
                  * }
                  * }
-                 * 
+                 *
                  * return true;
                  * } )
                  */
@@ -245,7 +245,7 @@ public class JdbcExecutor extends ExecutorTemplate {
     /**
      * Searches depth-first through all projections, reduces connnected to a
      * boundary operator
-     * 
+     *
      * @param task  execution task at the boundary
      * @param stage current execution stage
      * @return an arraylist pipeline containing all projection & reductions from the

@@ -8,12 +8,12 @@
             "factory": "org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory",
             "operand": {
                 "jdbcDriver": "org.postgresql.Driver",
-                "jdbcUrl": "jdbc:postgresql://host.docker.internal:5432/job",
+                "jdbcUrl": "jdbc:postgresql://job:5432/job",
                 "jdbcUser": "postgres",
                 "jdbcPassword": "postgres"
             }
         }
     ]
 }
-  
-  
+
+
