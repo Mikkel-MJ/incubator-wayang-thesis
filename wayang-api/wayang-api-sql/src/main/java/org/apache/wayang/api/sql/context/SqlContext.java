@@ -90,6 +90,58 @@ public class SqlContext extends WayangContext {
     }
 
     /**
+     * Method for building {@link WayangPlan}s useful for testing, benchmarking and other 
+     * usages where you want to handle the intermediate {@link WayangPlan}
+     * @param sql sql query string with the {@code ;} cut off
+     * @param udfJars 
+     * @return a {@link WayangPlan} of a given sql string
+     * @throws SqlParseException
+     */
+    public WayangPlan buildWayangPlan(final String sql, final String... udfJars) throws SqlParseException {
+        final Properties configProperties = Optimizer.ConfigProperties.getDefaults();
+        final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
+
+        final Optimizer optimizer = Optimizer.create(calciteSchema, configProperties,
+                relDataTypeFactory);
+
+        final SqlNode sqlNode = optimizer.parseSql(sql);
+        final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
+
+        final RelNode relNode = optimizer.convert(validatedSqlNode);
+
+        final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
+        visitor.visit(relNode, 0, null);
+
+        final AliasFinder aliasFinder = new AliasFinder(visitor);
+
+        PrintUtils.print("After parsing sql query", relNode);
+
+        final RuleSet rules = RuleSets.ofList(
+                WayangRules.WAYANG_TABLESCAN_RULE,
+                WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
+                WayangRules.WAYANG_PROJECT_RULE,
+                WayangRules.WAYANG_FILTER_RULE,
+                WayangRules.WAYANG_JOIN_RULE,
+                WayangRules.WAYANG_AGGREGATE_RULE);
+
+        final RelNode wayangRel = optimizer.optimize(
+                relNode,
+                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
+                rules);
+
+        PrintUtils.print("After translating logical intermediate plan", wayangRel);
+
+        // Optimizer.getCluster().getPlanner().setRoot(wayangRel);
+        // RelNode wayangRelOptimized =
+        // Optimizer.getCluster().getPlanner().findBestExp();
+
+        final Collection<Record> collector = new ArrayList<>();
+        final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
+
+        return wayangPlan;
+    }
+
+    /**
      * Executes sql with varargs udfJars. udfJars can help in serialisation contexts
      * where the
      * jars need to be used for serialisation remotely, in use cases like Spark and
