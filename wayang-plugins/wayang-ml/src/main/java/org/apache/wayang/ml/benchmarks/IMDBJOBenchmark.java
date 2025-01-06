@@ -23,9 +23,12 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class IMDBJOBenchmark {
-    public static WayangPlan getWayangPlan(final String path, final Configuration configuration, final Plugin[] plugins,
-            final String... udfJars)
-            throws SQLException, IOException, org.apache.calcite.sql.parser.SqlParseException {
+    public static WayangPlan getWayangPlan(
+        final String path,
+        final Configuration configuration,
+        final Plugin[] plugins,
+        final String... udfJars
+    ) throws SQLException, IOException, org.apache.calcite.sql.parser.SqlParseException {
         final SqlContext sqlContext = new SqlContext(configuration, plugins);
         final Path pathToQuery = Paths.get(path);
 
@@ -65,10 +68,6 @@ public class IMDBJOBenchmark {
                     "    ]\n" +
                     "}";
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7b839df9b34fb6e7fd9ab3032bfd96c3585bb52b
             configuration.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
             configuration.setProperty("wayang.calcite.model", calciteModel);
             configuration.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");

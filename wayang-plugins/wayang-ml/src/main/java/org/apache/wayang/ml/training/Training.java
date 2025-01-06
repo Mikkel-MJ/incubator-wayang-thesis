@@ -21,9 +21,6 @@ package org.apache.wayang.ml.training;
 import org.apache.wayang.ml.encoding.OneHotMappings;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
-import org.apache.wayang.ml.util.Jobs;
-import org.apache.wayang.api.DataQuanta;
-import org.apache.wayang.api.PlanBuilder;
 import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.api.Configuration;
@@ -31,26 +28,56 @@ import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.util.ReflectionUtils;
-import org.apache.wayang.ml.util.CardinalitySampler;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.wayang.ml.benchmarks.IMDBJOBenchmark;
 import org.apache.logging.log4j.Level;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.ElementaryOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.OperatorBase;
 import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimate;
+import org.apache.wayang.apps.util.Parameters;
+import org.apache.wayang.core.plugin.Plugin;
+import org.apache.wayang.ml.training.GeneratableJob;
+import org.apache.wayang.ml.util.Jobs;
+import org.apache.wayang.api.DataQuanta;
+import org.apache.wayang.api.PlanBuilder;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.lang.reflect.Constructor;
 import java.util.Set;
+import java.util.List;
 import java.util.Collection;
 import java.time.Instant;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.stream.Collectors;
+import scala.collection.JavaConversions;
 
 public class Training {
+
+    final static String calciteModel = "{\n" +
+            "    \"version\": \"1.0\",\n" +
+            "    \"defaultSchema\": \"wayang\",\n" +
+            "    \"schemas\": [\n" +
+            "        {\n" +
+            "            \"name\": \"postgres\",\n" +
+            "            \"type\": \"custom\",\n" +
+            "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
+            "            \"operand\": {\n" +
+            "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
+            "                \"jdbcUrl\": \"jdbc:postgresql://job:5432/job\",\n" +
+            "                \"jdbcUser\": \"postgres\",\n" +
+            "                \"jdbcPassword\": \"postgres\"\n" +
+            "            }\n" +
+            "        }\n" +
+            "    ]\n" +
+            "}";
+
+    public static void main(String[] args) {
+        //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
+        trainIMDB(args[0], args[1], args[2], args[3], true);
+    }
 
     /*
      * args format:
@@ -60,15 +87,90 @@ public class Training {
      * 4: job index for the job to run (int)
      * 5: overwrite skipConversions (boolean)
      **/
-    public static void main(String[] args) {
-        Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[3]));
+    public static void trainIMDB(
+        String platforms,
+        String dataPath,
+        String encodePath,
+        String query,
+        boolean skipConversions
+    ) {
+        System.out.println("Running job query: " + query);
+        try {
+            FileWriter fw = new FileWriter(encodePath, true);
+            BufferedWriter writer = new BufferedWriter(fw);
 
-        System.out.println("Running job " + args[3] + " : " + job.getName());
+            String[] jars = new String[]{
+                ReflectionUtils.getDeclaringJar(Training.class),
+                ReflectionUtils.getDeclaringJar(IMDBJOBenchmark.class),
+            };
+
+            List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(platforms));
+            Configuration config = new Configuration();
+            config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty("spark.master", "spark://spark-cluster:7077");
+            config.setProperty("spark.app.name", "IMDB Benchmark Query " + query);
+            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.flink.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.master", "flink-cluster");
+            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
+            config.setProperty("wayang.calcite.model", calciteModel);
+            config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");
+            config.setProperty("wayang.postgres.jdbc.user", "postgres");
+            config.setProperty("wayang.postgres.jdbc.password", "postgres");
+
+            WayangContext context = new WayangContext(config);
+
+            for (Plugin plugin : plugins) {
+                context.with(plugin);
+            }
+
+            WayangPlan plan = IMDBJOBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
+
+            long execTime = 0;
+
+            Job wayangJob = context.createJob("", plan, jars);
+            ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
+            OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+            TreeNode wayangNode = TreeEncoder.encode(plan);
+            TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
+            //System.out.println(exPlan.toExtensiveString());
+            System.out.println("Size: " + execNode.getTreeSize());
+
+            /*
+            writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), 1_000_000));
+            writer.newLine();
+            writer.flush();*/
+          } catch(Exception e) {
+              e.printStackTrace();
+          }
+    }
+
+    /*
+     * args format:
+     * 1: platforms, comma sep. (string)
+     * 2: tpch file path
+     * 3: encode to file path (string)
+     * 4: job index for the job to run (int)
+     * 5: overwrite skipConversions (boolean)
+     **/
+    public static void trainGeneratables(
+        String platforms,
+        String dataPath,
+        String encodePath,
+        int index,
+        boolean skipConversions
+    ) {
+        Class<? extends GeneratableJob> job = Jobs.getJob(index);
+
+        System.out.println("Running job " + index + " : " + job.getName());
         try {
             Constructor<?> cnstr = job.getDeclaredConstructors()[0];
             GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
-            String[] jobArgs = {args[0], args[1]};
-            FileWriter fw = new FileWriter(args[2], true);
+            String[] jobArgs = {platforms, dataPath};
+            FileWriter fw = new FileWriter(encodePath, true);
             BufferedWriter writer = new BufferedWriter(fw);
 
             String[] jars = new String[]{
@@ -76,11 +178,7 @@ public class Training {
                 ReflectionUtils.getDeclaringJar(createdJob.getClass()),
             };
 
-            boolean skipConversions = false;
-
-            if (args.length == 5) {
-                skipConversions = Boolean.valueOf(args[4]);
-            }
+            skipConversions = Boolean.valueOf(skipConversions);
             /*
             * TODO:
             *  - Get DataQuanta's WayangPlan :done:
@@ -97,13 +195,13 @@ public class Training {
             Configuration config = context.getConfiguration();
             config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
             config.setProperty("wayang.flink.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "6123");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
 
             WayangPlan plan = builder.build();
@@ -120,7 +218,7 @@ public class Training {
             OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
             TreeNode wayangNode = TreeEncoder.encode(plan);
             TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
-            System.out.println(exPlan.toExtensiveString());
+            //System.out.println(exPlan.toExtensiveString());
 
             quanta = createdJob.buildPlan(jobArgs);
             builder = quanta.getPlanBuilder();
@@ -129,13 +227,13 @@ public class Training {
             config = context.getConfiguration();
             config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
             config.setProperty("wayang.flink.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "6123");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
             plan = builder.build();
 

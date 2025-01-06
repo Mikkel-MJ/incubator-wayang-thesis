@@ -58,6 +58,10 @@ import java.util.Collections;
 
 public class Encode {
 
+    public static void main(String[] args) {
+        encodeJob(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
+    }
+
     /*
      * args format:
      * 1: platforms, comma sep. (string)
@@ -66,19 +70,19 @@ public class Encode {
      * 4: job index for the job to run (int)
      * 5: overwrite cardinalities (boolean)
      **/
-    public static void main(String[] args) {
+    public static void encodeJob(String platforms, String dataPath, String encodePath, int index, boolean rewriteCardinalities) {
         int counter = 0;
-        Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[3]));
+        Class<? extends GeneratableJob> job = Jobs.getJob(index);
 
         try {
-            FileWriter fw = new FileWriter(args[2], true);
+            FileWriter fw = new FileWriter(encodePath, true);
             BufferedWriter writer = new BufferedWriter(fw);
 
             System.out.println(job);
 
             Constructor<?> cnstr = job.getDeclaredConstructors()[0];
             GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
-            String[] jobArgs = {args[0], args[1]};
+            String[] jobArgs = {platforms, dataPath};
 
             DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
             PlanBuilder builder = quanta.getPlanBuilder();

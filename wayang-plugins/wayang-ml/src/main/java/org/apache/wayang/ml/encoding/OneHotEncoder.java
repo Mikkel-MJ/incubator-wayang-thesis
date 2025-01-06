@@ -474,7 +474,14 @@ public class OneHotEncoder implements Encoder {
         result[operatorsCount + platformsCount + 2] = outputCardinality;
 
         Integer operatorPosition = operatorMappings.get(operator.getClass().getSuperclass().getName());
+
+        // Try to find a higher matching parent in the mappings
+        if (operatorPosition == null) {
+            operatorPosition = operatorMappings.get(operator.getClass().getSuperclass().getSuperclass().getName());
+        }
+
         assert operatorPosition != null : operator.getClass().getSuperclass().getName() + " was not found in mappings";
+
         result[operatorPosition] = 1;
 
         Integer platformPosition = platformMappings.get(operator.getPlatform().getClass().getName());
