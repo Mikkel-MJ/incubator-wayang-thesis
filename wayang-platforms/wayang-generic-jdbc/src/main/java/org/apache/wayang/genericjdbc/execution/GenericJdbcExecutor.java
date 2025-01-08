@@ -235,7 +235,6 @@ public class GenericJdbcExecutor extends ExecutorTemplate {
         final FileSystem outFs = FileSystems.getFileSystem(outputFileChannelInstance.getSinglePath()).get();
         try (final OutputStreamWriter writer = new OutputStreamWriter(outFs.create(outputFileChannelInstance.getSinglePath()))) {
             while (rs.next()) {
-                //System.out.println(rs.getInt(1) + " " + rs.getString(2));
                 ResultSetMetaData rsmd = rs.getMetaData();
                 for (int i = 1; i <= rsmd.getColumnCount(); i++) {
                     writer.write(rs.getString(i));

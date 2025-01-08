@@ -257,7 +257,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         while (current.getOperator() instanceof JdbcGlobalReduceOperator
                 || current.getOperator() instanceof JdbcProjectionOperator) {
             pipeline.add(current);
-            // System.out.println("at current task: " + task);
             current = stage.getPreceedingTask(current).iterator().next(); // should only be one task in practice
         }
 
@@ -346,31 +345,23 @@ public class JdbcExecutor extends ExecutorTemplate {
         unionSet.removeAll(joinTableNames);
         // Remove aliases from the from statement:
         unionSet.removeAll(joinTableAliases);
-        System.out.println("aliases: " + joinTableAliases);
-        System.out.println("projections: " + projectionTableNames);
-        System.out.println("left joins: " + leftJoinTableNames);
-        System.out.println("right joins: " + rightJoinTableNames);
-        System.out.println("joins: " + joinTableNames);
-        System.out.println(unionSet);
 
         // match JOIN x AS x* ON x*.col = y.col
         // group1: x
         // group2: x*
         // group3: x*.col
         // group4: y.col
-        final String regex = "JOIN\\s+(?<joiningTable>\\w+)(?:\\s+AS\\s+(?<alias>\\w+))?\\s+ON\\s+(?<left>\\w+\\.\\w+)\\s*=\\s*(?<right>\\w+\\.\\w+)";
-        final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        if (joins.size() > 0) {
+            final String regex = "JOIN\\s+(?<joiningTable>\\w+)(?:\\s+AS\\s+(?<alias>\\w+))?\\s+ON\\s+(?<left>\\w+\\.\\w+)\\s*=\\s*(?<right>\\w+\\.\\w+)";
+            final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 
-        final Matcher matcher = pattern.matcher(joins.stream().findFirst().orElse(""));
+            final Matcher matcher = pattern.matcher(joins.stream().findFirst().orElse(""));
 
-        matcher.find();
+            matcher.find();
 
-        final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0]) ? matcher.group(4) : matcher.group(3);
-        unionSet.add(nonUsedTable.split("\\.")[0]);
-        System.out.println("matcher 1: " + matcher.group(1));
-        System.out.println("matcher 3: " + matcher.group(3));
-        System.out.println("non used table: " + nonUsedTable);
-        System.out.println("first join: " + joins.stream().findFirst().get());
+            final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0]) ? matcher.group(4) : matcher.group(3);
+            unionSet.add(nonUsedTable.split("\\.")[0]);
+        }
 
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
 
@@ -391,7 +382,6 @@ public class JdbcExecutor extends ExecutorTemplate {
             }
         }
         sb.append(';');
-        System.out.println("Decompiled into sql query: " + sb.toString());
         return sb.toString();
     }
 
@@ -426,7 +416,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         try (final OutputStreamWriter writer = new OutputStreamWriter(
                 outFs.create(outputFileChannelInstance.getSinglePath()))) {
             while (rs.next()) {
-                // System.out.println(rs.getInt(1) + " " + rs.getString(2));
                 final ResultSetMetaData rsmd = rs.getMetaData();
                 for (int i = 1; i <= rsmd.getColumnCount(); i++) {
                     writer.write(rs.getString(i));

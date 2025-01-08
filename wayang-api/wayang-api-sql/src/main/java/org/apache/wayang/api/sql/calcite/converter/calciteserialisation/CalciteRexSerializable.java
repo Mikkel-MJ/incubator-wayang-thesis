@@ -43,7 +43,7 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
      * This method is taken directly from RelJson as it has hidden visibility read
      * {@link RelJson.InputTranslator}.
      * This implementation should be removed in future updates.
-     * 
+     *
      * @param relJson
      * @param input
      * @param map
@@ -63,10 +63,6 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
             return rexBuilder.makeLocalRef(type, input);
         }
 
-        System.out.println("sql type name " + this.typeName);
-        System.out.println("input int " + input);
-        System.out.println("type factory " + Optimizer.getTypeFactory());
-        
         return rexBuilder.makeInputRef(Optimizer.getTypeFactory()
                 .createSqlType(this.typeName), input);
     }

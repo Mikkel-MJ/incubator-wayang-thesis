@@ -61,8 +61,6 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
         final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
 
-        System.out.println("aliased fields in project: " + Arrays.toString(aliasedFields));
-
         // list of projects passed to the serializable function, for java & others usage
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
 

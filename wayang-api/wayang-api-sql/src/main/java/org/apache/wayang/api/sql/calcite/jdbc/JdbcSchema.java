@@ -268,7 +268,6 @@ public class JdbcSchema implements Schema {
         final TableType tableType =
             Util.enumVal(TableType.OTHER, tableTypeName2);
         if (tableType == TableType.OTHER  && tableTypeName2 != null) {
-          System.out.println("Unknown table type: " + tableTypeName2);
         }
         final JdbcTable table =
             new JdbcTable(this, tableDef.tableCat, tableDef.tableSchem,

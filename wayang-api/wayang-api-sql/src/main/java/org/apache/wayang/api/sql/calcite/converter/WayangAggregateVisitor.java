@@ -62,8 +62,6 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                 .collect(Collectors.toList());
 
         final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
-        
-        System.out.println("aggregate visitor fields: " + Arrays.toString(aliasedFields));
 
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
@@ -114,7 +112,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                             reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")" + " AS " + unpackedAlias[1]);
                 } else {
                     reductionStatements.add(
-                        reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");  
+                        reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");
                 }
             }
 

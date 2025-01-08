@@ -39,7 +39,7 @@ public class ModelParser {
     }
 
     /**
-     * 
+     *
      * @param configuration
      * @param calciteModelPath path to json object containingcalcite model/schemax
      * @throws IOException
@@ -50,7 +50,6 @@ public class ModelParser {
         FileReader fr = new FileReader(calciteModelPath);
         Object obj = new JSONParser().parse(fr);
 
-        System.out.println("Parsed CalciteModel: " + obj);
         this.json = (JSONObject) obj;
     }
 

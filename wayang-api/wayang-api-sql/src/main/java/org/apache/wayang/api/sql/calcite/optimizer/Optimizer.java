@@ -112,7 +112,6 @@ public class Optimizer {
             RelDataTypeFactory typeFactory) {
         relDataTypeFactory = typeFactory;
         schema = calciteSchema.schema;
-        System.out.println("CREATING OPTIMIZERS");
         CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
 
         CalciteCatalogReader catalogReader = new CalciteCatalogReader(
@@ -120,7 +119,7 @@ public class Optimizer {
                 ImmutableList.of(calciteSchema.name),
                 typeFactory,
                 config);
-        
+
         relOptSchema = catalogReader; //set the reloptschema for serialisation access
 
         SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
@@ -138,7 +137,7 @@ public class Optimizer {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
-    
+
         SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
                 .withExpand(false);
@@ -150,13 +149,13 @@ public class Optimizer {
                 cluster,
                 StandardConvertletTable.INSTANCE,
                 converterConfig);
-    
+
         return new Optimizer(config, validator, converter, planner);
     }
 
     // To remove
     /**
-     * 
+     *
      * @param wayangSchema
      * @return
      * @deprecated Use
@@ -191,8 +190,8 @@ public class Optimizer {
                 .withLenientOperatorLookup(config.lenientOperatorLookup())
                 .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
-                .withIdentifierExpansion(true);         
-            
+                .withIdentifierExpansion(true);
+
         SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
                 validatorConfig);
 

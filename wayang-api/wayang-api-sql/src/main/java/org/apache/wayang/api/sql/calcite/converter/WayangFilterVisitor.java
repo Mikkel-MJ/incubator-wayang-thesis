@@ -77,7 +77,6 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
         final String extractedFilterFunctions = condition
                 .accept(new FunctionExtractor(true, affectedColumnIndexes, tableSpecifiedColumns));
 
-        System.out.println("extracted filter functions: " + extractedFilterFunctions);
         pd.withSqlImplementation(extractedFilterFunctions);
         final FilterOperator<Record> filter = new FilterOperator<>(pd);
 

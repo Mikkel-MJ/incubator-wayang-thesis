@@ -72,7 +72,7 @@ public class SqlToWayangRelTest {
         RexNode rightOperand           = rb.makeLiteral("test");
         RexNode cond                   = rb.makeCall(SqlStdOperatorTable.EQUALS, leftOperand, rightOperand);
         CalciteSerializable fpImpl     = (CalciteSerializable) new FilterPredicateImpl(cond);
-        
+
         //setup the optimizer as calcite serialization requires the schema to be ready before serialisation
         Properties configProperties           = Optimizer.ConfigProperties.getDefaults();
         RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
@@ -85,7 +85,6 @@ public class SqlToWayangRelTest {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
         objectOutputStream.writeObject((CalciteSerializable) fpImpl);
         objectOutputStream.close();
-        System.out.println("Serialized object: " + byteArrayOutputStream.toString());
 
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
@@ -124,7 +123,7 @@ public class SqlToWayangRelTest {
 
     private SqlContext createSqlContext(String calciteResourceName, String tableResourceName) throws IOException, ParseException, SQLException {
         String calciteModelPath = SqlAPI.class.getResource(calciteResourceName).getPath();
-        
+
         System.out.println("loading calcite model: " + calciteModelPath);
         Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
 
@@ -231,7 +230,7 @@ public class SqlToWayangRelTest {
 
         assert(result.stream().findAny().get().getString(0).equals("AA"));
     }
-    
+
     //@Test
     public void test_simple_sql() throws Exception {
         WayangTable customer = WayangTableBuilder.build("customer")
@@ -266,8 +265,6 @@ public class SqlToWayangRelTest {
         SqlNode sqlNode = optimizer.parseSql(sql);
         SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         RelNode relNode = optimizer.convert(validatedSqlNode);
-
-        print("After parsing", relNode);
 
 
         RuleSet rules = RuleSets.ofList(

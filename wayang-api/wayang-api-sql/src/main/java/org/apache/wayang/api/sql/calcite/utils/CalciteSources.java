@@ -27,7 +27,7 @@ public final class CalciteSources {
      * These nodes uses aliases which have to be unpacked by finding the last
      * non aliased input. This input still contains Calcite's unique integer
      * identifier at the end of the column name which will have to be removed.
-     * 
+     *
      * @param startNode     starting {@link WayangAggregate} or
      *                      {@link WayangProject}
      * @param columnIndexes starting column indexes that you want to de-alias
@@ -72,7 +72,7 @@ public final class CalciteSources {
     /**
      * Generates SQL select statements for fields in {@link WayangProjectVisitor}s
      * and {@link WayangAggregateVisitor}s.
-     * 
+     *
      * @param wayangRelNode current relnode, either projection or aggregate
      * @param columnIndexes
      * @param aliasFinder
@@ -103,7 +103,7 @@ public final class CalciteSources {
      * Calcite uses integers as identifiers to preserve uniqueness in their column
      * names, however, when this is converted to sql it will produce an error, this
      * method allows you to fetch the pure SQL names of a table's columns.
-     * 
+     *
      * @param wayangRelNode the {@link RelNode} whose SQL column names you want to
      *                      fetch
      * @return list of names as {@code String}s specified in a {@code table.column}
@@ -125,7 +125,7 @@ public final class CalciteSources {
      * Calcite uses integers as identifiers to preserve uniqueness in their column
      * names, however, when this is converted to sql it will produce an error, this
      * method allows you to fetch the pure SQL names of a table's columns.
-     * 
+     *
      * @param wayangRelNode the {@link RelNode} whose SQL column names you want to
      *                      fetch
      * @param aliasFinder   the aliasFinder of each {@link WayangRelNodeVisitor}
@@ -139,7 +139,6 @@ public final class CalciteSources {
                         .getFieldList()
                         .stream()
                         .map(column -> {
-                            System.out.print("col index: " + column.getIndex());
                             return aliasFinder.columnIndexToTableName.get(column.getIndex()) + "." + column.getName();
                         })
                         .collect(Collectors.toList()))
@@ -152,7 +151,7 @@ public final class CalciteSources {
      * names, however, when this is converted to sql it will produce an error. This
      * method allows you to lookup the original table sources of the columns, so you
      * can fetch their SQL name.
-     * 
+     *
      * @param wayangRelNode the {@link RelNode} whose SQL column names you want to
      *                      fetch
      * @return a map that maps a {@link RelOptTable} to its columns - a list
@@ -171,7 +170,7 @@ public final class CalciteSources {
 
     /**
      * A mapping that maps a column to its table origin.
-     * 
+     *
      * @param relNode the wayangRelNode we are operating on
      * @return a map that maps a field to its table source
      */
@@ -185,7 +184,7 @@ public final class CalciteSources {
     /**
      * Returns the table name origin of a {@link WayangRel} and a field's id.
      * See {@link #createColumnToTableOriginMap} for a practical use case.
-     * 
+     *
      * @param relNode any {@link WayangRel} inheritors like {@link WayangJoin}
      * @param index   id of field from relnode
      * @return table name
@@ -198,7 +197,7 @@ public final class CalciteSources {
      * Returns the {@link RelOptTable} origin of a {@link WayangRel} and a field's
      * id.
      * See {@link #createColumnToTableOriginMap} for a practical use case.
-     * 
+     *
      * @param relNode any {@link WayangRel} inheritors like {@link WayangJoin}
      * @param index   id of field from a {@link RelNode}
      * @return table name
@@ -219,7 +218,7 @@ public final class CalciteSources {
     /**
      * Matches a Calcite column name with unique indentifiers i.e. {@code column0}
      * with its SQL trueform equivalent {@code column}
-     * 
+     *
      * @param badName Calcite column name
      * @param catalog see {@link #getSqlColumnNames(RelNode)}
      * @return SQL column name

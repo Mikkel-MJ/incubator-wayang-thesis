@@ -104,7 +104,6 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
                 .createDatabaseDescriptor(executor.getConfiguration())
                 .createJdbcConnection();
 
-        System.out.println("got to creating result set iterator: ");
         final Iterator<Record> resultSetIterator = new ResultSetIterator(connection, input.getSqlQuery());
         final Spliterator<Record> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
         final Stream<Record> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
@@ -169,8 +168,6 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
                 final Statement st = connection.createStatement();
                 // st.setFetchSize(100000000);
                 this.resultSet = st.executeQuery(sqlQuery);
-                System.out.println(
-                        "SqlToStream: executing: " + sqlQuery + " in statement: " + st + " resultset: " + resultSet);
             } catch (final SQLException e) {
                 this.close();
                 throw new WayangException("Could not execute SQL. with query string: " + sqlQuery, e);
