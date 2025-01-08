@@ -37,6 +37,7 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule.FilterIntoJoinRuleConfig;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -79,6 +80,9 @@ public class Optimizer {
     private static Schema schema;
     private static RelDataTypeFactory relDataTypeFactory;
 
+    public VolcanoPlanner getPlanner(){
+        return this.volcanoPlanner;
+    }
     public static Schema getCalciteSchema(){
         return schema;
     }
@@ -134,6 +138,7 @@ public class Optimizer {
                 validatorConfig);
 
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
+        planner.addRule(CoreRules.FILTER_INTO_JOIN);
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));

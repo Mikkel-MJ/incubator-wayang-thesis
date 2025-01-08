@@ -23,7 +23,7 @@ import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
 abstract class WayangRelNodeVisitor<T extends RelNode> {
-    public final AliasFinder aliasFinder;
+    final AliasFinder aliasFinder;
     final WayangRelConverter wayangRelConverter;
 
     WayangRelNodeVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {

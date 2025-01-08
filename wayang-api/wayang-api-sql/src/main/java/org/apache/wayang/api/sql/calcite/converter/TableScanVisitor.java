@@ -12,19 +12,21 @@ public class TableScanVisitor extends RelVisitor {
 
     /**
      * This visitor visits {@RelNode}s and collects {@link LogicalTableScan}.
-     * Use by providing a root {@link RelNode} to {@link #visit(RelNode, int, RelNode)}.
-          * @param catalog
-          * @param tableNameToCounterMap
-          * @param fieldIndexToTableMap
-          */
-         public TableScanVisitor(final List<RelNode> tableScans, RelNode catalog) {
+     * Use by providing a root {@link RelNode} to
+     * {@link #visit(RelNode, int, RelNode)}.
+     * 
+     * @param catalog
+     * @param tableNameToCounterMap
+     * @param fieldIndexToTableMap
+     */
+    public TableScanVisitor(final List<RelNode> tableScans, RelNode catalog) {
         this.tableScans = tableScans;
         this.catalog = catalog;
     }
 
     @Override
     public void visit(final RelNode node, final int ordinal, final RelNode parent) {
-        if(catalog == null || catalog.getRowType().getFieldList().size() < node.getRowType().getFieldList().size()) {
+        if (catalog == null || catalog.getRowType().getFieldList().size() < node.getRowType().getFieldList().size()) {
             catalog = node;
         }
 
@@ -34,11 +36,11 @@ public class TableScanVisitor extends RelVisitor {
 
         if (node.getInputs().size() > 0) {
             final TableScanVisitor visitor = new TableScanVisitor(tableScans, catalog);
-            
+
             node.getInputs()
                     .stream()
                     .forEach(childNode -> visitor.visit(childNode, childNode.getId(), node));
-            
+
             catalog = visitor.catalog;
         }
     }

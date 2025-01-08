@@ -28,7 +28,7 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-
+import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoiningTableExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MapFunctionImpl;
@@ -93,10 +93,16 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String leftTableName = columnToOriginMapLeft.get(leftField);
         final String rightTableName = columnToOriginMapRight.get(rightField);
 
+        final JoiningTableExtractor leftVisitor = new JoiningTableExtractor(true);
+        leftVisitor.visit(wayangRelNode.getLeft(), wayangRelNode.getId(), null);
+
+        final JoiningTableExtractor rightVisitor = new JoiningTableExtractor(true);
+        rightVisitor.visit(wayangRelNode.getRight(), wayangRelNode.getId(), null);
+
         // TODO: prolly breaks on bushy joins
-        final String joiningTableName = wayangRelNode.getLeft() instanceof TableScan
-                ? wayangRelNode.getLeft().getTable().getQualifiedName().get(1)
-                : wayangRelNode.getRight().getTable().getQualifiedName().get(1);
+        final String joiningTableName = leftVisitor.getName() instanceof String 
+                ? leftVisitor.getName()
+                : rightVisitor.getName();
 
         // remove calcite unique integer identifiers in table.column0 type of names
         final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
