@@ -67,6 +67,7 @@ import org.apache.wayang.core.util.Formats;
 import org.apache.wayang.core.util.OneTimeExecutable;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.util.WayangCollections;
+import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -258,6 +259,7 @@ public class Job extends OneTimeExecutable {
 
         // Get initial execution plan.
         ExecutionPlan executionPlan = this.createInitialExecutionPlan();
+
         return executionPlan;
     }
 
@@ -291,6 +293,7 @@ public class Job extends OneTimeExecutable {
             // Get an execution plan.
             int executionId = 0;
             ExecutionPlan executionPlan = this.createInitialExecutionPlan();
+            ExplainUtils.parsePlan(wayangPlan, true);
 
             this.optimizationRound.stop();
             if (this.experiment != null) {

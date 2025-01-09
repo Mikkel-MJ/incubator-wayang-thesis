@@ -33,7 +33,11 @@ import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
+import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,8 +59,8 @@ public class JOBenchmark {
      * 4: model path
      * 5: experience path
      */
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         try {
