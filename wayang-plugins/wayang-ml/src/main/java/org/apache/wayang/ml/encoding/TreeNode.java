@@ -167,8 +167,8 @@ public class TreeNode {
     }
 
     public void softmax() {
-        // allow: 0 3 7
-        Set<Integer> disallowed = Set.of(1, 2, 4, 5, 7, 8);
+        // allow: 0 3 5 7
+        Set<Integer> disallowed = Set.of(1, 2, 4, 7, 8);
 
         if (this.encoded == null) {
             return;

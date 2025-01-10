@@ -28,6 +28,7 @@ import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.util.ReflectionUtils;
+import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.wayang.ml.benchmarks.IMDBJOBenchmark;
 import org.apache.logging.log4j.Level;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
@@ -137,12 +138,12 @@ public class Training {
             TreeNode wayangNode = TreeEncoder.encode(plan);
             TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
             //System.out.println(exPlan.toExtensiveString());
-            System.out.println("Size: " + execNode.getTreeSize());
+            System.out.println(execNode.toString());
+            ExplainUtils.parsePlan(exPlan, true);
 
-            /*
             writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), 1_000_000));
             writer.newLine();
-            writer.flush();*/
+            writer.flush();
           } catch(Exception e) {
               e.printStackTrace();
           }

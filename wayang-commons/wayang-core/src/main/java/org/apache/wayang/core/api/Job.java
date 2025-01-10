@@ -293,7 +293,7 @@ public class Job extends OneTimeExecutable {
             // Get an execution plan.
             int executionId = 0;
             ExecutionPlan executionPlan = this.createInitialExecutionPlan();
-            ExplainUtils.parsePlan(wayangPlan, true);
+            ExplainUtils.parsePlan(executionPlan, true);
 
             this.optimizationRound.stop();
             if (this.experiment != null) {

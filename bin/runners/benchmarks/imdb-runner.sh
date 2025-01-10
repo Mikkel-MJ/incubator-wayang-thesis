@@ -22,20 +22,10 @@ echo "Running JOBenchmark"
 for i in {0..5}; do
     for query in "$test_path"/*.sql; do
             ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $query
-            PGPASSWORD=ucloud psql -h job -U ucloud -d job -c 'DISCARD ALL;'
-            PGPASSWORD=ucloud psql -h job -U ucloud -d job -c 'CHECKPOINT;'
-            PGPASSWORD=ucloud psql -h job -U ucloud -d job -c 'ANALYZE;'
-
-            reboot
     done
 
     for query in "$test_path"/*.sql; do
             ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $query bvae $model_path $data_path
-            PGPASSWORD=ucloud psql -h job -U ucloud -d job -c 'DISCARD ALL;'
-            PGPASSWORD=ucloud psql -h job -U ucloud -d job -c 'CHECKPOINT;'
-            PGPASSWORD=ucloud psql -h job -U ucloud -d job -c 'ANALYZE;'
-
-            reboot
     done
 done
 
