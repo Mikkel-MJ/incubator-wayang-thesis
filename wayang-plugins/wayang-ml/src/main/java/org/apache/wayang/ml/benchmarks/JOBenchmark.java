@@ -59,8 +59,8 @@ public class JOBenchmark {
      * 4: model path
      * 5: experience path
      */
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         try {

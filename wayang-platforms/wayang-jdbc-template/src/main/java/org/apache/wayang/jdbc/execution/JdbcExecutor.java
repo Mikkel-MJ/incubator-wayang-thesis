@@ -41,6 +41,7 @@ import org.apache.wayang.jdbc.operators.JdbcJoinOperator;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
 import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
 import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
+import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -185,34 +186,34 @@ public class JdbcExecutor extends ExecutorTemplate {
          * .distinct()
          * .collect(Collectors.toList());
          */
-
         // search each of the boundary operators for distinct sql clauses
 
         // TODO: find a way of making sure that we dont select on too many tables
         // in the sql selection statement
         final List<String> nonDistinctSqlClauses = boundaryPipeline.stream()
-                .map(boundary -> boundary.getOperator())
+                .map(ExecutionTask::getOperator)
                 .map(op -> this.getSqlClause(op).split(", "))
                 .flatMap(Arrays::stream)
                 .distinct()
                 .collect(Collectors.toList());
 
-        // n^2
-        // if the clause is already in e.g. a min() statement filter it out
-        // TODO: this doesnt support nested select statements
-        final String projectionStatement = nonDistinctSqlClauses.stream()
-                /*
-                 * .filter(str -> {
-                 * for (final String str2 : distinctSqlClauses) {
-                 * if (str2.contains(str) && str2 != str) {
-                 * return false;
-                 * }
-                 * }
-                 *
-                 * return true;
-                 * } )
-                 */
-                .collect(Collectors.joining(","));
+        // each sql clause per operator in the the select statement pipeline
+        // filter out any projection task that comes after a join
+        // as they are a flattening operator and not relevant for select statement
+        final List<ExecutionOperator> validPipelineOperator = boundaryPipeline.stream()
+                .filter(task -> stage.getPreceedingTask(task).stream()
+                        .anyMatch(childTask -> !(childTask.getOperator() instanceof JdbcJoinOperator)))
+                .map(ExecutionTask::getOperator)
+                .collect(Collectors.toList());
+
+        System.out.println("valid operator pipeline: "
+                + validPipelineOperator.stream().map(op -> op.getClass()).collect(Collectors.toList()));
+        // TODO: validate whether this actually holds, we assume that reductions contain
+        // both the function and projection, so we only need to fetch, in order of
+        // importance, either the reduction or projection
+        final String projectionStatement = this.getSqlClause(validPipelineOperator.stream()
+                .filter(op -> op instanceof JdbcGlobalReduceOperator)
+                .findFirst().orElse(validPipelineOperator.get(0)));
 
         final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
 
