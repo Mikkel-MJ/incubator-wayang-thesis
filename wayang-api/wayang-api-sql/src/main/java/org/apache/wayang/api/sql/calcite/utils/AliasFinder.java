@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataTypeField;
 
 import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
@@ -15,6 +17,8 @@ public class AliasFinder {
     public final HashMap<String, Integer> tableOccurenceCounter;
 
     public final Map<RelDataTypeField, String> columnToTableNameMap;
+
+    public SqlImplementor.Context context;
 
     public AliasFinder(final TableScanVisitor visitor) {
         this.catalog = visitor.catalog.getRowType().getFieldList();
