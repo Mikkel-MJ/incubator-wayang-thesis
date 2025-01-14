@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
+import java.util.Set;
 
 public class TreeDecoder {
 
@@ -95,8 +96,12 @@ public class TreeDecoder {
             Platform platform = OneHotMappings.getOperatorPlatformFromEncoding(node.encoded).orElseThrow(
                 () -> new WayangException(String.format("Couldnt recover platform for operator: %s", operator.get()))
             );
+            Set<Platform> platforms = operator.get().getTargetPlatforms();
 
-            operator.get().addTargetPlatform(platform);
+            if (platforms.size() == 0 || platforms.contains(platform)) {
+                System.out.println("Setting platform " + platform + " for " + operator);
+                operator.get().addTargetPlatform(platform);
+            }
         } else {
             logger.info("Operator couldn't be recovered, potentially conversion operator: {}", node);
         }

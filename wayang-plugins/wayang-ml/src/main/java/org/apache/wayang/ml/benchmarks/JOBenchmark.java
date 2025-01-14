@@ -24,6 +24,8 @@ import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
+import org.apache.wayang.spark.Spark;
+import org.apache.wayang.flink.Flink;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.api.DataQuanta;
@@ -34,8 +36,13 @@ import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.OutputSlot;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.basic.operators.TableSource;
+import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.basic.data.Record;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -144,6 +151,8 @@ public class JOBenchmark {
 
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[2], config, plugins.toArray(Plugin[]::new), jars);
 
+            IMDBJOBenchmark.setSources(plan, args[1]);
+
             //Set sink to be on Java
             ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
 
@@ -219,5 +228,4 @@ public class JOBenchmark {
         }
 
     }
-
 }

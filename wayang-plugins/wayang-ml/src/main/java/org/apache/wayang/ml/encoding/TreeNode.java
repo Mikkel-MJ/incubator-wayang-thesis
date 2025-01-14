@@ -167,7 +167,8 @@ public class TreeNode {
     }
 
     public void softmax() {
-        // allow: 0 3 5 7
+        // allow: 0 3 5 6
+        // [0, 0, 0, 0, 0, 0, 0, 0, 0]
         Set<Integer> disallowed = Set.of(1, 2, 4, 7, 8);
 
         if (this.encoded == null) {
@@ -176,6 +177,7 @@ public class TreeNode {
 
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
+        System.out.println("Encoded: " + Arrays.toString(values));
 
         for (int i = 0; i < values.length; i++) {
             if (values[i] == 1 && disallowed.contains(i)) {

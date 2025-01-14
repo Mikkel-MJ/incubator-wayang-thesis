@@ -57,23 +57,8 @@ import scala.collection.JavaConversions;
 
 public class Training {
 
-    final static String calciteModel = "{\n" +
-            "    \"version\": \"1.0\",\n" +
-            "    \"defaultSchema\": \"wayang\",\n" +
-            "    \"schemas\": [\n" +
-            "        {\n" +
-            "            \"name\": \"postgres\",\n" +
-            "            \"type\": \"custom\",\n" +
-            "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
-            "            \"operand\": {\n" +
-            "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
-            "                \"jdbcUrl\": \"jdbc:postgresql://job:5432/job\",\n" +
-            "                \"jdbcUser\": \"postgres\",\n" +
-            "                \"jdbcPassword\": \"postgres\"\n" +
-            "            }\n" +
-            "        }\n" +
-            "    ]\n" +
-            "}";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
@@ -107,6 +92,31 @@ public class Training {
 
             List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(platforms));
             Configuration config = new Configuration();
+
+            final String calciteModel = "{\n" +
+                    "    \"version\": \"1.0\",\n" +
+                    "    \"defaultSchema\": \"wayang\",\n" +
+                    "    \"schemas\": [\n" +
+                    "        {\n" +
+                    "            \"name\": \"postgres\",\n" +
+                    "            \"type\": \"custom\",\n" +
+                    "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
+                    "            \"operand\": {\n" +
+                    "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
+                    "                \"jdbcUrl\": \"jdbc:postgresql://job:5432/job\",\n" +
+                    "                \"jdbcUser\": \"" + psqlUser + "\",\n" +
+                    "                \"jdbcPassword\": \"" + psqlPassword + "\"\n" +
+                    "            }\n" +
+                    "        }\n" +
+                    "    ]\n" +
+                    "}";
+
+            config.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
+            config.setProperty("wayang.calcite.model", calciteModel);
+            config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");
+            config.setProperty("wayang.postgres.jdbc.user", psqlUser);
+            config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
+
             config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "IMDB Benchmark Query " + query);
@@ -116,11 +126,6 @@ public class Training {
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "6123");
             config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
-            config.setProperty("wayang.calcite.model", calciteModel);
-            config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");
-            config.setProperty("wayang.postgres.jdbc.user", "postgres");
-            config.setProperty("wayang.postgres.jdbc.password", "postgres");
 
             WayangContext context = new WayangContext(config);
 
@@ -129,6 +134,7 @@ public class Training {
             }
 
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
+            IMDBJOBenchmark.setSources(plan, dataPath);
 
             long execTime = 0;
 

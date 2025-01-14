@@ -211,9 +211,15 @@ public class JdbcExecutor extends ExecutorTemplate {
         // TODO: validate whether this actually holds, we assume that reductions contain
         // both the function and projection, so we only need to fetch, in order of
         // importance, either the reduction or projection
-        final String projectionStatement = this.getSqlClause(validPipelineOperator.stream()
-                .filter(op -> op instanceof JdbcGlobalReduceOperator)
-                .findFirst().orElse(validPipelineOperator.get(0)));
+        //
+        //
+        String projectionStatement = "";
+
+        if (boundaryPipeline.size() > 0) {
+            projectionStatement = this.getSqlClause(validPipelineOperator.stream()
+                    .filter(op -> op instanceof JdbcGlobalReduceOperator)
+                    .findFirst().orElse(validPipelineOperator.get(0)));
+        }
 
         final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
 

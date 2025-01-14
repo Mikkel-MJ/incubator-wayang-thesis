@@ -8,11 +8,18 @@ import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.OutputSlot;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.flink.Flink;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.spark.Spark;
+import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.basic.operators.TableSource;
+import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.basic.data.Record;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -123,5 +130,41 @@ public class IMDBJOBenchmark {
             e.printStackTrace();
             System.exit(5);
         }
+    }
+
+    // Only source in postgres, compute elsewhere
+    public static void setSources(WayangPlan plan, String dataPath) {
+        /*
+        final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
+        operators.forEach(o -> {
+            if (!(o.isSource() || o.isSink())) {
+                o.addTargetPlatform(Java.platform());
+                o.addTargetPlatform(Spark.platform());
+                o.addTargetPlatform(Flink.platform());
+            }
+        });*/
+        final Collection<Operator> sources = plan.collectReachableTopLevelSources();
+
+        sources.stream().forEach(op -> {
+            if (op instanceof TableSource) {
+                String tableName = ((TableSource) op).getTableName();
+                String filePath = "file://" + dataPath + tableName + ".csv";
+                TextFileSource replacement = new TextFileSource(filePath);
+
+                System.out.println("Swapping " + op + " with " + replacement);
+                System.out.println(filePath);
+
+                MapOperator<String, Record> parser = new MapOperator<>(
+                    (line) -> {
+                        return new Record(line.split(",", -1));
+                    },
+                    String.class,
+                    Record.class
+                );
+                OutputSlot.stealConnections(op, parser);
+
+                replacement.connectTo(0, parser, 0);
+            }
+        });
     }
 }
