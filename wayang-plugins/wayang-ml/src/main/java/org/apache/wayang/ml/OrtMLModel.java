@@ -330,6 +330,7 @@ public class OrtMLModel {
                 for (int j = 0; j < resultTensor[0][i].length; j++) {
                     // Just shift the decimal point
                     longResult[0][i][j] = (long) (resultTensor[0][i][j] * 1_000_000_000);
+                    //longResult[0][i][j] = (long) (resultTensor[0][i][j]);
                 }
             }
 

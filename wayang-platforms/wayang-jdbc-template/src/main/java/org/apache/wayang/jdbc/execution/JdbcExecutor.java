@@ -43,6 +43,7 @@ import org.apache.wayang.jdbc.operators.JdbcJoinOperator;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
 import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
 import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
+import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 
 import com.google.common.collect.Lists;
 
@@ -203,7 +204,6 @@ public class JdbcExecutor extends ExecutorTemplate {
          * .distinct()
          * .collect(Collectors.toList());
          */
-
         // search each of the boundary operators for distinct sql clauses
 
         // TODO: find a way of making sure that we dont select on too many tables

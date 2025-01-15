@@ -46,6 +46,7 @@ import java.time.Duration;
 
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.Collection;
 
 /**
  * This is the entry point for users to work with Wayang ML.
