@@ -58,7 +58,7 @@ public class SqlContext extends WayangContext {
 
     private static final AtomicInteger jobId = new AtomicInteger(0);
 
-    private final CalciteSchema calciteSchema;
+    public final CalciteSchema calciteSchema;
 
     public SqlContext() throws SQLException {
         this(new Configuration());

@@ -648,5 +648,16 @@ public interface Operator {
         return properties;
     }
 
+    /*
+     * Collects all in and outputs of this operator instance and connects
+     * the operator given as parameter to them, effectively rendering this
+     * instance useless
+     *
+     * @param operator the operator to replace this one with
+     */
+    default void replaceWith(Operator operator) {
+        InputSlot.stealConnections(this, operator);
+        OutputSlot.stealConnections(this, operator);
+    }
 }
 

@@ -24,6 +24,8 @@ import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
+import org.apache.wayang.spark.Spark;
+import org.apache.wayang.flink.Flink;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.api.DataQuanta;
@@ -33,7 +35,16 @@ import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
+import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.OutputSlot;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.basic.operators.TableSource;
+import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.basic.data.Record;
 
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,11 +60,12 @@ public class JOBenchmark {
 
     /**
      * 0: platforms
-     * 1: Directory to write timings to
-     * 2: query path
-     * 3: model type
-     * 4: model path
-     * 5: experience path
+     * 1: Data directory
+     * 2: Directory to write timings to
+     * 3: query path
+     * 4: model type
+     * 5: model path
+     * 6: experience path
      */
     public static String psqlUser = "postgres";
     public static String psqlPassword = "postgres";
@@ -65,15 +77,14 @@ public class JOBenchmark {
             String modelType = "";
 
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "JOB Query " + args[2]);
+            config.setProperty("spark.app.name", "JOB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
-            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("spark.executor.memory", "32g");
             config.setProperty("wayang.flink.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "6123");
-            config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("spark.driver.maxResultSize", "4G");
+            config.setProperty("spark.driver.maxResultSize", "8G");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
             final String calciteModel = "{\n" +
@@ -100,20 +111,20 @@ public class JOBenchmark {
             config.setProperty("wayang.postgres.jdbc.user", psqlUser);
             config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
 
-            if (args.length > 3) {
-                modelType = args[3];
+            if (args.length > 4) {
+                modelType = args[4];
             }
 
-            if (args.length > 5) {
-                JOBenchmark.setMLModel(config, modelType, args[4], args[5]);
+            if (args.length > 6) {
+                JOBenchmark.setMLModel(config, modelType, args[5], args[6]);
             }
 
             // Take the query name
-            String fileName = args[2].substring(args[2].lastIndexOf("/") + 1);
+            String fileName = args[3].substring(args[3].lastIndexOf("/") + 1);
             String queryName = fileName.substring(0, fileName.lastIndexOf("."));
 
-            String executionTimeFile = args[1] + "query-executions-" + queryName;
-            String optimizationTimeFile = args[1] + "query-optimizations-" + queryName;
+            String executionTimeFile = args[2] + "query-executions-" + queryName;
+            String optimizationTimeFile = args[2] + "query-optimizations-" + queryName;
 
             if (!"".equals(modelType)) {
                 executionTimeFile += "-" + modelType;
@@ -138,7 +149,9 @@ public class JOBenchmark {
                 ReflectionUtils.getDeclaringJar(IMDBJOBenchmark.class),
             };
 
-            WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[2], config, plugins.toArray(Plugin[]::new), jars);
+            WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+
+            IMDBJOBenchmark.setSources(plan, args[1]);
 
             //Set sink to be on Java
             ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
@@ -161,12 +174,12 @@ public class JOBenchmark {
             */
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
-                System.out.println("Executing query " + args[2]);
+                System.out.println("Executing query " + args[3]);
                 wayangContext.execute(plan, jars);
                 System.out.println("Finished execution");
             } else {
                 System.out.println("Using vae cost model");
-                System.out.println("Executing query " + args[2]);
+                System.out.println("Executing query " + args[3]);
                 wayangContext.executeVAE(plan, jars);
                 System.out.println("Finished execution");
             }
@@ -215,5 +228,4 @@ public class JOBenchmark {
         }
 
     }
-
 }

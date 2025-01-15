@@ -25,9 +25,9 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
     @Override
     public Boolean visitCall(final RexCall call) {
         final SqlKind kind = call.getKind();
-                
+
         if(!kind.belongsTo(WayangFilterVisitor.SUPPORTED_OPS)) throw new IllegalStateException("Cannot handle this filter predicate yet: " + kind + " during RexCall: " + call);
-        
+
         switch(kind){
             case IS_NOT_NULL:
                 assert(call.getOperands().size() == 1);
@@ -93,7 +93,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
             final int leftIndex = leftRexInputRef.getIndex();
 
             final Optional<?> leftField = Optional.ofNullable(record.getField(leftIndex));
-            
+
             switch (kind) {
                 case IS_NOT_NULL:
                     return !isEqualTo(leftField, Optional.empty());
@@ -108,7 +108,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
         }
     }
 
-    private boolean like(final Optional<?> o, final RexLiteral toCompare) {       
+    private boolean like(final Optional<?> o, final RexLiteral toCompare) {
         final String unwrapped = o.map(s -> (String) s).orElse("");
         final boolean isMatch = SqlFunctions.like(unwrapped, toCompare
             .toString()
@@ -125,7 +125,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
      * @return boolean, where if both items are null, it picks the object over the rex literal
      */
     private boolean isGreaterThan(final Optional<?> o, final RexLiteral rexLiteral) {
-       if(o.isPresent() && !rexLiteral.isNull()) { //if o is any and rex is any 
+       if(o.isPresent() && !rexLiteral.isNull()) { //if o is any and rex is any
             final Object comparator = rexLiteral.getValueAs(o.get().getClass());
             return ((Comparable) o.get()).compareTo(comparator) > 0;
         } else if (rexLiteral.isNull()){
@@ -142,7 +142,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
      * @return boolean, where if both items are null, it picks the object over the rex literal
      */
     private boolean isLessThan(final Optional<?> o, final RexLiteral rexLiteral) {
-        if(o.isPresent() && !rexLiteral.isNull()) { //if o is any and rex is any 
+        if(o.isPresent() && !rexLiteral.isNull()) { //if o is any and rex is any
             final Object comparator = rexLiteral.getValueAs(o.get().getClass());
             return ((Comparable) o.get()).compareTo(comparator) < 0;
         } else if (rexLiteral.isNull()){
