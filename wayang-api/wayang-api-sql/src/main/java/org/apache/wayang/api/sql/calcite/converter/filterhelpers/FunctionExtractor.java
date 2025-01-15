@@ -4,12 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.util.Sarg;
 
 public class FunctionExtractor extends RexVisitorImpl<String> {
     final List<Integer> columnIndexes;
@@ -21,8 +26,7 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
      * sql-like string representation.
      * @param isDeep
      */
-    public FunctionExtractor(final Boolean isDeep, final List<Integer> columnIndexes,
-            final String[] specifiedColumnNames) {
+    public FunctionExtractor(final Boolean isDeep, final List<Integer> columnIndexes, final String[] specifiedColumnNames) {
         super(isDeep);
         this.columnIndexes = columnIndexes;
         this.specifiedColumnNames = specifiedColumnNames;
@@ -45,8 +49,13 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall(final RexCall call) {
-        final List<String> subResults = new ArrayList<>();
+        if (call.getKind().equals(SqlKind.SEARCH)) {
+                        
+        }
 
+        final List<String> subResults = new ArrayList<>();
+        System.out.println("visiting call: " + call + ", with operator: " + call.getOperator());
+    
         for (final RexNode operand : call.operands) {
             subResults.add(operand.accept(new FunctionExtractor(true, columnIndexes, specifiedColumnNames)));
         }
