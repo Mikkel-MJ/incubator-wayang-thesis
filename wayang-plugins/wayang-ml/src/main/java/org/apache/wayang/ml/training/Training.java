@@ -57,8 +57,8 @@ import scala.collection.JavaConversions;
 
 public class Training {
 
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
@@ -119,13 +119,12 @@ public class Training {
 
             config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "IMDB Benchmark Query " + query);
-            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("spark.app.name", "JOB Query" + query);
+            config.setProperty("spark.executor.memory", "32g");
             config.setProperty("wayang.flink.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "6123");
-            config.setProperty("spark.executor.memory", "16g");
 
             WayangContext context = new WayangContext(config);
 

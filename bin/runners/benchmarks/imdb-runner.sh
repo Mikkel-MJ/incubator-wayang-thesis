@@ -13,15 +13,20 @@ export PATH="$PATH:${GIRAPH_HOME}/bin"
 cd ${WORKDIR}
 cd wayang-0.7.1
 
-data_path=/work/lsbo-paper/data/JOBenchmark/retrained/
+data_path=/work/lsbo-paper/data/JOBenchmark/data
+timings_path=/work/lsbo-paper/data/JOBenchmark/data/executions
 test_path=/work/lsbo-paper/data/JOBenchmark/queries/BaseQuerySplit/test
-model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae-retrained.onnx
+model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
 echo "Running JOBenchmark"
 
 for i in {0..5}; do
     for query in "$test_path"/*.sql; do
-            ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $query bvae $model_path $data_path
+            ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $timings_path $query
+    done
+
+    for query in "$test_path"/*.sql; do
+            ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $timings_path $query bvae $model_path $data_path
     done
 done
 

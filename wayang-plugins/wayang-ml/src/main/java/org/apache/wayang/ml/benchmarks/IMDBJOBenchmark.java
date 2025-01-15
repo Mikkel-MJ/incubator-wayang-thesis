@@ -30,13 +30,15 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 public class IMDBJOBenchmark {
+    static SqlContext sqlContext;
+
     public static WayangPlan getWayangPlan(
         final String path,
         final Configuration configuration,
         final Plugin[] plugins,
         final String... udfJars
     ) throws SQLException, IOException, org.apache.calcite.sql.parser.SqlParseException {
-        final SqlContext sqlContext = new SqlContext(configuration, plugins);
+        sqlContext = new SqlContext(configuration, plugins);
         final Path pathToQuery = Paths.get(path);
 
         // need to chop off the last ';' otherwise sqlContext cant parse it
@@ -134,7 +136,6 @@ public class IMDBJOBenchmark {
 
     // Only source in postgres, compute elsewhere
     public static void setSources(WayangPlan plan, String dataPath) {
-        /*
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
         operators.forEach(o -> {
             if (!(o.isSource() || o.isSink())) {
@@ -142,7 +143,8 @@ public class IMDBJOBenchmark {
                 o.addTargetPlatform(Spark.platform());
                 o.addTargetPlatform(Flink.platform());
             }
-        });*/
+        });
+        /*
         final Collection<Operator> sources = plan.collectReachableTopLevelSources();
 
         sources.stream().forEach(op -> {
@@ -153,6 +155,8 @@ public class IMDBJOBenchmark {
 
                 System.out.println("Swapping " + op + " with " + replacement);
                 System.out.println(filePath);
+
+                System.out.println("TableSchema for " + tableName + " : " + sqlContext.calciteSchema.getTable(tableName, false));
 
                 MapOperator<String, Record> parser = new MapOperator<>(
                     (line) -> {
@@ -165,6 +169,6 @@ public class IMDBJOBenchmark {
 
                 replacement.connectTo(0, parser, 0);
             }
-        });
+        });*/
     }
 }
