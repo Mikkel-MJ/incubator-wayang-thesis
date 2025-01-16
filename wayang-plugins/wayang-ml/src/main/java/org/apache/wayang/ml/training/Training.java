@@ -57,8 +57,8 @@ import scala.collection.JavaConversions;
 
 public class Training {
 
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);

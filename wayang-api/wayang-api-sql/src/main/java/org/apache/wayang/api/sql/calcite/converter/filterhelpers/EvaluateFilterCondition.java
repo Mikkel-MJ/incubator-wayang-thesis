@@ -2,6 +2,7 @@ package org.apache.wayang.api.sql.calcite.converter.filterhelpers;
 
 import java.io.Serializable;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
@@ -10,6 +11,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.util.Sarg;
+import org.apache.calcite.util.NlsString;
 
 import org.apache.wayang.api.sql.calcite.converter.WayangFilterVisitor;
 import org.apache.wayang.basic.data.Record;
@@ -70,6 +73,27 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
                     return isGreaterThan(field, rexLiteral) || isEqualTo(field, rexLiteral);
                 case LESS_THAN_OR_EQUAL:
                     return isLessThan(field, rexLiteral) || isEqualTo(field, rexLiteral);
+                case SEARCH:
+                    if (field.isPresent()) {
+                        Sarg sarg = rexLiteral.getValueAs(Sarg.class);
+
+                        if (sarg.rangeSet.span().lowerEndpoint() instanceof NlsString) {
+                            String value = (String) field.get();
+
+                            return sarg.rangeSet.span().contains((Comparable) new NlsString(value, null, null));
+                        }
+
+                        if (sarg.rangeSet.span().lowerEndpoint() instanceof BigDecimal) {
+
+                            Integer value = (Integer) field.get();
+
+                            return sarg.rangeSet.span().contains((Comparable) new BigDecimal(value));
+                        }
+
+                        throw new IllegalStateException("Predicate not supported yet, record: " + record + ", SqlKind:" + kind + ", left operand: " + leftOperand + ", right operand: " + rightOperand);
+                    } else {
+                        return false;
+                    }
                 default:
                     throw new IllegalStateException("Predicate not supported yet, record: " + record + ", SqlKind:" + kind + ", left operand: " + leftOperand + ", right operand: " + rightOperand);
             }

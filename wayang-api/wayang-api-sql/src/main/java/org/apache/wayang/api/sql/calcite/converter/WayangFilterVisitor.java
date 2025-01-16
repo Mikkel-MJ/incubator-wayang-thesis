@@ -109,5 +109,5 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
             SqlKind.EQUALS, SqlKind.NOT_EQUALS,
             SqlKind.LESS_THAN, SqlKind.GREATER_THAN,
             SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL,
-            SqlKind.NOT, SqlKind.LIKE, SqlKind.IS_NOT_NULL, SqlKind.IS_NULL);
+            SqlKind.NOT, SqlKind.LIKE, SqlKind.IS_NOT_NULL, SqlKind.IS_NULL, SqlKind.SEARCH);
 }

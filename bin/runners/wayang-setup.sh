@@ -30,7 +30,7 @@ mv hadoop-${HADOOP_VERSION} ${HADOOP_HOME}
 rm hadoop-${HADOOP_VERSION}.tar.gz
 
 echo "Installing Spark"
-export SPARK_VERSION=3.5.3
+export SPARK_VERSION=3.5.4
 export SPARK_HOME=/opt/spark
 
 wget https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz

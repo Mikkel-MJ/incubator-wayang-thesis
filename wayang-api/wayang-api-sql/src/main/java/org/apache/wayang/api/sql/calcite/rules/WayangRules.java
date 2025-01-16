@@ -114,7 +114,6 @@ public class WayangRules {
 
         @Override
         public void onMatch(RelOptRuleCall call) {
-            System.out.println("matched on: " + call);
             super.onMatch(call);
         }
     }

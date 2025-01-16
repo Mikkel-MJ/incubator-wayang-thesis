@@ -139,11 +139,12 @@ public class IMDBJOBenchmark {
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
         operators.forEach(o -> {
             if (!(o.isSource() || o.isSink())) {
-                o.addTargetPlatform(Java.platform());
                 o.addTargetPlatform(Spark.platform());
                 o.addTargetPlatform(Flink.platform());
+                o.addTargetPlatform(Java.platform());
             }
         });
+
         /*
         final Collection<Operator> sources = plan.collectReachableTopLevelSources();
 

@@ -22,7 +22,7 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
 
     /**
      * This visitor, visits the various subnodes of a filter function,
-     * and collects the filter functions, literals and columns in a 
+     * and collects the filter functions, literals and columns in a
      * sql-like string representation.
      * @param isDeep
      */
@@ -36,7 +36,7 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
     public String visitInputRef(final RexInputRef inputRef) {
         // map rexInputRef to its column name
         final int listIndex = columnIndexes.indexOf(inputRef.getIndex());
-        
+
         final String fieldName = specifiedColumnNames[listIndex];
 
         return fieldName;
@@ -50,18 +50,17 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
     @Override
     public String visitCall(final RexCall call) {
         if (call.getKind().equals(SqlKind.SEARCH)) {
-                        
+
         }
 
         final List<String> subResults = new ArrayList<>();
-        System.out.println("visiting call: " + call + ", with operator: " + call.getOperator());
-    
+
         for (final RexNode operand : call.operands) {
             subResults.add(operand.accept(new FunctionExtractor(true, columnIndexes, specifiedColumnNames)));
         }
 
         if (subResults.size() == 1) {
-            // if the rexCall is (IS *) 
+            // if the rexCall is (IS *)
             if(call.getOperator().getName().contains("IS")) return subResults.get(0) + " " + call.getOperator().getName();
             // if the rexCall (NOT) has just one child like in the case of LIKE with a negation
             // i.e. NOT LIKE
@@ -73,7 +72,7 @@ public class FunctionExtractor extends RexVisitorImpl<String> {
             return "(" + subResults.stream().collect(Collectors.joining(" " + call.getOperator().getName() + " ")) + ")";
         }
 
-        // join the operands with the operator inbetween 
+        // join the operands with the operator inbetween
         return subResults.stream().collect(Collectors.joining(" " + call.getOperator().getName() + " "));
     }
 }

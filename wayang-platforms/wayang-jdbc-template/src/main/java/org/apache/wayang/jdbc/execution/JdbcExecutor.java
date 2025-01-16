@@ -107,7 +107,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         @Override
         public int compare(final ExecutionTask arg0, final ExecutionTask arg1) {
             // arg0 69a {12a} arg1 A12{}
-            //System.out.println("comparing: " + arg0 + ", " + arg1);
             if (ordering.get(arg0).contains(arg1)) {
                 return -1;
             }
@@ -129,9 +128,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
-
-        System.out.println("sorted list: " + allTasksWithTableSources.stream().filter(task -> task.getOperator() instanceof JdbcJoinOperator).collect(Collectors.toList()));
-        System.out.println("can reach map filtered: " + stage.canReachMap().entrySet().stream().filter(pair -> pair.getKey().getOperator() instanceof JdbcJoinOperator).map(pair -> pair.getKey() + "->" + pair.getValue().stream().filter(task -> task.getOperator() instanceof JdbcJoinOperator).collect(Collectors.toList())).collect(Collectors.toList()));
 
         final List<ExecutionTask> allTasks = allTasksWithTableSources.stream()
                 .filter(task -> !(task.getOperator() instanceof TableSource))
@@ -179,10 +175,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .map(this::getSqlClause)
                 .collect(Collectors.joining(","));
 
-        System.out.println("pairings: " + flattenOperators);
-
-
-
         final String projection = collectedProjections.equals("") ? joinedTableNames : collectedProjections;
 
         final Collection<String> joins = joinTasks.stream()
@@ -226,16 +218,18 @@ public class JdbcExecutor extends ExecutorTemplate {
         // TODO: validate whether this actually holds, we assume that reductions contain
         // both the function and projection, so we only need to fetch, in order of
         // importance, either the reduction or projection
-        final String projectionStatement = this.getSqlClause(validPipelineOperator.stream()
-                .filter(op -> op instanceof JdbcGlobalReduceOperator)
-                .findFirst().orElse(validPipelineOperator.get(0)));
+        String projectionStatement = "";
+
+        if (boundaryPipeline.size() > 0) {
+            projectionStatement = this.getSqlClause(validPipelineOperator.stream()
+                    .filter(op -> op instanceof JdbcGlobalReduceOperator)
+                    .findFirst().orElse(validPipelineOperator.get(0)));
+        }
 
         final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
 
         final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins,
                 selectStatement);
-
-        System.out.println("Decompiled SQL query: " + query);
 
         // get tasks who have sqlToStream connections:
         // this filter finds all operators who have
@@ -388,7 +382,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
 
         sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
-        System.out.println("joins: " + joins);
         // build joins in sql query
         if (!joins.isEmpty()) {
             final String separator = " ";
