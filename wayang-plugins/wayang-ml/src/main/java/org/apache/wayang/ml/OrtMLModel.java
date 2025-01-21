@@ -119,13 +119,13 @@ public class OrtMLModel {
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
         Instant start = Instant.now();
-        float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
+        float[][][] inputValueStructure = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
         long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
 
-        //input1Left = input1.field0.toArray(input1Left);
+        //inputValueStructure = input1.field0.toArray(input1Left);
         for (int i = 0; i < input1.field0.get(0).length; i++) {
             for (int j = 0; j < input1.field0.get(0)[i].length; j++) {
-                input1Left[0][i][j] = Long.valueOf(
+                inputValueStructure[0][i][j] = Long.valueOf(
                     input1.field0.get(0)[i][j]
                 ).floatValue();
             }
@@ -135,11 +135,11 @@ public class OrtMLModel {
             inputIndexStructure[0][i]  = input1.field1.get(0)[i];
         }
 
-        OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
-        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, inputIndexStructure);
+        OnnxTensor tensorValues = OnnxTensor.createTensor(env, inputValueStructure);
+        OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
 
-        this.inputMap.put("input1", tensorOneLeft);
-        this.inputMap.put("input2", tensorOneRight);
+        this.inputMap.put("input1", tensorValues);
+        this.inputMap.put("input2", tensorIndexes);
 
         this.requestedOutputs.add("output");
 
@@ -187,14 +187,14 @@ public class OrtMLModel {
         long[] input3Dims = ((TensorInfo) inputInfoList.get("input3").getInfo()).getShape();
         long[] input4Dims = ((TensorInfo) inputInfoList.get("input4").getInfo()).getShape();
 
-        float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
+        float[][][] inputValueStructure = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
         long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
         float[][][] input2Left = new float[1][(int) input3Dims[1]][(int) input3Dims[2]];
         long[][][] input2Right = new long[1][(int) input4Dims[1]][(int) input4Dims[2]];
 
         for (int i = 0; i < input1.field0.get(0).length; i++) {
             for (int j = 0; j < input1.field0.get(0)[i].length; j++) {
-                input1Left[0][i][j] = Long.valueOf(
+                inputValueStructure[0][i][j] = Long.valueOf(
                     input1.field0.get(0)[i][j]
                 ).floatValue();
             }
@@ -216,13 +216,13 @@ public class OrtMLModel {
             input2Right[0][i]  = input2.field1.get(0)[i];
         }
 
-        OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
-        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, inputIndexStructure);
+        OnnxTensor tensorValues = OnnxTensor.createTensor(env, inputValueStructure);
+        OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
         OnnxTensor tensorTwoLeft = OnnxTensor.createTensor(env, input2Left);
         OnnxTensor tensorTwoRight = OnnxTensor.createTensor(env, input2Right);
 
-        this.inputMap.put("input1", tensorOneLeft);
-        this.inputMap.put("input2", tensorOneRight);
+        this.inputMap.put("input1", tensorValues);
+        this.inputMap.put("input2", tensorIndexes);
         this.inputMap.put("input3", tensorTwoLeft);
         this.inputMap.put("input4", tensorTwoRight);
 
@@ -271,31 +271,55 @@ public class OrtMLModel {
         long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
+        int indexDims = encoded.getTreeSize();
+        long featureDims = input1Dims[1];
+        System.out.println("Input 1 Dims: " + Arrays.toString(input1Dims));
+        System.out.println("Input 2 Dims: " + Arrays.toString(input2Dims));
+        System.out.println("Feature Vector size: " + input1Dims[1]);
+        System.out.println("Index Dims: " + encoded.getTreeSize());
         Instant start = Instant.now();
 
-        float[][][] input1Left = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
+        float[][] inputValueStructure = new float[(int) featureDims][(int) input1Dims[2]];
+        //long[][][] inputIndexStructure = new long[1][indexDims][1];
         long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
-        //long[][][] inputIndexStructure = new long[1][encoded.getTreeSize()][(int) input2Dims[2]];
 
-        //input1Left = input1.field0.toArray(input1Left);
+        //inputValueStructure = input1.field0.toArray(input1Left);
         for (int i = 0; i < input.field0.get(0).length; i++) {
             for (int j = 0; j < input.field0.get(0)[i].length; j++) {
-                input1Left[0][i][j] = Long.valueOf(
+                // 0th entry as the model could take multiple trees
+                // It only ever takes one here
+                inputValueStructure[i][j] = Long.valueOf(
                     input.field0.get(0)[i][j]
                 ).floatValue();
             }
         }
 
+        /*
+        long[][] inputIndexStructure = input.field1.get(0);
+        */
+
+        long[][] encoderIndexes = input.field1.get(0);
+        long maxIndex = Arrays.stream(encoderIndexes)
+                        .flatMapToLong(Arrays::stream)
+                        .max()
+                        .orElseThrow(() -> new IllegalArgumentException("Encoder indexes are empty"));
+
+        assert maxIndex + 1 <= inputValueStructure[0].length : "There isn't a corresponding value for each index";
+
+        System.out.println("Input value Structure size: " + inputValueStructure[0].length);
+        System.out.println("Value input0 size: " + input.field0.get(0).length);
+        System.out.println("Index input1 size: " + input.field1.get(0).length);
+
         for (int i = 0; i < input.field1.get(0).length; i++) {
             inputIndexStructure[0][i]  = input.field1.get(0)[i];
         }
 
-        OnnxTensor tensorOneLeft = OnnxTensor.createTensor(env, input1Left);
-        OnnxTensor tensorOneRight = OnnxTensor.createTensor(env, inputIndexStructure);
+        OnnxTensor tensorValues = OnnxTensor.createTensor(env, new float[][][]{inputValueStructure});
+        OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
         OrtTensorDecoder decoder = new OrtTensorDecoder();
 
-        this.inputMap.put("input1", tensorOneLeft);
-        this.inputMap.put("input2", tensorOneRight);
+        this.inputMap.put("input1", tensorValues);
+        this.inputMap.put("input2", tensorIndexes);
 
         this.requestedOutputs.add("output");
 
@@ -314,6 +338,9 @@ public class OrtMLModel {
 
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
+
+            System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
+            System.out.println("Input indexes: " + Arrays.deepToString(encoderIndexes));
 
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
@@ -334,10 +361,17 @@ public class OrtMLModel {
                 }
             }
 
+            int valueDim = resultTensor[0][0].length;
+            int indexDim = input.field1.get(0).length;
+            // Only handle one tree
+            //assert valueDim == indexDim : "Index dim " + indexDim + " != " + valueDim + " valueDim";
+
             ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
             mlResult.add(longResult[0]);
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
             end = Instant.now();
+            System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
+            System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
             execTime = Duration.between(start, end).toMillis();
 
             Logging.writeToFile(

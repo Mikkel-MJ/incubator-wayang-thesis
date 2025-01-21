@@ -55,7 +55,7 @@ public class OrtTensorEncoder {
         return new Tuple<>(flatTrees, indexes);
     }
 
-    private static ArrayList<long[][]> transpose(ArrayList<long[][]> flatTrees) {
+    public static ArrayList<long[][]> transpose(ArrayList<long[][]> flatTrees) {
         return flatTrees.stream().map(tree -> IntStream.range(0, tree[0].length) //transpose matrix
                         .mapToObj(i -> Arrays.stream(tree)
                                 .mapToLong(row -> row[i])
@@ -70,7 +70,7 @@ public class OrtTensorEncoder {
      * @param root
      * @return
      */
-    private long[][] treeConvIndexes(TreeNode root){
+    public long[][] treeConvIndexes(TreeNode root){
         TreeNode indexTree = preorderIndexes(root, 1);
 
         ArrayList<long[]> acc = new ArrayList<>(); //in place of a generator
@@ -86,22 +86,24 @@ public class OrtTensorEncoder {
     }
 
 
-    private void treeConvIndexesStep(TreeNode root, ArrayList<long[]> acc){
+    public void treeConvIndexesStep(TreeNode root, ArrayList<long[]> acc){
         if (root == null) {
             return;
         }
 
-        if (!root.isLeaf()) {
-            long ID  = root.encoded[0];
-            long lID = root.left != null ? root.left.encoded[0] : 0;
-            long rID = root.right != null ? root.right.encoded[0]: 0;
+        if (root.isLeaf()) {
+            acc.add(new long[]{root.encoded[0], 0, 0});
 
-            acc.add(new long[]{ID,lID,rID});
-            treeConvIndexesStep(root.left,acc);
-            treeConvIndexesStep(root.right,acc);
-        } else {
-            acc.add(new long[]{root.encoded[0],0,0});
+            return;
         }
+
+        long ID  = root.encoded[0];
+        long lID = root.left != null ? root.left.encoded[0] : 0;
+        long rID = root.right != null ? root.right.encoded[0]: 0;
+
+        acc.add(new long[]{ID, lID, rID});
+        treeConvIndexesStep(root.left, acc);
+        treeConvIndexesStep(root.right, acc);
     }
 
 
@@ -116,7 +118,7 @@ public class OrtTensorEncoder {
      * @return
      * @param idx needs to default to one.
      */
-    private TreeNode preorderIndexes(TreeNode root, long idx){ //this method is very scary - Mads, early 2024 | - True, Juri, late 2024
+    public TreeNode preorderIndexes(TreeNode root, long idx){ //this method is very scary - Mads, early 2024 | - True, Juri, late 2024
         if (root == null) {
             return null;
         }
@@ -139,7 +141,7 @@ public class OrtTensorEncoder {
         return new TreeNode(new long[]{idx}, leftSubTree, rightSubTree);
     }
 
-    private long rightMost(TreeNode root){
+    public long rightMost(TreeNode root){
         // this null
         if (root == null) return 0;
 
@@ -161,9 +163,9 @@ public class OrtTensorEncoder {
      * @param flatTrees
      * @return
      */
-    private ArrayList<long[][]> padAndCombine(List<long[][]> flatTrees) {
+    public ArrayList<long[][]> padAndCombine(List<long[][]> flatTrees) {
         assert flatTrees.size() >= 1;
-        assert flatTrees.get(0).length == 2;
+        //assert flatTrees.get(0).length == 2;
 
         ArrayList<long[][]> vecs = new ArrayList<>();
 
@@ -211,7 +213,7 @@ public class OrtTensorEncoder {
      * @param root
      * @return
      */
-    private long[][] flatten(TreeNode root){
+    public long[][] flatten(TreeNode root){
         if (root == null) {
             return new long[0][0];
         }
@@ -224,7 +226,7 @@ public class OrtTensorEncoder {
         return acc.toArray(long[][]::new); //fix this. idk if it distributes the rows correctly.
     }
 
-    private void flattenStep(TreeNode v, ArrayList<long[]> acc){
+    public void flattenStep(TreeNode v, ArrayList<long[]> acc){
         if (v == null) {
             return;
         }

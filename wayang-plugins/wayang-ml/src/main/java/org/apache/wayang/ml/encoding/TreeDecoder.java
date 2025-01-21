@@ -98,10 +98,12 @@ public class TreeDecoder {
             );
             Set<Platform> platforms = operator.get().getTargetPlatforms();
 
-            if (platforms.size() == 0 || platforms.contains(platform)) {
-                System.out.println("Setting platform " + platform + " for " + operator);
+            System.out.println("Operator: " + operator);
+            System.out.println("Platform: " + platform);
+
+            //if (platforms.size() == 0 || platforms.contains(platform)) {
                 operator.get().addTargetPlatform(platform);
-            }
+            //}
         } else {
             logger.info("Operator couldn't be recovered, potentially conversion operator: {}", node);
         }

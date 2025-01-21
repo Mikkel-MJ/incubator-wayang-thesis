@@ -71,6 +71,27 @@ public class TreeNode {
         return "(" + encodedString + "," + leftString + "," + rightString + ")";
     }
 
+    public String toString(boolean debug) {
+        String encodedString = Arrays.toString(encoded).replace("[", "(").replace("]", ")").replaceAll("\\s+", "");
+
+        if (left == null && right == null) {
+            return '(' + encodedString + ",)";
+        }
+
+        String leftString = "";
+        String rightString = "";
+
+        if (left != null) {
+            leftString = left.toString();
+        }
+
+        if (right != null) {
+            rightString = right.toString();
+        }
+
+        return "(" + encodedString + "," + leftString + "," + rightString + ")";
+    }
+
     public static TreeNode fromString(String encoded) {
         TreeNode result = new TreeNode();
         Matcher matcher = pattern.matcher(encoded);
@@ -177,8 +198,8 @@ public class TreeNode {
 
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
-        System.out.println("Encoded: " + Arrays.toString(values));
 
+        /*
         for (int i = 0; i < values.length; i++) {
             if (values[i] == 1 && disallowed.contains(i)) {
                 this.encoded[i] = 0;
@@ -186,7 +207,7 @@ public class TreeNode {
 
                 return;
             }
-        }
+        }*/
 
         this.encoded = values;
 
@@ -206,6 +227,10 @@ public class TreeNode {
 
     public int getTreeSize() {
         int size = 1;
+
+        if (this.isLeaf()) {
+            return 1;
+        }
 
         if (this.left != null) {
             size += this.left.getTreeSize();

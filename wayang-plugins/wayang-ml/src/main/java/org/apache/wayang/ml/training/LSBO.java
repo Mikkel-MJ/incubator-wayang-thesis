@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.ServerSocket;
@@ -91,7 +92,7 @@ public class LSBO {
             WayangContext context = new WayangContext(config);
             plugins.stream().forEach(plug -> context.register(plug));
             Job samplingJob = context.createJob("sampling", plan, "");
-            ExplainUtils.parsePlan(plan, false);
+            //ExplainUtils.parsePlan(plan, false);
             samplingJob.estimateKeyFigures();
             OneHotMappings.setOptimizationContext(samplingJob.getOptimizationContext());
             OneHotMappings.encodeIds = true;
@@ -123,15 +124,15 @@ public class LSBO {
             // execute each WayangPlan and sample latency
             // encode the best one
             // Get the initial plan created by the LSBO loop
-            Job executionJob = context.createJob("executing", sampledPlan, udfJars);
+            //Job executionJob = context.createJob("executing", sampledPlan, udfJars);
 
-            ExplainUtils.parsePlan(sampledPlan, false);
+            //ExplainUtils.parsePlan(sampledPlan, false);
             TreeNode encoded = TreeEncoder.encode(sampledPlan);
             long execTime = Long.MAX_VALUE;
 
             try {
                 Instant start = Instant.now();
-                executionJob.execute();
+                context.execute(sampledPlan, udfJars);
                 Instant end = Instant.now();
                 execTime = Duration.between(start, end).toMillis();
 
@@ -216,8 +217,11 @@ public class LSBO {
                 mlResult.add(longResult[0]);
                 ArrayList<long[][]> indexList = new ArrayList<long[][]>();
                 indexList.add(indexes[0]);
-                Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
+                Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, indexList);
                 TreeNode decoded = decoder.decode(decoderInput);
+                System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
+                System.out.println("Decoder Index Size: " + decoderInput.field1.get(0).length);
+                System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
                 decoded.softmax();
 
                 // Now set the platforms on the wayangPlan

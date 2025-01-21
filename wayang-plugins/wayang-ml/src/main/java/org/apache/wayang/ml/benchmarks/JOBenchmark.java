@@ -43,6 +43,7 @@ import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.core.util.ExplainUtils;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -67,8 +68,8 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         try {
@@ -155,6 +156,8 @@ public class JOBenchmark {
 
             //Set sink to be on Java
             ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
+
+            ExplainUtils.parsePlan(plan, false);
 
             /*
             FileWriter fw = new FileWriter(
