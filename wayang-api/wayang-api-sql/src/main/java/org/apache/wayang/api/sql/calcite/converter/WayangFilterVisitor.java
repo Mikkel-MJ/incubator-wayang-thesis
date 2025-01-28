@@ -23,7 +23,6 @@ import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.wayang.api.sql.calcite.converter.filterhelpers.ColumnIndexExtractor;
@@ -106,6 +105,7 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
 
     /** for quick sanity check **/
     public static final EnumSet<SqlKind> SUPPORTED_OPS = EnumSet.of(SqlKind.AND, SqlKind.OR,
+            SqlKind.SEARCH,
             SqlKind.EQUALS, SqlKind.NOT_EQUALS,
             SqlKind.LESS_THAN, SqlKind.GREATER_THAN,
             SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL,
