@@ -59,27 +59,10 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
         final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
         final SqlImplementor.Context relContext = decompiler.visitInput(wayangRelNode, 0).qualifiedContext();
         final SqlBasicCall sqlCondition = (SqlBasicCall) relContext.toSql(wayangRelNode.getAggCallList().get(0));
-        if (((SqlIdentifier) sqlCondition.getOperandList().get(0)).isStar()) {// if this is an aggregate on all cols
-            List<Integer> columnIndexes = wayangRelNode.getInputs().stream()
-                    .flatMap(node -> node.getRowType().getFieldList().stream())
-                    .map(field -> field.getIndex()).collect(Collectors.toList());
-            System.out.println("column indexes: " + columnIndexes);
-            System.out.println("fields: " + CalciteSources.getColumnsFromGlobalCatalog(wayangRelNode, columnIndexes));
-            System.out.println("column names: " + CalciteSources.getSqlColumnNames(wayangRelNode, aliasFinder));
-        }
-        System.out.println(sqlCondition.getOperandList().get(0));
-        SqlIdentifier identifier = (SqlIdentifier) sqlCondition.getOperandList().get(0);
-        System.out.println("is star: " + identifier.isStar());
+
         // fetch the indexes of colmuns affected, in calcite aggregates and projections
         // have their own catalog, we need to find the column indexes in the global
         // catalog
-        System.out.println(wayangRelNode.getTable());
-        System.out.println("agg: " + wayangRelNode.getAggCallList().get(0));
-        System.out.println("agg: " + wayangRelNode.getAggCallList().get(0).getAggregation().getKind());
-        System.out.println("input rows: " + wayangRelNode.getInput().getRowType().getFieldList());
-        System.out.println("agg fields: " + wayangRelNode.getRowType().getFieldList());
-        System.out.println("keys: " + wayangRelNode.getAggCallList().get(0).distinctKeys);
-
         final boolean isStar = ((SqlIdentifier) sqlCondition.getOperandList().get(0)).isStar();
         final List<Integer> columnIndexes = isStar 
                 ? wayangRelNode.getInputs().stream()

@@ -32,17 +32,14 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
     WayangProjectVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
