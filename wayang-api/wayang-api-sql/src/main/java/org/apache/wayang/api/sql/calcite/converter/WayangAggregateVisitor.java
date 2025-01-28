@@ -20,8 +20,12 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataTypeField;
-
+import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
@@ -40,28 +44,54 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.types.DataUnitType;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
-    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
+    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
         super(wayangRelConverter, aliasFinder);
     }
 
     @Override
     Operator visit(final WayangAggregate wayangRelNode) {
+        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
+        final SqlImplementor.Context relContext = decompiler.visitInput(wayangRelNode, 0).qualifiedContext();
+        final SqlBasicCall sqlCondition = (SqlBasicCall) relContext.toSql(wayangRelNode.getAggCallList().get(0));
+        if (((SqlIdentifier) sqlCondition.getOperandList().get(0)).isStar()) {// if this is an aggregate on all cols
+            List<Integer> columnIndexes = wayangRelNode.getInputs().stream()
+                    .flatMap(node -> node.getRowType().getFieldList().stream())
+                    .map(field -> field.getIndex()).collect(Collectors.toList());
+            System.out.println("column indexes: " + columnIndexes);
+            System.out.println("fields: " + CalciteSources.getColumnsFromGlobalCatalog(wayangRelNode, columnIndexes));
+            System.out.println("column names: " + CalciteSources.getSqlColumnNames(wayangRelNode, aliasFinder));
+        }
+        System.out.println(sqlCondition.getOperandList().get(0));
+        SqlIdentifier identifier = (SqlIdentifier) sqlCondition.getOperandList().get(0);
+        System.out.println("is star: " + identifier.isStar());
         // fetch the indexes of colmuns affected, in calcite aggregates and projections
         // have their own catalog, we need to find the column indexes in the global
         // catalog
-        final List<Integer> columnIndexes = wayangRelNode.getAggCallList().stream()
-                .map(agg -> agg.getArgList().get(0))
-                .collect(Collectors.toList());
+        System.out.println(wayangRelNode.getTable());
+        System.out.println("agg: " + wayangRelNode.getAggCallList().get(0));
+        System.out.println("agg: " + wayangRelNode.getAggCallList().get(0).getAggregation().getKind());
+        System.out.println("input rows: " + wayangRelNode.getInput().getRowType().getFieldList());
+        System.out.println("agg fields: " + wayangRelNode.getRowType().getFieldList());
+        System.out.println("keys: " + wayangRelNode.getAggCallList().get(0).distinctKeys);
 
-        final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
+        final boolean isStar = ((SqlIdentifier) sqlCondition.getOperandList().get(0)).isStar();
+        final List<Integer> columnIndexes = isStar 
+                ? wayangRelNode.getInputs().stream()
+                        .flatMap(node -> node.getRowType().getFieldList().stream())
+                        .map(RelDataTypeField::getIndex)
+                        .collect(Collectors.toList())
+                : wayangRelNode.getAggCallList().stream()
+                        .map(agg -> agg.getArgList().get(0))
+                        .collect(Collectors.toList());
+
+        final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes,
+                aliasFinder);
 
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
@@ -80,7 +110,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
         Operator aggregateOperator;
 
         if (groupCount > 0) {
-            ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
+            final ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
                     new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class,
                             Object.class),
                     new ReduceDescriptor<>(new AggregateFunction(aggregateCalls),
@@ -109,10 +139,11 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
                 if (aliasedFields.length == 2) {
                     reductionStatements.add(
-                            reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")" + " AS " + unpackedAlias[1]);
+                            reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")"
+                                    + " AS " + unpackedAlias[1]);
                 } else {
                     reductionStatements.add(
-                        reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");
+                            reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");
                 }
             }
 
