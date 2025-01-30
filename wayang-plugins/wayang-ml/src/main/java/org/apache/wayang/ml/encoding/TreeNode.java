@@ -107,6 +107,12 @@ public class TreeNode {
         Long[] encodedLongs = Stream.of(value.split(","))
             .map(val -> Long.valueOf(val.replaceAll("\\s+","")))
             .collect(Collectors.toList()).toArray(Long[]::new);
+
+        // ignore if no platform choices given
+        if (Stream.of(encodedLongs).reduce(0l, Long::sum) == 0) {
+            return null;
+        }
+
         result.encoded = ArrayUtils.toPrimitive(encodedLongs);
 
         if (left != null) {
@@ -135,13 +141,15 @@ public class TreeNode {
     }
 
     public TreeNode withPlatformChoicesFrom(TreeNode node) {
-        if (this.encoded != null) {
-            assert node.encoded != null;
+        System.out.println("THIS: " + this);
+        System.out.println("Node: " + node);
+        if (this.encoded == null) {
+            return this;
         }
 
         if (node.encoded == null) {
             assert this.encoded != null;
-            //return this;
+            return this;
         }
 
         HashMap<String, Integer> platformMappings = OneHotMappings.getInstance().getPlatformsMapping();
@@ -199,7 +207,6 @@ public class TreeNode {
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
 
-        /*
         for (int i = 0; i < values.length; i++) {
             if (values[i] == 1 && disallowed.contains(i)) {
                 this.encoded[i] = 0;
@@ -207,7 +214,7 @@ public class TreeNode {
 
                 return;
             }
-        }*/
+        }
 
         this.encoded = values;
 

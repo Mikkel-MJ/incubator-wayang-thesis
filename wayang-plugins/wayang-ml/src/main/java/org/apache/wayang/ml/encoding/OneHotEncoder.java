@@ -498,7 +498,7 @@ public class OneHotEncoder implements Encoder {
         int platformsCount = platformMappings.size();
         long[] result = new long[operatorsCount + platformsCount + 3];
 
-        result[operatorsCount - 1] = 1;
+        //result[operatorsCount - 1] = 1;
 
         return result;
     }

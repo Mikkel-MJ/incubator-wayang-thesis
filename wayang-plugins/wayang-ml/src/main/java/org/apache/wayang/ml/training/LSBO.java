@@ -22,6 +22,7 @@ import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.api.exception.WayangException;
+import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.util.Tuple;
@@ -94,9 +95,11 @@ public class LSBO {
             Job samplingJob = context.createJob("sampling", plan, "");
             //ExplainUtils.parsePlan(plan, false);
             samplingJob.estimateKeyFigures();
+            //ExecutionPlan exPlan = samplingJob.buildInitialExecutionPlan();
             OneHotMappings.setOptimizationContext(samplingJob.getOptimizationContext());
             OneHotMappings.encodeIds = true;
             TreeNode wayangNode = TreeEncoder.encode(plan);
+            //TreeNode execNode = TreeEncoder.encode(exPlan, true).withIdsFrom(wayangNode);
             String encodedInput = wayangNode.toString() + ":" + wayangNode.toString() + ":1";
             ArrayList<String> input = new ArrayList<>();
             input.add(encodedInput);
@@ -221,12 +224,15 @@ public class LSBO {
                 TreeNode decoded = decoder.decode(decoderInput);
                 System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
                 System.out.println("Decoder Index Size: " + decoderInput.field1.get(0).length);
-                System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
+                System.out.println("Decoder Input: " + Arrays.deepToString(input.field1.get(0)));
                 decoded.softmax();
 
                 // Now set the platforms on the wayangPlan
+                System.out.println("Decoded: " + decoded.toString());
                 encoded = encoded.withPlatformChoicesFrom(decoded);
                 WayangPlan decodedPlan = TreeDecoder.decode(encoded);
+
+                System.out.println("WayangPlan: " + decodedPlan);
 
                 resultPlans.add(decodedPlan);
             } catch (Exception e) {

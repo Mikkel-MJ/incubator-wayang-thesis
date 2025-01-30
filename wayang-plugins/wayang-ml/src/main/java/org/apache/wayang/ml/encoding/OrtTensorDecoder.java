@@ -47,12 +47,25 @@ public class OrtTensorDecoder {
             long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
             for (int j = 0; j < flatIndexTree.length; j+=3) {
                 final long curID = flatIndexTree[j];
+
+                System.out.println("Decoding curID: " + curID);
+                // Skip 0s
+                if (curID == 0) {
+                    System.out.println("0 curID hit, aborting this leaf");
+                    continue;
+                }
+
                 long lID   = flatIndexTree[j+1];
                 long rID   = flatIndexTree[j+2];
 
                 long[] value = Arrays.stream(values)
                         .flatMapToLong(arr -> LongStream.of(arr[(int) curID]))
                         .toArray();
+
+                // Skip 0s
+                if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
+                    continue;
+                }
 
                 //fetch l,r from map such that we can reference values.
                 TreeNode l       = nodeToIDMap.containsKey(lID)   ? nodeToIDMap.get(lID)   : new TreeNode();
