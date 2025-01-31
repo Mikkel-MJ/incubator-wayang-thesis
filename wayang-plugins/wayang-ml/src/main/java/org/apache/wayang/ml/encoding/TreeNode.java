@@ -145,6 +145,10 @@ public class TreeNode {
             return this;
         }
 
+        if (this.encoded == OneHotEncoder.encodeNullOperator()) {
+            return this;
+        }
+
         if (node.encoded == null) {
             assert this.encoded != null;
             return this;
@@ -170,6 +174,7 @@ public class TreeNode {
         int operatorsCount = operatorMappings.size();
         this.encoded[operatorsCount + platformPosition] = 1;
 
+        /*
         if (this.left != null) {
             assert node.left != null;
             this.left = left.withPlatformChoicesFrom(node.left);
@@ -178,17 +183,15 @@ public class TreeNode {
         if (this.right != null) {
             assert node.right != null;
             this.right = right.withPlatformChoicesFrom(node.right);
-        }
+        }*/
 
-        /*
         if (this.left != null && node.left != null) {
             this.left = left.withPlatformChoicesFrom(node.left);
-        }*/
+        }
 
-        /*
         if (this.right != null && node.right != null) {
             this.right = right.withPlatformChoicesFrom(node.right);
-        }*/
+        }
 
         return this;
     }
