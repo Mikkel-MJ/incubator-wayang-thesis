@@ -141,8 +141,6 @@ public class TreeNode {
     }
 
     public TreeNode withPlatformChoicesFrom(TreeNode node) {
-        System.out.println("THIS: " + this);
-        System.out.println("Node: " + node);
         if (this.encoded == null) {
             return this;
         }

@@ -48,10 +48,8 @@ public class OrtTensorDecoder {
             for (int j = 0; j < flatIndexTree.length; j+=3) {
                 final long curID = flatIndexTree[j];
 
-                System.out.println("Decoding curID: " + curID);
                 // Skip 0s
                 if (curID == 0) {
-                    System.out.println("0 curID hit, aborting this leaf");
                     continue;
                 }
 

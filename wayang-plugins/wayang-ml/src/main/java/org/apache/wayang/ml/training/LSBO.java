@@ -219,12 +219,12 @@ public class LSBO {
                 ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
                 mlResult.add(longResult[0]);
                 ArrayList<long[][]> indexList = new ArrayList<long[][]>();
-                indexList.add(indexes[0]);
+                indexList.add(input.field1.get(0));
                 Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, indexList);
                 TreeNode decoded = decoder.decode(decoderInput);
                 System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
                 System.out.println("Decoder Index Size: " + decoderInput.field1.get(0).length);
-                System.out.println("Decoder Input: " + Arrays.deepToString(input.field1.get(0)));
+                System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
                 decoded.softmax();
 
                 // Now set the platforms on the wayangPlan
