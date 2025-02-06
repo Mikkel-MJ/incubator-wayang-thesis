@@ -20,11 +20,9 @@ package org.apache.wayang.api.sql.context;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -32,6 +30,7 @@ import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
+import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
@@ -95,9 +94,11 @@ public class SqlContext extends WayangContext {
     }
 
     /**
-     * Method for building {@link WayangPlan}s useful for testing, benchmarking and other
+     * Method for building {@link WayangPlan}s useful for testing, benchmarking and
+     * other
      * usages where you want to handle the intermediate {@link WayangPlan}
-     * @param sql sql query string with the {@code ;} cut off
+     * 
+     * @param sql     sql query string with the {@code ;} cut off
      * @param udfJars
      * @return a {@link WayangPlan} of a given sql string
      * @throws SqlParseException
@@ -111,7 +112,6 @@ public class SqlContext extends WayangContext {
 
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
-
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
@@ -120,13 +120,14 @@ public class SqlContext extends WayangContext {
         final AliasFinder aliasFinder = new AliasFinder(visitor);
 
         final RuleSet rules = RuleSets.ofList(
+                CoreRules.FILTER_INTO_JOIN,
+                WayangRules.WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE,
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
-                WayangRules.WAYANG_FILTER_INTO_JOIN_RULE);
+                WayangRules.WAYANG_AGGREGATE_RULE);
 
         final RelNode wayangRel = optimizer.optimize(
                 relNode,
@@ -156,43 +157,43 @@ public class SqlContext extends WayangContext {
         final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
         final Optimizer optimizer = Optimizer.create(calciteSchema, configProperties,
-                relDataTypeFactory);        
+                relDataTypeFactory);
 
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         final RelNode relNode = optimizer.convert(validatedSqlNode);
-        
-        // initialisations that handles decompilations of calcite's relnodes back to SQL
-        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT); 
-        final SqlImplementor.Context relContext = decompiler.visitInput(relNode,0).qualifiedContext();
+        // we call optimizer.prepare to remove structures within the relnode tree before handled by
+        // the sql api.
+        final RelNode fixedTree = optimizer.prepare(relNode, RuleSets.ofList(CoreRules.FILTER_INTO_JOIN, WayangRules.WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE));
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
-        visitor.visit(relNode, 0, null);
+        visitor.visit(fixedTree, 0, null);
 
         final AliasFinder aliasFinder = new AliasFinder(visitor);
-        aliasFinder.context = relContext;
+
         final RuleSet rules = RuleSets.ofList(
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
-                WayangRules.WAYANG_FILTER_INTO_JOIN_RULE);
+                WayangRules.WAYANG_AGGREGATE_RULE);
 
         final RelNode wayangRel = optimizer.optimize(
-                relNode,
-                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
+                fixedTree,
+                fixedTree.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
 
         PrintUtils.print("Logical WayangPlan", wayangRel);
-        
+
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
 
         if (udfJars.length == 0) {
-             PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node
-             -> {if (!node.isSink()) node.addTargetPlatform(Postgres.platform());});
+            PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node -> {
+                if (!node.isSink())
+                    node.addTargetPlatform(Postgres.platform());
+            });
             this.execute(getJobName(), wayangPlan);
         } else {
             Arrays.stream(udfJars).forEach(System.out::println);

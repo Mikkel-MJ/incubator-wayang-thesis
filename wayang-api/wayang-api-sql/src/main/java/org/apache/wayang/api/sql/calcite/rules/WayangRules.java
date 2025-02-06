@@ -22,6 +22,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.TableScan;
@@ -31,12 +32,14 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
+
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
@@ -55,7 +58,11 @@ public class WayangRules {
     public static final RelOptRule WAYANG_TABLESCAN_ENUMERABLE_RULE = new WayangTableScanRule(
             WayangTableScanRule.ENUMERABLE_CONFIG);
     public static final RelOptRule WAYANG_AGGREGATE_RULE = new WayangAggregateRule(WayangAggregateRule.DEFAULT_CONFIG);
-    public static final RelOptRule WAYANG_FILTER_INTO_JOIN_RULE = new WayangFilterIntoJoinRule(WayangFilterIntoJoinRule.DEFAULT_CONFIG);
+    
+    /**
+     * Rule that tries to take a multi conditional join and splits it into multiple binary joins.
+     */
+    public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE = new WayangMultiConditionJoinSplitRule(WayangMultiConditionJoinSplitRule.Config.DEFAULT);
 
     private static class WayangProjectRule extends ConverterRule {
 
@@ -103,20 +110,6 @@ public class WayangRules {
                     filter.getCondition());
         }
 
-    }
-
-    private static class WayangFilterIntoJoinRule extends FilterIntoJoinRule {
-        public static final Config DEFAULT_CONFIG = FilterIntoJoinRuleConfig.DEFAULT;
-
-        public WayangFilterIntoJoinRule(Config config) {
-            super((FilterIntoJoinRuleConfig) config);
-        }
-
-        @Override
-        public void onMatch(RelOptRuleCall call) {
-            System.out.println("matched on: " + call);
-            super.onMatch(call);
-        }
     }
 
     private static class WayangTableScanRule extends ConverterRule {
