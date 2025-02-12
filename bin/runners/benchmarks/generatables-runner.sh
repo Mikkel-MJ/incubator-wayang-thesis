@@ -13,8 +13,9 @@ export PATH="$PATH:${GIRAPH_HOME}/bin"
 cd ${WORKDIR}
 cd wayang-0.7.1
 
-#bvae_31_path=/work/lsbo-paper/python-ml/src/Models/zdim/bvae.onnx
-bvae_31_path=/work/lsbo-paper/data/models/bvae.onnx
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/tpch/bvae-b-1.onnx
+bvae_5_path=/work/lsbo-paper/python-ml/src/Models/tpch/bvae-b-5.onnx
+bvae_150_path=/work/lsbo-paper/python-ml/src/Models/tpch/bvae-b-150.onnx
 cost_path=/work/lsbo-paper/data/models/cost.onnx
 
 data_path=/work/lsbo-paper/data
@@ -26,8 +27,12 @@ echo "Benchmarking Test data with native optimizer"
 #    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/ $query
 #done
 
-for query in {801..810}; do
-    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/mish/ $query bvae $bvae_31_path $experience_path
+for query in {801..900}; do
+    for i in {0..2}; do
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/b1/ $query bvae $bvae_1_path $experience_path
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/b5/ $query bvae $bvae_5_path $experience_path
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/b150/ $query bvae $bvae_150_path $experience_path
+    done
 done
 
 #echo "Benchmarking Test data with Cost model"
