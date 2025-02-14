@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoiningTableExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
@@ -53,6 +53,11 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
+        System.out.println("starting sout       : ");
+        System.out.println("left: " + wayangRelNode.getLeft().getRowType());
+        System.out.println();
+        System.out.println("join: " + wayangRelNode.getRowType());
+        System.out.println("fucky wucky done \n");
         final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
         final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), super.aliasFinder);
 
@@ -68,10 +73,27 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
         final int leftKeyIndex = condition.accept(new KeyIndex(false, Child.LEFT));
         final int rightKeyIndex = condition.accept(new KeyIndex(false, Child.RIGHT));
+        System.out.println("condition: " + condition);
+        System.out.println("field list size join: " + wayangRelNode.getRowType().getFieldCount() + ", left: "
+                + wayangRelNode.getLeft().getRowType().getFieldCount() + ", right: "
+                + wayangRelNode.getRight().getRowType().getFieldCount() + ", sum: "
+                + (wayangRelNode.getLeft().getRowType().getFieldCount()
+                        + wayangRelNode.getRight().getRowType().getFieldCount()));
 
         // init join
         final scala.Tuple2<Integer, Integer> keyExtractor = this.determineKeyExtractionDirection(leftKeyIndex,
                 rightKeyIndex, wayangRelNode);
+
+        System.out.println("join left rowtype: " + wayangRelNode.getLeft().getRowType());
+        System.out.println("join right rowtype: " + wayangRelNode.getRight().getRowType());
+        System.out.println("kE1: " + keyExtractor._1());
+        System.out.println("kE2: " + keyExtractor._2());
+
+        final RelDataTypeField leftFieldL = wayangRelNode.getRowType().getFieldList().get(leftKeyIndex);
+        final RelDataTypeField reftFieldR = wayangRelNode.getRowType().getFieldList().get(rightKeyIndex);
+
+        System.out.println("left field testO: " + leftFieldL);
+        System.out.println("right field testo: " + reftFieldR);
 
         final RelDataTypeField leftField = wayangRelNode.getLeft().getRowType().getFieldList()
                 .get(keyExtractor._1());
@@ -100,7 +122,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         rightVisitor.visit(wayangRelNode.getRight(), wayangRelNode.getId(), null);
 
         // TODO: prolly breaks on bushy joins
-        final String joiningTableName = leftVisitor.getName() instanceof String 
+        final String joiningTableName = leftVisitor.getName() instanceof String
                 ? leftVisitor.getName()
                 : rightVisitor.getName();
 
@@ -113,7 +135,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
         // find the sql table alias for the left and right table, so it can be used in
         // the transform descriptor, this depends when each statement shows up in the
-        // condition if the leftKeyIndex is less than the right key index this is the normal case,
+        // condition if the leftKeyIndex is less than the right key index this is the
+        // normal case,
         // where JOIN x AS x' ON x'.x* = y'.y*, else we need to switch
         final String leftTableAlias = leftKeyIndex < rightKeyIndex
                 ? aliasFinder.columnIndexToTableName.get(leftKeyIndex)
@@ -169,11 +192,13 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
      */
     protected scala.Tuple2<Integer, Integer> determineKeyExtractionDirection(final Integer leftKeyIndex,
             final Integer rightKeyIndex, final WayangJoin wayangRelNode) {
+
+        System.out.println("compare: " + leftKeyIndex.compareTo(rightKeyIndex));
         switch (leftKeyIndex.compareTo(rightKeyIndex)) {
             case 1: // left greater than
             {
-                final int newLeftKeyIndex = leftKeyIndex
-                        - wayangRelNode.getInput(0).getRowType().getFieldCount();
+                final int newLeftKeyIndex = leftKeyIndex - wayangRelNode.getInput(0).getRowType().getFieldCount();
+                // (leftTableGetter, rightTableGetter)
                 return new scala.Tuple2<>(rightKeyIndex, newLeftKeyIndex);
             }
             case -1: // left lesser than
@@ -210,14 +235,16 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 Record.class, SqlField.class, leftFieldName)
                 .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName);
 
-        final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
+        final TransformationDescriptor<Record, SqlField> rightProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(rightKeyIndex),
                 Record.class, SqlField.class, rightFieldName)
                 .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName);
 
+        System.out.println("lpd: " + leftProjectionDescriptor.getSqlImplementation());
+        System.out.println("rpd: " + rightProjectionDescriptor.getSqlImplementation());
         final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
                 leftProjectionDescriptor,
-                righProjectionDescriptor);
+                rightProjectionDescriptor);
 
         return join;
     }

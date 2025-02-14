@@ -62,6 +62,7 @@ import org.apache.calcite.tools.RuleSets;
 
 import org.apache.wayang.api.sql.calcite.converter.WayangRelConverter;
 import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule;
+import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
@@ -256,9 +257,12 @@ public class Optimizer {
      * @param rules
      * @return
      */
-    public RelNode prepare(final RelNode node, final RuleSet rules) {
+    public RelNode prepare(final RelNode node) {
+        final RuleSet rs = RuleSets.ofList(CoreRules.FILTER_INTO_JOIN, WayangRules.WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE);
+
+        // use hep as it doesnt take cost into consideration while volcano planner does.
         final HepProgramBuilder programBuilder = HepProgram.builder();
-        rules.forEach(programBuilder::addRuleInstance);
+        rs.forEach(programBuilder::addRuleInstance);
         final HepProgram program = programBuilder.build();
         final HepPlanner planner = new HepPlanner(program);
         planner.setRoot(node);

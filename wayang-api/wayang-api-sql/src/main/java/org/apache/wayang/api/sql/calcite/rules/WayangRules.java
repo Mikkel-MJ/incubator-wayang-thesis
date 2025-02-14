@@ -20,9 +20,7 @@ package org.apache.wayang.api.sql.calcite.rules;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.TableScan;
@@ -31,19 +29,19 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
-
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
+import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule.CustomLogicalJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 //TODO: split into multiple classes
 public class WayangRules {
@@ -58,11 +56,56 @@ public class WayangRules {
     public static final RelOptRule WAYANG_TABLESCAN_ENUMERABLE_RULE = new WayangTableScanRule(
             WayangTableScanRule.ENUMERABLE_CONFIG);
     public static final RelOptRule WAYANG_AGGREGATE_RULE = new WayangAggregateRule(WayangAggregateRule.DEFAULT_CONFIG);
-    
+
     /**
-     * Rule that tries to take a multi conditional join and splits it into multiple binary joins.
+     * Rule that takes the custom logical join created in
+     * {@link #WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE} and converts them
+     * to the wayang convention
      */
-    public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE = new WayangMultiConditionJoinSplitRule(WayangMultiConditionJoinSplitRule.Config.DEFAULT);
+    public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_RULE = new WayangMultiConditionJoinRule(
+            WayangMultiConditionJoinRule.DEFAULT_CONFIG);
+
+    /**
+     * Rule that tries to take a multi conditional join and splits it into multiple
+     * binary joins.
+     */
+    public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE = new WayangMultiConditionJoinSplitRule(
+            WayangMultiConditionJoinSplitRule.Config.DEFAULT);
+
+    private static class WayangMultiConditionJoinRule extends ConverterRule {
+        public static final Config DEFAULT_CONFIG = Config.INSTANCE
+                .withConversion(CustomLogicalJoin.class,
+                        Convention.NONE, WayangConvention.INSTANCE,
+                        "WayangMultiConditionJoinRule")
+                .withRuleFactory(WayangMultiConditionJoinRule::new);
+
+        protected WayangMultiConditionJoinRule(Config config) {
+            super(config);
+        }
+
+        public RelNode convert(RelNode rel) {
+            System.out.println("converting rel to wayang: " + rel + " with row type: " + rel.getRowType());
+            final CustomLogicalJoin join = (CustomLogicalJoin) rel;
+
+            final List<RelNode> newInputs = join.getInputs().stream()
+                    .map(input -> input.getConvention() instanceof WayangConvention 
+                            ? input
+                            : convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE)))
+                    .collect(Collectors.toList());
+            System.out.println("rel " + rel + " ; " + rel.getRowType().getFieldCount());
+            System.out.println("roowssl " + newInputs.get(0) + "\n ; " + newInputs.get(0).getRowType().getFieldCount());
+            System.out.println("rooowwss: " + newInputs.get(1) + "\n ; " + newInputs.get(1).getRowType().getFieldCount());
+        
+            return new WayangJoin(
+                    join.getCluster(),
+                    join.getTraitSet().replace(WayangConvention.INSTANCE),
+                    newInputs.get(0),
+                    newInputs.get(1),
+                    join.getCondition(),
+                    join.getVariablesSet(),
+                    join.getJoinType());
+        }
+    }
 
     private static class WayangProjectRule extends ConverterRule {
 

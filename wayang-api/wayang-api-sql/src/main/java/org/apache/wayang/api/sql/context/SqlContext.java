@@ -121,13 +121,13 @@ public class SqlContext extends WayangContext {
 
         final RuleSet rules = RuleSets.ofList(
                 CoreRules.FILTER_INTO_JOIN,
-                WayangRules.WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE,
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE);
+                WayangRules.WAYANG_AGGREGATE_RULE,
+                WayangRules.WAYANG_MULTI_CONDITION_JOIN_RULE);
 
         final RelNode wayangRel = optimizer.optimize(
                 relNode,
@@ -164,8 +164,8 @@ public class SqlContext extends WayangContext {
         final RelNode relNode = optimizer.convert(validatedSqlNode);
         // we call optimizer.prepare to remove structures within the relnode tree before handled by
         // the sql api.
-        final RelNode fixedTree = optimizer.prepare(relNode, RuleSets.ofList(CoreRules.FILTER_INTO_JOIN, WayangRules.WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE));
-
+        final RelNode fixedTree = optimizer.prepare(relNode);
+        PrintUtils.print("Tree after converting to handleable tree: ", fixedTree);
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(fixedTree, 0, null);
 
@@ -177,7 +177,8 @@ public class SqlContext extends WayangContext {
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE);
+                WayangRules.WAYANG_AGGREGATE_RULE,
+                WayangRules.WAYANG_MULTI_CONDITION_JOIN_RULE);
 
         final RelNode wayangRel = optimizer.optimize(
                 fixedTree,
