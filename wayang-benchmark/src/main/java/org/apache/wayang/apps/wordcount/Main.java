@@ -48,6 +48,17 @@ public class Main {
 
             Configuration configuration = new Configuration();
             configuration.setProperty("spark.master", "spark://spark-cluster:7077");
+            configuration.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            configuration.setProperty("spark.rpc.message.maxSize", "2047");
+            configuration.setProperty("spark.executor.memory", "16g");
+            configuration.setProperty("wayang.flink.mode.run", "distribution");
+            configuration.setProperty("wayang.flink.parallelism", "1");
+            configuration.setProperty("wayang.flink.master", "flink-cluster");
+            configuration.setProperty("wayang.flink.port", "7071");
+            configuration.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            configuration.setProperty("spark.executor.memory", "16g");
+            configuration.setProperty("spark.driver.maxResultSize", "4G");
+            configuration.setProperty("wayang.ml.experience.enabled", "false");
 
             WayangContext wayangContext = new WayangContext(configuration);
             wayangContext.setLogLevel(Level.ERROR);

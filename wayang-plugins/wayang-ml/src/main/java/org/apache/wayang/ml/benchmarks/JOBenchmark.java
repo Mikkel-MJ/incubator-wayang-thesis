@@ -26,6 +26,7 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.flink.Flink;
+import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.api.DataQuanta;
@@ -44,6 +45,7 @@ import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.util.ExplainUtils;
+import org.apache.wayang.api.sql.context.SqlContext;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -81,10 +83,11 @@ public class JOBenchmark {
             config.setProperty("spark.app.name", "JOB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
             config.setProperty("spark.executor.memory", "32g");
-            config.setProperty("wayang.flink.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.mode.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");
-            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("wayang.flink.port", "7071");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
             config.setProperty("spark.driver.maxResultSize", "8G");
             config.setProperty("wayang.ml.experience.enabled", "false");
 
@@ -148,6 +151,7 @@ public class JOBenchmark {
             String[] jars = new String[]{
                 ReflectionUtils.getDeclaringJar(JOBenchmark.class),
                 ReflectionUtils.getDeclaringJar(IMDBJOBenchmark.class),
+                ReflectionUtils.getDeclaringJar(SqlContext.class)
             };
 
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
@@ -155,8 +159,8 @@ public class JOBenchmark {
             IMDBJOBenchmark.setSources(plan, args[1]);
 
             //Set sink to be on Java
-            ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
-
+            //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
+            //
             ExplainUtils.parsePlan(plan, false);
 
             /*

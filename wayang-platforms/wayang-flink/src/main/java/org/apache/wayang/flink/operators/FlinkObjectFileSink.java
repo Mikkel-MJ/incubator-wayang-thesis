@@ -82,7 +82,7 @@ public class FlinkObjectFileSink<Type> extends ObjectFileSink<Type> implements F
         DataSetChannel.Instance input = (DataSetChannel.Instance) inputs[0];
         final DataSink<Type> tDataSink = input.<Type>provideDataSet()
                 .write(new WayangFileOutputFormat<Type>(targetPath), targetPath, FileSystem.WriteMode.OVERWRITE)
-                .setParallelism(1);
+                .setParallelism(flinkExecutor.fee.getParallelism());
 
 
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);

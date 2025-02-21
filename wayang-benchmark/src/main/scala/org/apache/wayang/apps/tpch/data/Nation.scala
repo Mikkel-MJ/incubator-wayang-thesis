@@ -24,9 +24,9 @@ package org.apache.wayang.apps.tpch.data
 case class Nation(nationKey: Long,
                     name: String,
                     regionKey: Long,
-                    comment: String)
+                    comment: String) extends Serializable
 
-object Nation {
+object Nation extends Serializable {
 
   val fields = IndexedSeq("n_nationkey", "n_name", "n_regionkey","n_comment")
 

@@ -28,9 +28,9 @@ case class Customer(custKey: Long,
                     phone: String,
                     acctbal: Double,
                     mktSegment: String,
-                    comment: String)
+                    comment: String) extends Serializable
 
-object Customer {
+object Customer extends Serializable {
 
   val fields = IndexedSeq("c_custkey", "c_name", "c_address", "c_nationkey", "c_phone", "c_acctbal", "c_mktsegment", "c_comment")
 

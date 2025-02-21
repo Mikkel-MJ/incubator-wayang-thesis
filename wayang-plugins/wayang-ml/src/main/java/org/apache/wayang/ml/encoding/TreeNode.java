@@ -145,9 +145,10 @@ public class TreeNode {
             return this;
         }
 
+        /*
         if (this.encoded == OneHotEncoder.encodeNullOperator()) {
             return this;
-        }
+        }*/
 
         if (node.encoded == null) {
             assert this.encoded != null;

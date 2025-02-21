@@ -40,7 +40,7 @@ public class TransformationDescriptor<Input, Output> extends FunctionDescriptor 
 
     private final FunctionDescriptor.SerializableFunction<Input, Output> javaImplementation;
 
-    private Tuple<String, String> sqlImplementation;
+    private transient Tuple<String, String> sqlImplementation;
 
     public TransformationDescriptor(FunctionDescriptor.SerializableFunction<Input, Output> javaImplementation,
                                     Class<Input> inputTypeClass,

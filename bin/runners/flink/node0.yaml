@@ -1,0 +1,41 @@
+blob:
+  server:
+    port: '6124'
+taskmanager:
+  memory:
+    process:
+      size: 40g
+  bind-host: 0.0.0.0
+  numberOfTaskSlots: '8'
+classloader:
+  check-leaked-classloader: 'false'
+  resolve-order: parent-first
+jobmanager:
+  execution:
+    failover-strategy: region
+  rpc:
+    address: node0
+    port: '6123'
+  memory:
+    process:
+      size: 40g
+  bind-host: 0.0.0.0
+query:
+  server:
+    port: '6125'
+rest:
+  bind-address: 0.0.0.0
+  port: '7071'
+  client:
+    max-content-length: 2000MiB
+  max-content-length: 2000MiB
+  address: node0
+pekko:
+  framesize: 2000MiB
+high-availability: NONE
+parallelism:
+  default: '8'
+env:
+  java:
+    opts:
+      all: --add-exports=java.base/sun.net.util=ALL-UNNAMED --add-exports=java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED

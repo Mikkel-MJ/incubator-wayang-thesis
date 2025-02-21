@@ -61,8 +61,8 @@ public class Training {
     public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
-        trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
-        //trainIMDB(args[0], args[1], args[2], args[3], true);
+        //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
+        trainIMDB(args[0], args[1], args[2], args[3], true);
     }
 
     /*
@@ -119,12 +119,13 @@ public class Training {
 
             config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "JOB Query" + query);
-            config.setProperty("spark.executor.memory", "32g");
-            config.setProperty("wayang.flink.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.flink.mode.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");
-            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("wayang.flink.port", "7071");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
+            config.setProperty("spark.executor.memory", "16g");
 
             WayangContext context = new WayangContext(config);
 
@@ -133,7 +134,7 @@ public class Training {
             }
 
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
-            IMDBJOBenchmark.setSources(plan, dataPath);
+            //IMDBJOBenchmark.setSources(plan, dataPath);
 
             long execTime = 0;
 
@@ -143,8 +144,7 @@ public class Training {
             TreeNode wayangNode = TreeEncoder.encode(plan);
             TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
             //System.out.println(exPlan.toExtensiveString());
-            System.out.println(execNode.toString());
-            ExplainUtils.parsePlan(exPlan, true);
+            //System.out.println(execNode.toString());
 
             writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), 1_000_000));
             writer.newLine();
@@ -203,10 +203,11 @@ public class Training {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("wayang.flink.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.mode.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");
-            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("wayang.flink.port", "7071");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
 
@@ -235,10 +236,11 @@ public class Training {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("wayang.flink.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.mode.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");
-            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("wayang.flink.port", "7071");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
             plan = builder.build();

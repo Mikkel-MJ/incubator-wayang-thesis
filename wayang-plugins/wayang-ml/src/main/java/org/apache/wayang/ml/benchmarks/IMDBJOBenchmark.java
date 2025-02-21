@@ -21,12 +21,14 @@ import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
 
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.stream.Collectors;
 
 public class IMDBJOBenchmark {
@@ -44,7 +46,11 @@ public class IMDBJOBenchmark {
         // need to chop off the last ';' otherwise sqlContext cant parse it
         final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
 
-        return sqlContext.buildWayangPlan(query, udfJars);
+        WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
+
+        ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
+
+        return plan;
     }
 
     /**
@@ -138,26 +144,20 @@ public class IMDBJOBenchmark {
     public static void setSources(WayangPlan plan, String dataPath) {
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
         operators.forEach(o -> {
-            if (!(o.isSource() || o.isSink())) {
+            /*if (!(o.isSource() || o.isSink())) {
                 o.addTargetPlatform(Spark.platform());
                 o.addTargetPlatform(Flink.platform());
                 o.addTargetPlatform(Java.platform());
-            }
+            }*/
         });
 
-        /*
         final Collection<Operator> sources = plan.collectReachableTopLevelSources();
 
         sources.stream().forEach(op -> {
             if (op instanceof TableSource) {
                 String tableName = ((TableSource) op).getTableName();
-                String filePath = "file://" + dataPath + tableName + ".csv";
+                String filePath = dataPath + tableName + ".csv";
                 TextFileSource replacement = new TextFileSource(filePath);
-
-                System.out.println("Swapping " + op + " with " + replacement);
-                System.out.println(filePath);
-
-                System.out.println("TableSchema for " + tableName + " : " + sqlContext.calciteSchema.getTable(tableName, false));
 
                 MapOperator<String, Record> parser = new MapOperator<>(
                     (line) -> {
@@ -170,6 +170,6 @@ public class IMDBJOBenchmark {
 
                 replacement.connectTo(0, parser, 0);
             }
-        });*/
+        });
     }
 }

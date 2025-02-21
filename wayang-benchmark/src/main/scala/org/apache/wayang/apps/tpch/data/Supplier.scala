@@ -27,9 +27,9 @@ case class Supplier(supplierKey: Long,
                     nationKey: Long,
                     phone: String,
                     acctbal: Double,
-                    comment: String)
+                    comment: String) extends Serializable
 
-object Supplier {
+object Supplier extends Serializable {
 
   val fields = IndexedSeq("s_supplierkey", "s_name", "s_address","s_nationkey","s_phone","s_acctbal","s_comment")
 

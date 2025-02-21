@@ -21,6 +21,7 @@ package org.apache.wayang.apps.wordcount;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.core.api.WayangContext;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.function.FlatMapDescriptor;
 import org.apache.wayang.core.function.ReduceDescriptor;
 import org.apache.wayang.core.function.TransformationDescriptor;
@@ -30,6 +31,7 @@ import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.types.DataUnitType;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.flink.Flink;
+import org.apache.wayang.flink.operators.FlinkJoinOperator;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.java.platform.JavaPlatform;
 import org.apache.wayang.spark.Spark;
@@ -51,10 +53,11 @@ public class WordCountWithJavaNativeAPI {
      *
      * @param inputFileUrl the file whose words should be counted
      */
-    public static WayangPlan createWayangPlan(String inputFileUrl, Collection<Tuple2<String, Integer>> collector) throws URISyntaxException, IOException {
+    public static WayangPlan createWayangPlan(String inputFileUrl, Collection<Tuple2<Tuple2<String, Integer>, Integer>> collector) throws URISyntaxException, IOException {
         // Assignment mode: none.
 
         TextFileSource textFileSource = new TextFileSource(inputFileUrl);
+        TextFileSource textFileSource2 = new TextFileSource(inputFileUrl);
         textFileSource.setName("Load file");
 
         // for each line (input) output an iterator of the words
@@ -95,10 +98,26 @@ public class WordCountWithJavaNativeAPI {
         ), DataSetType.createDefaultUnchecked(Tuple2.class)
         );
         reduceByOperator.setName("Add counters");
+        reduceByOperator.addTargetPlatform(Flink.platform());
 
+        JoinOperator<Tuple2<String, Integer>, String, Integer> join = new JoinOperator<Tuple2<String, Integer>, String, Integer>(
+            (left) -> { return left.field1; },
+            (right) -> 1,
+            ReflectionUtils.specify(Tuple2.class),
+            String.class,
+            Integer.class
+        );
+
+        join.addTargetPlatform(Java.platform());
 
         // write results to a sink
+        /*
         LocalCallbackSink<Tuple2<String, Integer>> sink = LocalCallbackSink.createCollectingSink(
+                collector,
+                DataSetType.createDefaultUnchecked(Tuple2.class)
+        );*/
+
+        LocalCallbackSink<Tuple2<Tuple2<String, Integer>, Integer>> sink = LocalCallbackSink.createCollectingSink(
                 collector,
                 DataSetType.createDefaultUnchecked(Tuple2.class)
         );
@@ -109,7 +128,10 @@ public class WordCountWithJavaNativeAPI {
         flatMapOperator.connectTo(0, filterOperator, 0);
         filterOperator.connectTo(0, mapOperator, 0);
         mapOperator.connectTo(0, reduceByOperator, 0);
-        reduceByOperator.connectTo(0, sink, 0);
+        reduceByOperator.connectTo(0, join, 0);
+
+        textFileSource2.connectTo(0, join, 1);
+        join.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);
     }
@@ -121,10 +143,22 @@ public class WordCountWithJavaNativeAPI {
                 System.exit(1);
             }
 
-            List<Tuple2<String, Integer>> collector = new LinkedList<>();
+            List<Tuple2<Tuple2<String, Integer>, Integer>> collector = new LinkedList<>();
             WayangPlan wayangPlan = createWayangPlan(args[1], collector);
 
-            WayangContext wayangContext = new WayangContext();
+            Configuration configuration = new Configuration();
+            configuration.setProperty("spark.master", "spark://spark-cluster:7077");
+            configuration.setProperty("spark.rpc.message.maxSize", "2047");
+            configuration.setProperty("spark.executor.memory", "16g");
+            configuration.setProperty("wayang.flink.mode.run", "distribution");
+            configuration.setProperty("wayang.flink.parallelism", "8");
+            configuration.setProperty("wayang.flink.master", "flink-cluster");
+            configuration.setProperty("wayang.flink.port", "7071");
+            configuration.setProperty("spark.executor.memory", "16g");
+            configuration.setProperty("spark.driver.maxResultSize", "4G");
+            configuration.setProperty("wayang.ml.experience.enabled", "false");
+
+            WayangContext wayangContext = new WayangContext(configuration);
             for (String platform : args[0].split(",")) {
                 switch (platform) {
                     case "java":
@@ -143,11 +177,16 @@ public class WordCountWithJavaNativeAPI {
                 }
             }
 
-            wayangContext.execute(wayangPlan, ReflectionUtils.getDeclaringJar(WordCountWithJavaNativeAPI.class), ReflectionUtils.getDeclaringJar(JavaPlatform.class));
+            wayangContext.execute(
+                    wayangPlan,
+                    ReflectionUtils.getDeclaringJar(WordCountWithJavaNativeAPI.class),
+                    ReflectionUtils.getDeclaringJar(JavaPlatform.class),
+                    ReflectionUtils.getDeclaringJar(Flink.class)
+            );
 
-            collector.sort((t1, t2) -> Integer.compare(t2.field1, t1.field1));
+            //collector.sort((t1, t2) -> Integer.compare(t2.field1, t1.field1));
             System.out.printf("Found %d words:\n", collector.size());
-            collector.forEach(wc -> System.out.printf("%dx %s\n", wc.field1, wc.field0));
+            //collector.forEach(wc -> System.out.printf("%dx %s\n", wc.field1, wc.field0));
         } catch (Exception e) {
             System.err.println("App failed.");
             e.printStackTrace();

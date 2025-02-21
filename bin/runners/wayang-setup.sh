@@ -18,50 +18,61 @@ python3.11 --version
 
 SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
-
-echo "Installing Hadoop"
+export DEPENDENCIES_DIR="${WORKDIR}/dependencies"
 
 export HADOOP_VERSION=3.3.0
-export HADOOP_HOME=/opt/hadoop
+export HADOOP_HOME="${DEPENDENCIES_DIR}/hadoop"
 
-wget https://archive.apache.org/dist/hadoop/core/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz
-tar -zxf hadoop-${HADOOP_VERSION}.tar.gz
-mv hadoop-${HADOOP_VERSION} ${HADOOP_HOME}
-rm hadoop-${HADOOP_VERSION}.tar.gz
+if [ ! -d $HADOOP_HOME ]; then
+    echo "Installing Hadoop"
 
-echo "Installing Spark"
+    wget https://archive.apache.org/dist/hadoop/core/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz
+    tar -zxf hadoop-${HADOOP_VERSION}.tar.gz
+    mv hadoop-${HADOOP_VERSION} ${HADOOP_HOME}
+    rm hadoop-${HADOOP_VERSION}.tar.gz
+fi
+
 export SPARK_VERSION=3.5.4
-export SPARK_HOME=/opt/spark
+export SPARK_HOME="${DEPENDENCIES_DIR}/spark"
 
-wget https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz
-tar -zxf spark-${SPARK_VERSION}-bin-hadoop3.tgz
-rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
-mv spark-${SPARK_VERSION}-bin-hadoop3 ${SPARK_HOME}
+if [ ! -d $SPARK_HOME ]; then
+    echo "Installing Spark"
+
+    wget https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz
+    tar -zxf spark-${SPARK_VERSION}-bin-hadoop3.tgz
+    rm spark-${SPARK_VERSION}-bin-hadoop3.tgz
+    mv spark-${SPARK_VERSION}-bin-hadoop3 ${SPARK_HOME}
+fi
 
 export PATH=$PATH:$SPARK_HOME/bin
 
-echo "Installing Flink"
-
 # "Installing Flink"
 export FLINK_VERSION=1.20.0
-export FLINK_HOME=/opt/flink
+export FLINK_HOME="${DEPENDENCIES_DIR}/flink"
+
+if [ ! -d $FLINK_HOME ]; then
+    echo "Installing Flink"
+    curl https://dlcdn.apache.org/flink/flink-${FLINK_VERSION}/flink-${FLINK_VERSION}-bin-scala_2.12.tgz --output flink-${FLINK_VERSION}-bin-scala_2.12.tgz &&
+            tar -zxf flink-${FLINK_VERSION}-bin-scala_2.12.tgz &&
+            rm flink-${FLINK_VERSION}-bin-scala_2.12.tgz &&
+            mv flink-${FLINK_VERSION} ${FLINK_HOME}
+fi
+
 export PATH="$PATH:${FLINK_HOME}/bin"
 
-curl https://dlcdn.apache.org/flink/flink-${FLINK_VERSION}/flink-${FLINK_VERSION}-bin-scala_2.12.tgz --output flink-${FLINK_VERSION}-bin-scala_2.12.tgz &&
-        tar -zxf flink-${FLINK_VERSION}-bin-scala_2.12.tgz &&
-        rm flink-${FLINK_VERSION}-bin-scala_2.12.tgz &&
-        mv flink-${FLINK_VERSION} ${FLINK_HOME}
-
-echo "Installing Giraph"
 
 export GIRAPH_VERSION=1.3.0
-export GIRAPH_HOME=/opt/giraph
-export PATH="$PATH:${GIRAPH_HOME}/bin"
+export GIRAPH_HOME="${DEPENDENCIES_DIR}/giraph"
 
-curl https://archive.apache.org/dist/giraph/giraph-${GIRAPH_VERSION}/giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz --output giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz &&
-        tar -zxf giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz &&
-        rm giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz &&
-        mv giraph-${GIRAPH_VERSION}-hadoop1-for-hadoop-1.2.1 ${GIRAPH_HOME}
+if [ ! -d $GIRAPH_HOME ]; then
+    echo "Installing Giraph"
+    curl https://archive.apache.org/dist/giraph/giraph-${GIRAPH_VERSION}/giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz --output giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz &&
+            tar -zxf giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz &&
+            rm giraph-dist-${GIRAPH_VERSION}-hadoop1-bin.tar.gz &&
+            mv giraph-${GIRAPH_VERSION}-hadoop1-for-hadoop-1.2.1 ${GIRAPH_HOME}
+fi
+
+export PATH="$PATH:${GIRAPH_HOME}/bin"
 
 cd ${WORKDIR}
 #cp spark-defaults.conf /opt/spark/conf

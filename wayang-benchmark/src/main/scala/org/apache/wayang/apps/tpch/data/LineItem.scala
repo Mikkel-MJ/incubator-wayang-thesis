@@ -39,9 +39,9 @@ case class LineItem(orderKey: Long,
                     receiptDate: Int,
                     shipInstruct: String,
                     shipMode: String,
-                    comment: String)
+                    comment: String) extends Serializable
 
-object LineItem {
+object LineItem extends Serializable {
 
   val fields = IndexedSeq("l_orderkey",
     "l_partkey",

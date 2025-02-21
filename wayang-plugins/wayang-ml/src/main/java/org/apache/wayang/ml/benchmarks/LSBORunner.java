@@ -121,10 +121,11 @@ public class LSBORunner {
         config.setProperty("spark.master", "spark://spark-cluster:7077");
         config.setProperty("spark.app.name", "LSBO Query " + args[2]);
         config.setProperty("spark.executor.memory", "16g");
-        config.setProperty("wayang.flink.run", "distribution");
-        config.setProperty("wayang.flink.parallelism", "1");
+        config.setProperty("wayang.flink.mode.run", "distribution");
+        config.setProperty("wayang.flink.parallelism", "8");
         config.setProperty("wayang.flink.master", "flink-cluster");
-        config.setProperty("wayang.flink.port", "6123");
+        config.setProperty("wayang.flink.port", "7071");
+        config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
         config.setProperty("spark.executor.memory", "16g");
         config.setProperty("spark.driver.maxResultSize", "4G");
 
@@ -148,13 +149,14 @@ public class LSBORunner {
         WayangPlan plan = plans.get("query" + args[2]);*/
 
         try {
-            WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
-            //WayangPlan plan = getJOBPlan(plugins, config, args[2], jars);
+            //WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
+            WayangPlan plan = getJOBPlan(plugins, config, args[2], jars);
 
             //Set sink to be on Java
+            /*
             ((LinkedList<Operator>) plan.getSinks())
                 .get(0)
-                .addTargetPlatform(Java.platform());
+                .addTargetPlatform(Java.platform());*/
 
             LSBO.process(plan, config, plugins, jars);
         } catch(Exception e) {
@@ -166,6 +168,7 @@ public class LSBORunner {
     private static WayangPlan getJOBPlan(List<Plugin> plugins, Configuration config, String queryPath, String[] jars) {
         try {
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(queryPath, config, plugins.toArray(Plugin[]::new), jars);
+            IMDBJOBenchmark.setSources(plan, queryPath);
 
             return plan;
         } catch (Exception e) {

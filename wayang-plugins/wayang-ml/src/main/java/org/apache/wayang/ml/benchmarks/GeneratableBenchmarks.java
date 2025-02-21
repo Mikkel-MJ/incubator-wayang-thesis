@@ -24,6 +24,7 @@ import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
+import org.apache.wayang.flink.Flink;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.api.DataQuanta;
@@ -72,6 +73,7 @@ public class GeneratableBenchmarks {
         try {
             List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
             Class<? extends GeneratableJob> job = Jobs.getJob(Integer.parseInt(args[3]));
+            System.out.println("Job: " + job.getName());
             Configuration config = new Configuration();
             String modelType = "";
 
@@ -79,10 +81,11 @@ public class GeneratableBenchmarks {
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
             config.setProperty("spark.rpc.message.maxSize", "2047");
             config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("wayang.flink.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "1");
+            config.setProperty("wayang.flink.mode.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");
-            config.setProperty("wayang.flink.port", "6123");
+            config.setProperty("wayang.flink.port", "7071");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
             config.setProperty("spark.executor.memory", "16g");
             config.setProperty("spark.driver.maxResultSize", "4G");
@@ -125,7 +128,7 @@ public class GeneratableBenchmarks {
             WayangPlan plan = builder.build();
 
             //Set sink to be on Java
-            ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
+            //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
 
             String[] jars = new String[]{
                 ReflectionUtils.getDeclaringJar(GeneratableBenchmarks.class),

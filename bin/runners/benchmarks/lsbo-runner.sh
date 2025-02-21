@@ -1,13 +1,14 @@
 export WORKDIR=/work/lsbo-paper
-export SPARK_HOME=/opt/spark
-export HADOOP_HOME=/opt/hadoop
+export DEPENDENCIES_DIR="${WORKDIR}/dependencies"
+export HADOOP_HOME="${DEPENDENCIES_DIR}/hadoop"
+export SPARK_HOME="${DEPENDENCIES_DIR}/spark"
 export PATH="$PATH:${SPARK_HOME}/bin"
 export SPARK_DIST_CLASSPATH="$HADOOP_HOME/etc/hadoop/*:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*:$HADOOP_HOME/share/hadoop/tools/lib/*"
 export FLINK_VERSION=1.20.0
-export FLINK_HOME=/opt/flink
+export FLINK_HOME="${DEPENDENCIES_DIR}/flink"
 export PATH="$PATH:${FLINK_HOME}/bin"
 export GIRAPH_VERSION=1.3.0
-export GIRAPH_HOME=/opt/giraph
+export GIRAPH_HOME="${DEPENDENCIES_DIR}/giraph"
 export PATH="$PATH:${GIRAPH_HOME}/bin"
 
 cd ${WORKDIR}
@@ -28,14 +29,23 @@ fi
 
 #queries=(901 950 999)
 
-bvae_path=/work/lsbo-paper/data/models/bvae.onnx
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bqs/bvae-b-1.onnx
+bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bqs/bvae-b-5.onnx
+bvae_10_path=/work/lsbo-paper/python-ml/src/Models/imdb/bqs/bvae-b-10.onnx
 
 data_path=/work/lsbo-paper/data
 experience_path=/work/lsbo-paper/data/experience/
 train_path=/work/lsbo-paper/data/JOBenchmark/queries/BaseQuerySplit/train
 
-#for query in ${queries[@]}; do
+#for query in {949..999}; do
 for query in "$train_path"/*.sql; do
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 2 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,postgres file:///work/lsbo-paper/data/' --parameters="./src/HyperparameterLogs/BVAE.json" --model-path="./src/Models/imdb/bqs/bvae.onnx" --stats="./src/Data/splits/imdb/bqs/stats-31.txt" --trainset="./src/Data/splits/imdb/bqs/retrain.txt"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,postgres file:///work/lsbo-paper/data/' --model-path $bvae_1_path --stats="./src/Data/splits/imdb/bqs/stats-1.txt" --trainset="./src/Data/splits/imdb/bqs/retrain-1.txt" --zdim 19
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,postgres file:///work/lsbo-paper/data/' --model-path $bvae_5_path --stats="./src/Data/splits/imdb/bqs/stats-5.txt" --trainset="./src/Data/splits/imdb/bqs/retrain-5.txt" --zdim 1
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory='-Xmx32g --illegal-access=permit' --exec='/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit' --args='java,spark,flink,postgres file:///work/lsbo-paper/data/' --model-path $bvae_10_path --stats="./src/Data/splits/imdb/bqs/stats-10.txt" --trainset="./src/Data/splits/imdb/bqs/retrain-10.txt" --zdim 1
+
+    # Lord forgive me - for Flink has sinned
+    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
+    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
+    sleep 5s
 done

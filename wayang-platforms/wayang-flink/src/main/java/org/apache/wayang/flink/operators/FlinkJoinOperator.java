@@ -92,6 +92,8 @@ public class FlinkJoinOperator<InputType0, InputType1, KeyType>
         KeySelector<InputType0, KeyType> fun0 = compiler.compileKeySelector(this.keyDescriptor0);
         KeySelector<InputType1, KeyType> fun1 = compiler.compileKeySelector(this.keyDescriptor1);
 
+        System.out.println("Key selector: " + fun0);
+        System.out.println("Key selector: " + fun1);
 
         DataSet<Tuple2<InputType0, InputType1>> dataSetOutput =
             dataSetInput0.join(dataSetInput1)
@@ -99,14 +101,15 @@ public class FlinkJoinOperator<InputType0, InputType1, KeyType>
                 fun0
             ).equalTo(
                 fun1
-            ).with(
+            )
+            .with(
                 new JoinFunction<InputType0, InputType1, Tuple2<InputType0, InputType1>>() {
                     @Override
                     public Tuple2<InputType0, InputType1> join(InputType0 inputType0, InputType1 inputType1) throws Exception {
-                        return new Tuple2<>(inputType0, inputType1);
+                        return new Tuple2<InputType0, InputType1>(inputType0, inputType1);
                     }
                 }
-            ).setParallelism(flinkExecutor.getNumDefaultPartitions());
+            ).setParallelism(flinkExecutor.fee.getParallelism());
 
 
         output.accept(dataSetOutput, flinkExecutor);
@@ -144,7 +147,8 @@ public class FlinkJoinOperator<InputType0, InputType1, KeyType>
     @Override
     public List<ChannelDescriptor> getSupportedOutputChannels(int index) {
         assert index <= this.getNumOutputs() || (index == 0 && this.getNumOutputs() == 0);
-        return Collections.singletonList(DataSetChannel.DESCRIPTOR);
+        //return Collections.singletonList(DataSetChannel.DESCRIPTOR);
+        return Arrays.asList(DataSetChannel.DESCRIPTOR, DataSetChannel.DESCRIPTOR_MANY);
     }
 
     @Override

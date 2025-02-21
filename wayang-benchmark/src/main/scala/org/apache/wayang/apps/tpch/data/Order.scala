@@ -31,9 +31,9 @@ case class Order(orderKey: Long,
                  orderPriority: String,
                  clerk: String,
                  shipPrioritiy: Int,
-                 comment: String)
+                 comment: String) extends Serializable
 
-object Order {
+object Order extends Serializable {
 
   val fields = IndexedSeq(
     "o_orderkey",

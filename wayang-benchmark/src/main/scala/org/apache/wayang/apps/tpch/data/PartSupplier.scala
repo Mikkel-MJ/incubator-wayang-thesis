@@ -25,9 +25,9 @@ case class PartSupplier(partKey: Long,
                     supplierKey: Long,
                     availQTY: Long,
                     supplyCost: Double,
-                    comment: String)
+                    comment: String) extends Serializable
 
-object PartSupplier {
+object PartSupplier extends Serializable {
 
   val fields = IndexedSeq("ps_partkey","ps_supplierkey", "ps_availQTY", "ps_supplycost","ps_comment")
 
