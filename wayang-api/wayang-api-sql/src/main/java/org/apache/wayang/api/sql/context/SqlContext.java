@@ -17,6 +17,7 @@
 
 package org.apache.wayang.api.sql.context;
 
+import org.apache.calcite.*;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
@@ -156,14 +157,14 @@ public class SqlContext extends WayangContext {
         final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
         final Optimizer optimizer = Optimizer.create(calciteSchema, configProperties,
-                relDataTypeFactory);        
+                relDataTypeFactory);
 
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         final RelNode relNode = optimizer.convert(validatedSqlNode);
-        
+
         // initialisations that handles decompilations of calcite's relnodes back to SQL
-        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT); 
+        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
         final SqlImplementor.Context relContext = decompiler.visitInput(relNode,0).qualifiedContext();
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
@@ -186,7 +187,7 @@ public class SqlContext extends WayangContext {
                 rules);
 
         PrintUtils.print("Logical WayangPlan", wayangRel);
-        
+
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
 

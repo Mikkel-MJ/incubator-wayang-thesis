@@ -46,6 +46,8 @@ import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
+import org.apache.wayang.apps.tpch.queries.Query1Wayang;
+import org.apache.wayang.api.DataQuanta;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -161,8 +163,6 @@ public class JOBenchmark {
             //Set sink to be on Java
             //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
             //
-            ExplainUtils.parsePlan(plan, false);
-
             /*
             FileWriter fw = new FileWriter(
                 "/var/www/html/data/benchmarks/operators.txt",

@@ -1,8 +1,5 @@
 package org.apache.wayang.ml.benchmarks;
 
-import com.amazonaws.services.iot.model.SqlParseException;
-
-import org.apache.calcite.runtime.CalciteException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.basic.data.Record;
@@ -20,7 +17,6 @@ import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
-
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -122,19 +118,7 @@ public class IMDBJOBenchmark {
 
             System.out.println(result.stream().limit(50).collect(Collectors.toList()));
             System.out.println("\nResults: " + " amount of records: " + result.size());
-        } catch (final IndexOutOfBoundsException e) {
-            e.printStackTrace();
-            System.exit(1);
-        } catch (final CalciteException e) {
-            e.printStackTrace();
-            System.exit(2);
-        } catch (final SqlParseException e) {
-            e.printStackTrace();
-            System.exit(3);
-        } catch (final Exception e) {
-            e.printStackTrace();
-            System.exit(4);
-        } catch (final Error e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(5);
         }
