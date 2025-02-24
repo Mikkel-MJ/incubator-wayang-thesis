@@ -48,6 +48,7 @@ import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.apps.tpch.queries.Query1Wayang;
 import org.apache.wayang.api.DataQuanta;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -150,11 +151,12 @@ public class JOBenchmark {
             final MLContext wayangContext = new MLContext(config);
             plugins.stream().forEach(plug -> wayangContext.register(plug));
 
-            String[] jars = new String[]{
-                ReflectionUtils.getDeclaringJar(JOBenchmark.class),
-                ReflectionUtils.getDeclaringJar(IMDBJOBenchmark.class),
-                ReflectionUtils.getDeclaringJar(SqlContext.class)
-            };
+            String[] jars = ArrayUtils.addAll(
+                ReflectionUtils.getAllJars(JOBenchmark.class),
+                ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
+            );
+
+            System.out.println(Arrays.toString(jars));
 
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 

@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelInput;
@@ -53,7 +55,7 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
     @Override
     public RexNode translateInput(final RelJson relJson, final int input,
             final Map<String, @Nullable Object> map, final RelInput relInput) {
-        final RelOptCluster cluster = relInput.getCluster();
+        final RelOptCluster cluster = Optimizer.createCluster();
         final RexBuilder rexBuilder = cluster.getRexBuilder();
 
         // Check if it is a local ref.
@@ -63,12 +65,17 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
             return rexBuilder.makeLocalRef(type, input);
         }
 
-        return rexBuilder.makeInputRef(Optimizer.getTypeFactory()
+        return rexBuilder.makeInputRef(Optimizer.createTypeFactory()
                 .createSqlType(this.typeName), input);
     }
 
     private void writeObject(final ObjectOutputStream out) throws IOException {
-        final String[] nodes = this.getNodesAsStrings(serializables); //serialize rexnodes
+        // serialize rexnodes
+        final String[] nodes = this.getNodesAsStrings(serializables);
+
+        System.out.println("[SERDE]: this: " + this);
+        System.out.println("[SERDE]: serializables: " + serializables);
+        System.out.println("[SERDE]: sqltypename: " + typeName);
 
         out.defaultWriteObject(); //write sqltypename
         out.writeObject(nodes); //write the rexnodes
@@ -78,6 +85,10 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
         in.defaultReadObject(); //read sqlTypeName
 
         final String[] nodesAsStrings = (String[]) in.readObject(); // read in the rexnode json objects
+        System.out.println("[SERDE]: this: " + this);
+        System.out.println("[SERDE]: nodesAsStrings: " + Arrays.toString(nodesAsStrings));
+        System.out.println("[SERDE]: sqltypename: " + typeName);
+
 
         final Function<String, Map<String, Object>> stringToJsonObjMapper = (string) -> {
             try {
@@ -90,7 +101,11 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
         };
 
         final Function<Map<String, Object>, RexNode> jsonToRexNode = (map) -> RelJson
-                .readExpression(Optimizer.getCluster(), this, map);
+                .readExpression(Optimizer.createCluster(), this, map);
+
+        List<Object> maps = Arrays.stream(nodesAsStrings)
+            .map(stringToJsonObjMapper::apply)
+            .collect(Collectors.toList());
 
         final RexNode[] rexNodes = Arrays.stream(nodesAsStrings)
                 .map(stringToJsonObjMapper::apply)  //map rexnode strings to json objs

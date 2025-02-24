@@ -35,6 +35,7 @@ import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.operators.FlinkExecutionOperator;
 import org.apache.wayang.flink.platform.FlinkPlatform;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -79,6 +80,8 @@ public class FlinkExecutor extends PushExecutorTemplate {
         this.numDefaultPartitions = (int) this.getConfiguration().getLongProperty("wayang.flink.parallelism");
         this.fee.setParallelism(this.numDefaultPartitions);
         this.flinkContextReference.noteObtainedReference();
+        this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteRexSerializable.class, DefaultSerializers.ClassSerializer.class);
+        this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.calcite.rel.externalize.RelJson.class, DefaultSerializers.ClassSerializer.class);
     }
 
     @Override

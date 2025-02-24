@@ -128,13 +128,14 @@ public class IMDBJOBenchmark {
     public static void setSources(WayangPlan plan, String dataPath) {
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
         operators.forEach(o -> {
-            /*if (!(o.isSource() || o.isSink())) {
+            if (!(o.isSource() || o.isSink())) {
                 o.addTargetPlatform(Spark.platform());
                 o.addTargetPlatform(Flink.platform());
                 o.addTargetPlatform(Java.platform());
-            }*/
+            }
         });
 
+        /*
         final Collection<Operator> sources = plan.collectReachableTopLevelSources();
 
         sources.stream().forEach(op -> {
@@ -154,6 +155,6 @@ public class IMDBJOBenchmark {
 
                 replacement.connectTo(0, parser, 0);
             }
-        });
+        });*/
     }
 }

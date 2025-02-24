@@ -150,8 +150,17 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
      */
     private boolean isGreaterThan(final Optional<?> o, final RexLiteral rexLiteral) {
        if(o.isPresent() && !rexLiteral.isNull()) { //if o is any and rex is any
-            final Object comparator = rexLiteral.getValueAs(o.get().getClass());
-            return ((Comparable) o.get()).compareTo(comparator) > 0;
+            try {
+                final Object comparator = rexLiteral.getValueAs(o.get().getClass());
+                return ((Comparable) o.get()).compareTo(comparator) > 0;
+            } catch(AssertionError e) {
+                throw new Error("O: " + o + "\n"
+                + "O val: " + o.get() + "\n"
+                + "O Class: " + o.get().getClass() + "\n"
+                + "RexLiteral: " + rexLiteral + "\n"
+                + "RexLiteral class: " + rexLiteral.getValue().getClass() + "\n"
+                );
+            }
         } else if (rexLiteral.isNull()){
             return true; //if o is any and rex is null
         } else {

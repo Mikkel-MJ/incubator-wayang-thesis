@@ -103,7 +103,7 @@ public class CalciteAggSerializable implements CalciteSerializable {
         final int filterArg = 0; // no ide ahow to fetch this
         final ImmutableBitSet distinctKeys = null; // no idea how t ofetch this
         final RelCollation collation = RelCollations.EMPTY;
-        final RelDataType type = Optimizer.getTypeFactory().createSqlType(typeName);
+        final RelDataType type = Optimizer.createTypeFactory().createSqlType(typeName);
         final String name = (String) mapAgg.get("name");
 
         final AggregateCall call = AggregateCall.create(sqlAggFunction, distinct, approximate, ignoreNulls, argList,

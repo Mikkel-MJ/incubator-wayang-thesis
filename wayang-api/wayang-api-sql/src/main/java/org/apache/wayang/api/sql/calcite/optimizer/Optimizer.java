@@ -269,6 +269,29 @@ public class Optimizer {
         return new WayangPlan(sink);
     }
 
+    public static RelOptCluster createCluster() {
+        // Recreate Cluster because serialization is hard uwu
+        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        Properties configProperties = new Properties();
+        configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
+        configProperties.put(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
+        configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
+
+        CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
+
+        VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
+        planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        planner.addRule(FilterIntoJoinRuleConfig.DEFAULT.toRule());
+
+        RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
+
+        return cluster;
+    }
+
+    public static RelDataTypeFactory createTypeFactory() {
+        return new JavaTypeFactoryImpl();
+    }
+
     public static class ConfigProperties {
 
         public static Properties getDefaults() {

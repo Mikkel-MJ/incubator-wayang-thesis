@@ -24,6 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.InputStream;
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -114,6 +115,47 @@ public class ReflectionUtils {
         }
         return null;
     }
+
+    public static String[] getAllJars(Class<?> cls) {
+        try {
+            URL location = cls.getProtectionDomain().getCodeSource().getLocation();
+            URI uri = location.toURI();
+            File jarFile = new File(uri);
+
+            if (!jarFile.getName().endsWith(".jar")) {
+                System.err.println("Class " + cls + " is not loaded from a JAR file, but from " + jarFile.getAbsolutePath());
+                return new String[0];
+            }
+
+            File directory = jarFile.getParentFile();
+            if (directory == null || !directory.isDirectory()) {
+                System.err.println("Could not determine JAR directory.");
+                return new String[0];
+            }
+
+
+            System.out.println("Directory is: " + directory.getName());
+            // List all JAR files in the directory
+            return Stream.of(
+                directory.list((dir, name) -> name.endsWith(".jar"))
+            )
+                .map(path -> {
+                    if (!path.contains(directory.getName())) {
+                        return directory.getAbsolutePath() + "/" + path;
+                    }
+
+                    return path;
+                })
+                .toArray(String[]::new);
+
+        } catch (Exception e) {
+            System.err.println("Could not determine JAR file directory.");
+            e.printStackTrace();
+        }
+
+        return new String[0];
+    }
+
 
     /**
      * Provides a resource as an {@link InputStream}.
