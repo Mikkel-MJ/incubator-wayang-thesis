@@ -17,6 +17,7 @@ import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.apps.imdb.data.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -127,15 +128,15 @@ public class IMDBJOBenchmark {
     // Only source in postgres, compute elsewhere
     public static void setSources(WayangPlan plan, String dataPath) {
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
+        /*
         operators.forEach(o -> {
             if (!(o.isSource() || o.isSink())) {
                 o.addTargetPlatform(Spark.platform());
                 o.addTargetPlatform(Flink.platform());
                 o.addTargetPlatform(Java.platform());
             }
-        });
+        });*/
 
-        /*
         final Collection<Operator> sources = plan.collectReachableTopLevelSources();
 
         sources.stream().forEach(op -> {
@@ -144,17 +145,100 @@ public class IMDBJOBenchmark {
                 String filePath = dataPath + tableName + ".csv";
                 TextFileSource replacement = new TextFileSource(filePath);
 
-                MapOperator<String, Record> parser = new MapOperator<>(
-                    (line) -> {
-                        return new Record(line.split(",", -1));
-                    },
-                    String.class,
-                    Record.class
-                );
-                OutputSlot.stealConnections(op, parser);
+                System.out.println("Table Name: " + tableName);
+                MapOperator<String, Record> parser;
 
-                replacement.connectTo(0, parser, 0);
+                switch (tableName) {
+                    case "movie_companies":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+
+                        break;
+                    case "aka_name":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(AkaName.toArray(AkaName.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+
+                    case "comp_cast_type":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(CompCastType.toArray(CompCastType.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    case "company_name":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(CompanyName.toArray(CompanyName.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    case "info_type":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(InfoType.toArray(InfoType.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    case "movie_info":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(MovieInfo.toArray(MovieInfo.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    case "person_info":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(PersonInfo.toArray(PersonInfo.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    default:
+                        break;
+                }
             }
-        });*/
+        });
     }
 }
