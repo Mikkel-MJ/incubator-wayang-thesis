@@ -17,6 +17,10 @@
  */
 package org.apache.wayang.apps.imdb.data
 
+import java.util.Optional;
+import scala.util.matching.Regex
+import org.apache.commons.lang3.StringEscapeUtils
+
 /**
   * Represents elements from the IMDB `movie_info` table.
   */
@@ -25,7 +29,7 @@ case class MovieInfo(
     movieId: Integer,
     infoTypeId: Integer,
     info: String,
-    note: Option[String]
+    note: Optional[String]
 ) extends Serializable
 
 object MovieInfo extends Serializable {
@@ -39,18 +43,19 @@ object MovieInfo extends Serializable {
     * @return the [[MovieInfo]]
     */
   def parseCsv(csv: String): MovieInfo = {
-    val fields = csv.split(',').map(_.trim)
+    val pattern: Regex = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".r
+    val fields = pattern.split(s"""$csv""").map(_.trim)
 
     MovieInfo(
       fields(0).toInt,
       fields(1).toInt,
       fields(2).toInt,
       fields(3),
-      Option(fields(4)).filter(_.nonEmpty)
+      if (fields.length > 4) Optional.of(fields(4)).filter(_.nonEmpty) else Optional.empty()
     )
   }
 
-  def toTuple(m: MovieInfo): (Integer, Integer, Integer, String, Option[String]) = {
+  def toTuple(m: MovieInfo): (Integer, Integer, Integer, String, Optional[String]) = {
     (m.id, m.movieId, m.infoTypeId, m.info, m.note)
   }
 

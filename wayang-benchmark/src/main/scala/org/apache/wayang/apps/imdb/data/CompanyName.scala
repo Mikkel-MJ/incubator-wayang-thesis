@@ -17,17 +17,20 @@
  */
 package org.apache.wayang.apps.imdb.data
 
+import java.util.Optional;
+import scala.util.matching.Regex
+import org.apache.commons.lang3.StringEscapeUtils
 /**
   * Represents elements from the IMDB `company_name` table.
   */
 case class CompanyName(
     id: Integer,
     name: String,
-    countryCode: Option[String],
-    imdbId: Option[Integer],
-    namePcodeNf: Option[String],
-    namePcodeSf: Option[String],
-    md5sum: Option[String]
+    countryCode: Optional[String],
+    imdbId: Optional[Integer],
+    namePcodeNf: Optional[String],
+    namePcodeSf: Optional[String],
+    md5sum: Optional[String]
 ) extends Serializable
 
 object CompanyName extends Serializable {
@@ -41,20 +44,22 @@ object CompanyName extends Serializable {
     * @return the [[CompanyName]]
     */
   def parseCsv(csv: String): CompanyName = {
-    val fields = csv.split(',').map(_.trim)
+    val pattern: Regex = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".r
+    val fields = pattern.split(s"""$csv""").map(_.trim)
+    //val fields = csv.split(',').map(_.trim)
 
     CompanyName(
       fields(0).toInt,
       fields(1),
-      Option(fields(2)).filter(_.nonEmpty),
-      Option(fields(3)).filter(_.nonEmpty).map(_.toInt),
-      Option(fields(4)).filter(_.nonEmpty),
-      Option(fields(5)).filter(_.nonEmpty),
-      Option(fields(6)).filter(_.nonEmpty)
+      if (fields.length > 2) Optional.of(fields(2)).filter(_.nonEmpty) else Optional.empty(),
+      if (fields.length > 3 && fields(3).nonEmpty) Optional.of(fields(3).toInt) else Optional.empty(),
+      if (fields.length > 4) Optional.of(fields(4)).filter(_.nonEmpty) else Optional.empty(),
+      if (fields.length > 5) Optional.of(fields(5)).filter(_.nonEmpty) else Optional.empty(),
+      if (fields.length > 6) Optional.of(fields(6)).filter(_.nonEmpty) else Optional.empty(),
     )
   }
 
-  def toTuple(c: CompanyName): (Integer, String, Option[String], Option[Integer], Option[String], Option[String], Option[String]) = {
+  def toTuple(c: CompanyName): (Integer, String, Optional[String], Optional[Integer], Optional[String], Optional[String], Optional[String]) = {
     (c.id, c.name, c.countryCode, c.imdbId, c.namePcodeNf, c.namePcodeSf, c.md5sum)
   }
 

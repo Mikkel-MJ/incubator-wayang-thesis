@@ -55,7 +55,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
         if(leftOperand instanceof RexInputRef && rightOperand instanceof RexLiteral) {
             final RexInputRef rexInputRef = (RexInputRef) leftOperand;
             final int index = rexInputRef.getIndex();
-            final Optional<?> field = Optional.ofNullable(record.getField(index));
+            final Optional<?> field = record.getField(index) instanceof Optional<?> ? (Optional<?>) record.getField(index) : Optional.ofNullable(record.getField(index));
             final RexLiteral rexLiteral = (RexLiteral) rightOperand;
 
             switch (kind) {
@@ -191,7 +191,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
             if(o.isPresent()) return ((Comparable) o.get()).compareTo(rexLiteral.getValueAs(o.get().getClass())) == 0;
             return false;
         } catch (final Exception e) {
-            throw new IllegalStateException("Predicate not supported yet, something went wrong when computing an isEqualTo predicate, object: " + o + " rexLiteral: " + rexLiteral + " rexLiteral kind: " + rexLiteral.getKind() + " rexLiteral type: " + rexLiteral.getType());
+            throw new IllegalStateException("Predicate not supported yet, something went wrong when computing an isEqualTo predicate, object: " + o + " rexLiteral: " + rexLiteral + " rexLiteral kind: " + rexLiteral.getKind() + " rexLiteral type: " + rexLiteral.getType() + "\n" + e.getMessage());
         }
     }
 

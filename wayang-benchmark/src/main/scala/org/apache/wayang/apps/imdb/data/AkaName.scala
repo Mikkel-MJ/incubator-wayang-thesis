@@ -18,6 +18,10 @@
 
 package org.apache.wayang.apps.imdb.data
 
+import java.util.Optional;
+import scala.util.matching.Regex
+import org.apache.commons.lang3.StringEscapeUtils
+
 /**
   * Represents elements from the IMDB `aka_name` table.
   */
@@ -41,7 +45,10 @@ object AkaName extends Serializable {
     * @return the [[AkaName]]
     */
   def parseCsv(csv: String): AkaName = {
-    val fields = csv.split(',').map(_.trim)
+    val pattern: Regex = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".r
+    val fields = pattern.split(s"""$csv""").map(_.trim)
+
+    //val fields = csv.split(',').map(_.trim)
 
     AkaName(
       fields(0).toInt,

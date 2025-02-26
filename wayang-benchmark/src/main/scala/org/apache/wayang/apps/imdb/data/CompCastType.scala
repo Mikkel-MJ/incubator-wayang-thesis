@@ -18,6 +18,10 @@
 
 package org.apache.wayang.apps.imdb.data
 
+import java.util.Optional;
+import scala.util.matching.Regex
+import org.apache.commons.lang3.StringEscapeUtils
+
 /**
   * Represents elements from the IMDB `comp_cast_type` table.
   */
@@ -34,7 +38,8 @@ object CompCastType extends Serializable {
     * @return the [[CompCastType]]
     */
   def parseCsv(csv: String): CompCastType = {
-    val fields = csv.split(',').map(_.trim)
+    val pattern: Regex = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".r
+    val fields = pattern.split(s"""$csv""").map(_.trim)
 
     CompCastType(
       fields(0).toInt,
