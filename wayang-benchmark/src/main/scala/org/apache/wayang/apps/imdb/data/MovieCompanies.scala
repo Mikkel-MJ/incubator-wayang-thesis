@@ -18,7 +18,10 @@
 package org.apache.wayang.apps.imdb.data
 
 import java.util.Optional;
+import org.apache.commons.csv._
+import java.io.StringReader;
 import scala.util.matching.Regex
+import scala.collection.JavaConverters._
 /**
   * Represents elements from the IMDB `movie_companies` table.
   */
@@ -41,8 +44,11 @@ object MovieCompanies extends Serializable {
     * @return the [[MovieCompanies]]
     */
   def parseCsv(csv: String): MovieCompanies = {
-    val pattern: Regex = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".r
-    val fields = pattern.split(s"""$csv""").map(_.trim)
+    val csvFormat = CSVFormat.DEFAULT.withQuote('"').builder()
+        .build();
+    val fields = csvFormat.parse(new StringReader(csv)).getRecords().get(0).toList.asScala;
+
+    assert(1 == 2, "movie_companies " + fields.mkString)
 
     MovieCompanies(
       fields(0).toInt,
@@ -51,6 +57,7 @@ object MovieCompanies extends Serializable {
       fields(3).toInt,
       if (fields.length > 4) Optional.of(fields(4)) else Optional.empty()
     )
+
   }
 
   def toTuple(m: MovieCompanies): (Integer, Integer, Integer, Integer, Optional[String]) = {

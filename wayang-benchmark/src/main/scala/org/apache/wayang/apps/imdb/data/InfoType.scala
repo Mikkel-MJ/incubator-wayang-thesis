@@ -18,7 +18,10 @@
 package org.apache.wayang.apps.imdb.data
 
 import java.util.Optional;
+import org.apache.commons.csv._
+import java.io.StringReader;
 import scala.util.matching.Regex
+import scala.collection.JavaConverters._
 /**
   * Represents elements from the IMDB `info_type` table.
   */
@@ -35,8 +38,9 @@ object InfoType extends Serializable {
     * @return the [[InfoType]]
     */
   def parseCsv(csv: String): InfoType = {
-    val pattern: Regex = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".r
-    val fields = pattern.split(s"""$csv""").map(_.trim)
+    val csvFormat = CSVFormat.DEFAULT.withQuote('"').builder()
+        .build();
+    val fields = csvFormat.parse(new StringReader(csv)).getRecords().get(0).toList.asScala;
 
     InfoType(
       fields(0).toInt,
