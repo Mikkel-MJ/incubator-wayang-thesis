@@ -28,13 +28,15 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
+import org.apache.wayang.api.sql.calcite.rel.WayangSort;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
-import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule.CustomLogicalJoin;
+import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule.BinaryJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -58,12 +60,12 @@ public class WayangRules {
     public static final RelOptRule WAYANG_AGGREGATE_RULE = new WayangAggregateRule(WayangAggregateRule.DEFAULT_CONFIG);
 
     /**
-     * Rule that takes the custom logical join created in
+     * Rule that takes the custom binary joins created in
      * {@link #WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE} and converts them
-     * to the wayang convention
+     * to the Wayang convention
      */
-    public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_RULE = new WayangMultiConditionJoinRule(
-            WayangMultiConditionJoinRule.DEFAULT_CONFIG);
+    public static final RelOptRule WAYANG_BINARY_JOIN_RULE = new WayangBinaryJoinRule(
+            WayangBinaryJoinRule.DEFAULT_CONFIG);
 
     /**
      * Rule that tries to take a multi conditional join and splits it into multiple
@@ -72,38 +74,40 @@ public class WayangRules {
     public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE = new WayangMultiConditionJoinSplitRule(
             WayangMultiConditionJoinSplitRule.Config.DEFAULT);
 
-    private static class WayangMultiConditionJoinRule extends ConverterRule {
-        public static final Config DEFAULT_CONFIG = Config.INSTANCE
-                .withConversion(CustomLogicalJoin.class,
-                        Convention.NONE, WayangConvention.INSTANCE,
-                        "WayangMultiConditionJoinRule")
-                .withRuleFactory(WayangMultiConditionJoinRule::new);
+    /**
+     * Rule that converts {@link LogicalSort} to Wayang convention
+     * {@link WayangSort}
+     */
+    public static final RelOptRule WAYANG_SORT_RULE = new WayangSortRule(WayangSortRule.DEFAULT_CONFIG);
 
-        protected WayangMultiConditionJoinRule(Config config) {
+    private static class WayangSortRule extends ConverterRule {
+        public static final Config DEFAULT_CONFIG = Config.INSTANCE
+                .withConversion(LogicalSort.class, Convention.NONE, WayangConvention.INSTANCE, "WayangSortRule")
+                .withRuleFactory(WayangSortRule::new);
+
+        protected WayangSortRule(Config config) {
             super(config);
+            // TODO Auto-generated constructor stub
         }
 
-        public RelNode convert(RelNode rel) {
-            System.out.println("converting rel to wayang: " + rel + " with row type: " + rel.getRowType());
-            final CustomLogicalJoin join = (CustomLogicalJoin) rel;
+        @Override
+        public @Nullable RelNode convert(RelNode rel) {
+            final LogicalSort sort = (LogicalSort) rel;
 
-            final List<RelNode> newInputs = join.getInputs().stream()
-                    .map(input -> input.getConvention() instanceof WayangConvention 
-                            ? input
-                            : convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE)))
-                    .collect(Collectors.toList());
-            System.out.println("rel " + rel + " ; " + rel.getRowType().getFieldCount());
-            System.out.println("roowssl " + newInputs.get(0) + "\n ; " + newInputs.get(0).getRowType().getFieldCount());
-            System.out.println("rooowwss: " + newInputs.get(1) + "\n ; " + newInputs.get(1).getRowType().getFieldCount());
-        
-            return new WayangJoin(
-                    join.getCluster(),
-                    join.getTraitSet().replace(WayangConvention.INSTANCE),
-                    newInputs.get(0),
-                    newInputs.get(1),
-                    join.getCondition(),
-                    join.getVariablesSet(),
-                    join.getJoinType());
+            System.out.println("converting rel to sort: " + rel);
+            final RelNode newInput = convert(
+                    sort.getInput(),
+                    sort.getInput()
+                            .getTraitSet()
+                            .replace(WayangConvention.INSTANCE));
+
+            return new WayangSort(sort.getCluster(),
+                    sort.getTraitSet().replace(WayangConvention.INSTANCE),
+                    sort.getHints(),
+                    newInput,
+                    sort.collation,
+                    sort.fetch,
+                    sort.offset);
         }
     }
 
@@ -120,6 +124,7 @@ public class WayangRules {
         }
 
         public RelNode convert(RelNode rel) {
+            System.out.println("convert project: " + rel);
             final LogicalProject project = (LogicalProject) rel;
             return new WayangProject(
                     project.getCluster(),
@@ -145,6 +150,7 @@ public class WayangRules {
 
         @Override
         public RelNode convert(RelNode rel) {
+            System.out.println("convert filter: " + rel);
             final LogicalFilter filter = (LogicalFilter) rel;
             return new WayangFilter(
                     rel.getCluster(),
@@ -175,7 +181,7 @@ public class WayangRules {
 
         @Override
         public @Nullable RelNode convert(RelNode relNode) {
-
+            System.out.println("convert table scan: " + relNode);
             TableScan scan = (TableScan) relNode;
             final RelOptTable relOptTable = scan.getTable();
 
@@ -203,6 +209,7 @@ public class WayangRules {
 
         @Override
         public @Nullable RelNode convert(RelNode relNode) {
+            System.out.println("convert join: " + relNode);
             LogicalJoin join = (LogicalJoin) relNode;
             List<RelNode> newInputs = new ArrayList<>();
             for (RelNode input : join.getInputs()) {
@@ -223,6 +230,42 @@ public class WayangRules {
         }
     }
 
+    private static class WayangBinaryJoinRule extends ConverterRule {
+        public static final Config DEFAULT_CONFIG = Config.INSTANCE
+                .withConversion(BinaryJoin.class, Convention.NONE,
+                        WayangConvention.INSTANCE, "WayangBinaryJoinRUle")
+                .withRuleFactory(WayangBinaryJoinRule::new);
+
+        protected WayangBinaryJoinRule(Config config) {
+            super(config);
+        }
+
+        public RelNode convert(RelNode rel) {
+            System.out.println("converting rel to wayang: " + rel + " with row type: " + rel.getRowType());
+            final BinaryJoin join = (BinaryJoin) rel;
+
+            final List<RelNode> newInputs = join.getInputs().stream()
+                    .map(input -> !(input.getConvention() instanceof WayangConvention)
+                            ? input
+                            : convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE)))
+                    .collect(Collectors.toList());
+            System.out.println("rel " + rel + " ; " + rel.getRowType().getFieldCount());
+            System.out.println("roowssl " + newInputs.get(0) + "\n ; " + newInputs.get(0).getRowType().getFieldCount());
+            System.out
+                    .println("rooowwss: " + newInputs.get(1) + "\n ; " + newInputs.get(1).getRowType().getFieldCount());
+
+            return new WayangJoin(
+                    join.getCluster(),
+                    join.getTraitSet().replace(WayangConvention.INSTANCE),
+                    newInputs.get(0),
+                    newInputs.get(1),
+                    join.getCondition(),
+                    join.getVariablesSet(),
+                    join.getJoinType());
+        }
+    }
+
+
     private static class WayangAggregateRule extends ConverterRule {
 
         public static final Config DEFAULT_CONFIG = Config.INSTANCE
@@ -237,6 +280,7 @@ public class WayangRules {
 
         @Override
         public @Nullable RelNode convert(RelNode relNode) {
+            System.out.println("convert aggregate");
             LogicalAggregate aggregate = (LogicalAggregate) relNode;
             RelNode input = convert(aggregate.getInput(),
                     aggregate.getInput().getTraitSet().replace(WayangConvention.INSTANCE));
@@ -251,5 +295,4 @@ public class WayangRules {
                     aggregate.getAggCallList());
         }
     }
-
 }
