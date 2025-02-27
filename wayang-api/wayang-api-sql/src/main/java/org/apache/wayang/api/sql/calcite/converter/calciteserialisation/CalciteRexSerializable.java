@@ -73,10 +73,6 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
         // serialize rexnodes
         final String[] nodes = this.getNodesAsStrings(serializables);
 
-        System.out.println("[SERDE]: this: " + this);
-        System.out.println("[SERDE]: serializables: " + serializables);
-        System.out.println("[SERDE]: sqltypename: " + typeName);
-
         out.defaultWriteObject(); //write sqltypename
         out.writeObject(nodes); //write the rexnodes
     }
@@ -85,18 +81,15 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
         in.defaultReadObject(); //read sqlTypeName
 
         final String[] nodesAsStrings = (String[]) in.readObject(); // read in the rexnode json objects
-        System.out.println("[SERDE]: this: " + this);
-        System.out.println("[SERDE]: nodesAsStrings: " + Arrays.toString(nodesAsStrings));
-        System.out.println("[SERDE]: sqltypename: " + typeName);
-
-
         final Function<String, Map<String, Object>> stringToJsonObjMapper = (string) -> {
             try {
-                return (new ObjectMapper()).configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
-                        .readValue(string, TYPE_REF);
+                return (new ObjectMapper())
+                    .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
+                    .readValue(string, TYPE_REF);
             } catch (final Exception e) {
                 e.printStackTrace();
             }
+
             return null;
         };
 
@@ -111,6 +104,7 @@ public class CalciteRexSerializable implements CalciteSerializable, InputTransla
                 .map(stringToJsonObjMapper::apply)  //map rexnode strings to json objs
                 .map(jsonToRexNode::apply)  //map the json objs to rexnodes
                 .toArray(RexNode[]::new); //wrap in array so they can be set
+
 
         this.serializables = rexNodes;
     }

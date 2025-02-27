@@ -87,7 +87,6 @@ public class FlinkPlatform extends Platform {
     public FlinkContextReference getFlinkContext(Job job) {
         Configuration conf = job.getConfiguration();
         String[] jars = getJars(job);
-        System.out.println("Sending JARs: " + Arrays.toString(jars));
 
         if(this.flinkContextReference == null)
             switch (conf.getStringProperty("wayang.flink.mode.run")) {

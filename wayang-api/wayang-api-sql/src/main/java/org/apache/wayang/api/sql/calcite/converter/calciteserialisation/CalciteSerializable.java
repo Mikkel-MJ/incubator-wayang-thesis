@@ -16,7 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 /**
  * Interface for serialisation for calcite {@link RexNode}s and
  * {@link AggregateCall} containing classes.
- * 
+ *
  * Serialisation as of now requires that the {@link Optimizer} has been created
  * for the sake of
  * initialising the Calcite Schema/Cluster. In practice this happens when
@@ -32,11 +32,11 @@ public interface CalciteSerializable extends Serializable {
      * Default implementation for serialising {@link AggregateCall} and
      * {@link RexNode}.
      * Has no safety checking for other types.
-     * 
-     * @param nodes An array of RexNodes or AggregateCalls
+     *
+     * @param nodes An iterable of RexNodes or AggregateCalls
      * @return a readily serializable string array
      */
-    default String[] getNodesAsStrings(final Object[] nodes) {
+    default String[] getNodesAsStrings(Object... nodes) {
         final JsonBuilder jb = new JsonBuilder();
         final RelJson writer = new RelJson(jb);
 

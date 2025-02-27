@@ -134,7 +134,7 @@ public class Training {
             }
 
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
-            //IMDBJOBenchmark.setSources(plan, dataPath);
+            IMDBJOBenchmark.setSources(plan, dataPath);
 
             long execTime = 0;
 

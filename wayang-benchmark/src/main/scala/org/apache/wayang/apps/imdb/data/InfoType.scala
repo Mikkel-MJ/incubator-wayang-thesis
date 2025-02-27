@@ -38,9 +38,13 @@ object InfoType extends Serializable {
     * @return the [[InfoType]]
     */
   def parseCsv(csv: String): InfoType = {
-    val csvFormat = CSVFormat.DEFAULT.withQuote('"').builder()
+    val csvFormat = CSVFormat.DEFAULT
+        .withQuote('"')
+        .withEscape('\\')
+        .withIgnoreSurroundingSpaces(true)
+        .builder()
         .build();
-    val fields = csvFormat.parse(new StringReader(csv)).getRecords().get(0).toList.asScala;
+    val fields = csvFormat.parse(new StringReader(s"""$csv""")).getRecords().get(0).toList.asScala;
 
     InfoType(
       fields(0).toInt,

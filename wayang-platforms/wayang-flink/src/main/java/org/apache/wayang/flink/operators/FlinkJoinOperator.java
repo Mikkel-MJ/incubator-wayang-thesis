@@ -92,9 +92,6 @@ public class FlinkJoinOperator<InputType0, InputType1, KeyType>
         KeySelector<InputType0, KeyType> fun0 = compiler.compileKeySelector(this.keyDescriptor0);
         KeySelector<InputType1, KeyType> fun1 = compiler.compileKeySelector(this.keyDescriptor1);
 
-        System.out.println("Key selector: " + fun0);
-        System.out.println("Key selector: " + fun1);
-
         DataSet<Tuple2<InputType0, InputType1>> dataSetOutput =
             dataSetInput0.join(dataSetInput1)
             .where(

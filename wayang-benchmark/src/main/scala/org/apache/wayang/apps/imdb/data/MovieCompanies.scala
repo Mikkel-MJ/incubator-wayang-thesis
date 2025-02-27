@@ -44,19 +44,25 @@ object MovieCompanies extends Serializable {
     * @return the [[MovieCompanies]]
     */
   def parseCsv(csv: String): MovieCompanies = {
-    val csvFormat = CSVFormat.DEFAULT.withQuote('"').builder()
-        .build();
-    val fields = csvFormat.parse(new StringReader(csv)).getRecords().get(0).toList.asScala;
+    try {
+      val csvFormat = CSVFormat.DEFAULT
+          .withQuote('"')
+          .withEscape('\\')
+          .withIgnoreSurroundingSpaces(true)
+          .builder()
+          .build();
+      val fields = csvFormat.parse(new StringReader(s"""$csv""")).getRecords().get(0).toList.asScala;
 
-    assert(1 == 2, "movie_companies " + fields.mkString)
-
-    MovieCompanies(
-      fields(0).toInt,
-      fields(1).toInt,
-      fields(2).toInt,
-      fields(3).toInt,
-      if (fields.length > 4) Optional.of(fields(4)) else Optional.empty()
-    )
+      MovieCompanies(
+        fields(0).toInt,
+        fields(1).toInt,
+        fields(2).toInt,
+        fields(3).toInt,
+        if (fields.length > 4) Optional.of(fields(4)) else Optional.empty()
+      )
+    } catch {
+      case _: Throwable => throw new Exception("Exception: " + (csv.map(c => s"[$c]").mkString(", ")))
+    }
 
   }
 

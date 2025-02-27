@@ -133,8 +133,6 @@ public class ReflectionUtils {
                 return new String[0];
             }
 
-
-            System.out.println("Directory is: " + directory.getName());
             // List all JAR files in the directory
             return Stream.of(
                 directory.list((dir, name) -> name.endsWith(".jar"))

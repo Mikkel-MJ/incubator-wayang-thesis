@@ -106,8 +106,18 @@ public class CalciteAggSerializable implements CalciteSerializable {
         final RelDataType type = Optimizer.createTypeFactory().createSqlType(typeName);
         final String name = (String) mapAgg.get("name");
 
-        final AggregateCall call = AggregateCall.create(sqlAggFunction, distinct, approximate, ignoreNulls, argList,
-                filterArg, distinctKeys, collation, type, name);
+        final AggregateCall call = AggregateCall.create(
+            sqlAggFunction,
+            distinct,
+            approximate,
+            ignoreNulls,
+            argList,
+            filterArg,
+            //distinctKeys,
+            collation,
+            type,
+            name
+        );
 
         return call;
     }

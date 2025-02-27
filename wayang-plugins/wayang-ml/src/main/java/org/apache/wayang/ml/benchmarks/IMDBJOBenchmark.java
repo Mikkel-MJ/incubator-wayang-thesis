@@ -145,7 +145,6 @@ public class IMDBJOBenchmark {
                 String filePath = dataPath + tableName + ".csv";
                 TextFileSource replacement = new TextFileSource(filePath);
 
-                System.out.println("Table Name: " + tableName);
                 MapOperator<String, Record> parser;
 
                 switch (tableName) {
@@ -227,6 +226,56 @@ public class IMDBJOBenchmark {
                         parser = new MapOperator<>(
                             (line) -> {
                                 return new Record(PersonInfo.toArray(PersonInfo.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    case "movie_keyword":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(MovieKeyword.toArray(MovieKeyword.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    /*
+                    case "title":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(Title.toArray(Title.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    */
+                    case "cast_info":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(CastInfo.toArray(CastInfo.parseCsv(line)));
+                            },
+                            String.class,
+                            Record.class
+                        );
+                        OutputSlot.stealConnections(op, parser);
+
+                        replacement.connectTo(0, parser, 0);
+                        break;
+                    case "movie_link":
+                        parser = new MapOperator<>(
+                            (line) -> {
+                                return new Record(MovieLink.toArray(MovieLink.parseCsv(line)));
                             },
                             String.class,
                             Record.class

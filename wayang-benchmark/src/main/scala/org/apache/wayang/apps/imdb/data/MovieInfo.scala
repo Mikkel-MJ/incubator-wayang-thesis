@@ -45,9 +45,13 @@ object MovieInfo extends Serializable {
     * @return the [[MovieInfo]]
     */
   def parseCsv(csv: String): MovieInfo = {
-    val csvFormat = CSVFormat.DEFAULT.withQuote('"').builder()
+    val csvFormat = CSVFormat.DEFAULT
+        .withQuote('"')
+        .withEscape('\\')
+        .withIgnoreSurroundingSpaces(true)
+        .builder()
         .build();
-    val fields = csvFormat.parse(new StringReader(csv)).getRecords().get(0).toList.asScala;
+    val fields = csvFormat.parse(new StringReader(s"""$csv""")).getRecords().get(0).toList.asScala;
 
 
     MovieInfo(

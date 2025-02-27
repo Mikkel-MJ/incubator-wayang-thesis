@@ -156,7 +156,6 @@ public class JOBenchmark {
                 ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
             );
 
-            System.out.println(Arrays.toString(jars));
 
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
