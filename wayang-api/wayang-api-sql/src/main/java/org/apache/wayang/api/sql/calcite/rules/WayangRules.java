@@ -21,8 +21,10 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
@@ -30,6 +32,15 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexChecker;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.util.Litmus;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
@@ -43,6 +54,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 //TODO: split into multiple classes
@@ -60,9 +72,9 @@ public class WayangRules {
     public static final RelOptRule WAYANG_AGGREGATE_RULE = new WayangAggregateRule(WayangAggregateRule.DEFAULT_CONFIG);
 
     /**
-     * Rule that takes the custom binary joins created in
+     * Rule that takes the custom {@link BinaryJoin}s created in
      * {@link #WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE} and converts them
-     * to the Wayang convention
+     * to {@link LogicalJoin}s
      */
     public static final RelOptRule WAYANG_BINARY_JOIN_RULE = new WayangBinaryJoinRule(
             WayangBinaryJoinRule.DEFAULT_CONFIG);
@@ -85,13 +97,13 @@ public class WayangRules {
                 .withConversion(LogicalSort.class, Convention.NONE, WayangConvention.INSTANCE, "WayangSortRule")
                 .withRuleFactory(WayangSortRule::new);
 
-        protected WayangSortRule(Config config) {
+        protected WayangSortRule(final Config config) {
             super(config);
             // TODO Auto-generated constructor stub
         }
 
         @Override
-        public @Nullable RelNode convert(RelNode rel) {
+        public @Nullable RelNode convert(final RelNode rel) {
             final LogicalSort sort = (LogicalSort) rel;
 
             System.out.println("converting rel to sort: " + rel);
@@ -119,18 +131,18 @@ public class WayangRules {
                         "WayangProjectRule")
                 .withRuleFactory(WayangProjectRule::new);
 
-        protected WayangProjectRule(Config config) {
+        protected WayangProjectRule(final Config config) {
             super(config);
         }
 
-        public RelNode convert(RelNode rel) {
+        public RelNode convert(final RelNode rel) {
             System.out.println("convert project: " + rel);
             final LogicalProject project = (LogicalProject) rel;
+
             return new WayangProject(
                     project.getCluster(),
                     project.getTraitSet().replace(WayangConvention.INSTANCE),
-                    convert(project.getInput(), project.getInput().getTraitSet()
-                            .replace(WayangConvention.INSTANCE)),
+                    convert(project.getInput(), project.getInput().getTraitSet().replace(WayangConvention.INSTANCE)),
                     project.getProjects(),
                     project.getRowType());
         }
@@ -144,14 +156,15 @@ public class WayangRules {
                         "WayangFilterRule")
                 .withRuleFactory(WayangFilterRule::new);
 
-        protected WayangFilterRule(Config config) {
+        protected WayangFilterRule(final Config config) {
             super(config);
         }
 
         @Override
-        public RelNode convert(RelNode rel) {
+        public RelNode convert(final RelNode rel) {
             System.out.println("convert filter: " + rel);
             final LogicalFilter filter = (LogicalFilter) rel;
+
             return new WayangFilter(
                     rel.getCluster(),
                     rel.getTraitSet().replace(WayangConvention.INSTANCE),
@@ -175,14 +188,14 @@ public class WayangRules {
                         "WayangTableScanRule1")
                 .withRuleFactory(WayangTableScanRule::new);
 
-        protected WayangTableScanRule(Config config) {
+        protected WayangTableScanRule(final Config config) {
             super(config);
         }
 
         @Override
-        public @Nullable RelNode convert(RelNode relNode) {
+        public @Nullable RelNode convert(final RelNode relNode) {
             System.out.println("convert table scan: " + relNode);
-            TableScan scan = (TableScan) relNode;
+            final TableScan scan = (TableScan) relNode;
             final RelOptTable relOptTable = scan.getTable();
 
             /**
@@ -203,15 +216,19 @@ public class WayangRules {
                         WayangConvention.INSTANCE, "WayangJoinRule")
                 .withRuleFactory(WayangJoinRule::new);
 
-        protected WayangJoinRule(Config config) {
+        protected WayangJoinRule(final Config config) {
             super(config);
         }
 
         @Override
-        public @Nullable RelNode convert(RelNode relNode) {
+        public @Nullable RelNode convert(final RelNode relNode) {
             System.out.println("convert join: " + relNode);
-            LogicalJoin join = (LogicalJoin) relNode;
-            List<RelNode> newInputs = new ArrayList<>();
+            final LogicalJoin join = (LogicalJoin) relNode;
+            if (join.getCondition().isA(SqlKind.AND))
+                throw new UnsupportedOperationException(
+                        "Multiconditional joins are currently not supported for Wayang conversions.");
+            final List<RelNode> newInputs = new ArrayList<>();
+
             for (RelNode input : join.getInputs()) {
                 if (!(input.getConvention() instanceof WayangConvention)) {
                     input = convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE));
@@ -219,7 +236,7 @@ public class WayangRules {
                 newInputs.add(input);
             }
 
-            return new WayangJoin(
+            final WayangJoin newJoin = new WayangJoin(
                     join.getCluster(),
                     join.getTraitSet().replace(WayangConvention.INSTANCE),
                     newInputs.get(0),
@@ -227,44 +244,129 @@ public class WayangRules {
                     join.getCondition(),
                     join.getVariablesSet(),
                     join.getJoinType());
+
+            // this should be safe as no multiconditional joins should be available at this
+            // time
+            final List<RexInputRef> oldRefs = ((RexCall) join.getCondition()).operands.stream()
+                    .map(RexInputRef.class::cast)
+                    .collect(Collectors.toList());
+            final List<RexInputRef> refs = newJoin.getRexInputRefs();
+
+            System.out.println("ref index accessor types: " + oldRefs.stream().map(ref -> ref.getIndex())
+                    .map(index -> join.getRowType().getFieldList().get(index).getType().getFullTypeString()));
+            System.out.println("old ref index accessor types: " + refs.stream().map(ref -> ref.getIndex())
+                    .map(index -> join.getRowType().getFieldList().get(index).getType().getFullTypeString()));
+
+            assert (oldRefs.stream().map(ref -> ref.getType().getFullTypeString())
+                    .equals(refs.stream().map(ref -> ref.getType().getFullTypeString())))
+                    : "Expected old logical join to have same input types as new wayang join.";
+                
+            assert (WayangRules.ensureConditionAndInputRefTypeParity(newJoin)) : "Expected the RexInputRefs' fields to have the same type string as the intermediate table representation for the join.";
+            return newJoin;
         }
     }
 
+    /**
+     * See {@link WayangRules#WAYANG_BINARY_JOIN_RULE}
+     */
     private static class WayangBinaryJoinRule extends ConverterRule {
         public static final Config DEFAULT_CONFIG = Config.INSTANCE
                 .withConversion(BinaryJoin.class, Convention.NONE,
-                        WayangConvention.INSTANCE, "WayangBinaryJoinRUle")
+                        Convention.NONE, "WayangBinaryJoinRUle")
                 .withRuleFactory(WayangBinaryJoinRule::new);
 
-        protected WayangBinaryJoinRule(Config config) {
+        protected WayangBinaryJoinRule(final Config config) {
             super(config);
         }
 
-        public RelNode convert(RelNode rel) {
-            System.out.println("converting rel to wayang: " + rel + " with row type: " + rel.getRowType());
+        public RelNode convert(final RelNode rel) {
             final BinaryJoin join = (BinaryJoin) rel;
 
             final List<RelNode> newInputs = join.getInputs().stream()
-                    .map(input -> !(input.getConvention() instanceof WayangConvention)
+                    .map(input -> input.getConvention() instanceof WayangConvention
                             ? input
                             : convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE)))
                     .collect(Collectors.toList());
-            System.out.println("rel " + rel + " ; " + rel.getRowType().getFieldCount());
-            System.out.println("roowssl " + newInputs.get(0) + "\n ; " + newInputs.get(0).getRowType().getFieldCount());
-            System.out
-                    .println("rooowwss: " + newInputs.get(1) + "\n ; " + newInputs.get(1).getRowType().getFieldCount());
 
-            return new WayangJoin(
-                    join.getCluster(),
-                    join.getTraitSet().replace(WayangConvention.INSTANCE),
+            System.out.println("binary join inputs: " + join.getInputs());
+            assert (newInputs.size() == 2) : "expected join only to have two inputs, got: " + newInputs.size()
+                    + ", from list:\n" + "\t" + newInputs;
+
+            assert (join.getInputs().stream().map(input -> input.getRowType().getFullTypeString())
+                    .collect(Collectors.toList())
+                    .equals(newInputs.stream().map(input -> input.getRowType().getFullTypeString())
+                            .collect(Collectors.toList())))
+                    : "Expected row types to be the same before and after conversion.";
+
+            final LogicalJoin newJoin = LogicalJoin.create(
                     newInputs.get(0),
                     newInputs.get(1),
+                    join.getHints(),
                     join.getCondition(),
                     join.getVariablesSet(),
                     join.getJoinType());
+
+            assert (fetchRexInputTypeString(join.getCondition())
+                    .equals(fetchRexInputTypeString(newJoin.getCondition())))
+                    : "expected types of RexInputRefs to remain consistent, old type: "
+                            + fetchRexInputTypeString(join.getCondition()) + " new: "
+                            + fetchRexInputTypeString(newJoin.getCondition());
+
+            assert (WayangRules.ensureConditionAndInputRefTypeParity(newJoin)) : "Expected the RexInputRefs' fields to have the same type string as the intermediate table representation for the join.";
+            return newJoin;
+        }
+
+        List<String> fetchRexInputTypeString(final RexNode binaryJoinCondition) {
+            // since we have a binary join we can safely fetch the RexInputRefs:
+            // joins have a treelike structure of BinaryJoin(RexCall(RexInputRef,
+            // RexInputRef))
+            return RexCall.class.cast(binaryJoinCondition).getOperands().stream()
+                    .map(RexInputRef.class::cast)
+                    .map(RexInputRef::getType)
+                    .map(RelDataType::getFullTypeString)
+                    .collect(Collectors.toList());
         }
     }
 
+    /*
+     * Ensures that the types within the join condition and in the table representation that 
+     * calcite has for the for the current join have parity
+     */
+    public static boolean ensureConditionAndInputRefTypeParity(Join join){
+        final RexCall condition = (RexCall) join.getCondition();
+
+        // assuming binary join
+        assert(condition.isA(SqlKind.EQUALS)) : "Condition was not a binary: " + join.getCondition();
+
+        final List<Integer> keys = condition.operands.stream()
+            .map(RexInputRef.class::cast)
+            .map(RexInputRef::getIndex)
+            .collect(Collectors.toList());
+        System.out.println("join left rows: " + join.getLeft().getRowType());
+        System.out.println(join.getLeft().getRowType().getFieldCount());
+        System.out.println("join right rows: " + join.getRight().getRowType());
+        System.out.println(join.getRight().getRowType().getFieldCount());
+        System.out.println("Keys: " + keys);
+        System.out.println("Field list: " + join.getRowType().getFieldList());
+
+        final List<String> fieldTypeNames = keys.stream()
+            .map(key -> join.getRowType().getFieldList().get(key))
+            .map(RelDataTypeField::getType)
+            .map(RelDataType::getFullTypeString)
+            .collect(Collectors.toList());
+        
+        final List<String> refTypeNames = condition.getOperands().stream()
+            .map(RexInputRef.class::cast)
+            .map(RexInputRef::getType)
+            .map(RelDataType::getFullTypeString)
+            .collect(Collectors.toList());
+
+        final boolean isParity = fieldTypeNames.equals(refTypeNames);
+
+        if(!isParity) System.err.println("Keys: " + keys + ", fieldTypeNames: " + fieldTypeNames + ", refTypeNames: " + refTypeNames);
+
+        return isParity;
+    }
 
     private static class WayangAggregateRule extends ConverterRule {
 
@@ -274,15 +376,15 @@ public class WayangRules {
                         "WayangAggregateRule")
                 .withRuleFactory(WayangAggregateRule::new);
 
-        protected WayangAggregateRule(Config config) {
+        protected WayangAggregateRule(final Config config) {
             super(config);
         }
 
         @Override
-        public @Nullable RelNode convert(RelNode relNode) {
+        public @Nullable RelNode convert(final RelNode relNode) {
             System.out.println("convert aggregate");
-            LogicalAggregate aggregate = (LogicalAggregate) relNode;
-            RelNode input = convert(aggregate.getInput(),
+            final LogicalAggregate aggregate = (LogicalAggregate) relNode;
+            final RelNode input = convert(aggregate.getInput(),
                     aggregate.getInput().getTraitSet().replace(WayangConvention.INSTANCE));
 
             return new WayangAggregate(
