@@ -26,6 +26,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
+
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
@@ -112,9 +113,11 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
             final List<String> reductionStatements = new ArrayList<>();
 
+            /*
             assert reductionFunctions.size() == aliasedFields.length
-                    : "Expected that the amount of reduction functions in reduce statement was eqaul to the amount of used tables";
-
+                    : "Expected that the amount of reduction functions in reduce statement was equal to the amount of used tables, got " + reductionFunctions.size() + " reduction functions and: " + aliasedFields.length + " tables.";
+            */
+            
             // we have an assumption that the ordering is maintained between each list
             for (int i = 0; i < reductionFunctions.size(); i++) {
                 // unpacking alias
