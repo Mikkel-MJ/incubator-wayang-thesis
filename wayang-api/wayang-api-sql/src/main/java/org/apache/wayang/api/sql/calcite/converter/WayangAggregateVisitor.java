@@ -112,11 +112,6 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                     .map(agg -> agg.left.getAggregation().getName()).collect(Collectors.toList());
 
             final List<String> reductionStatements = new ArrayList<>();
-
-            /*
-            assert reductionFunctions.size() == aliasedFields.length
-                    : "Expected that the amount of reduction functions in reduce statement was equal to the amount of used tables, got " + reductionFunctions.size() + " reduction functions and: " + aliasedFields.length + " tables.";
-            */
             
             // we have an assumption that the ordering is maintained between each list
             for (int i = 0; i < reductionFunctions.size(); i++) {
