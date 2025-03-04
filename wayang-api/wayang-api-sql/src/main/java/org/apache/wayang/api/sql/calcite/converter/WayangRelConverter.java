@@ -37,6 +37,8 @@ public class WayangRelConverter {
             return new WayangJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
         } else if (node instanceof WayangAggregate) {
             return new WayangAggregateVisitor(this, aliasFinder).visit((WayangAggregate) node);
+        } else if (node instanceof WayangSort) {
+            return new WayangSortVisitor(this, aliasFinder).visit((WayangSort) node);
         }
         throw new IllegalStateException("Operator translation not supported yet");
     }
