@@ -11,7 +11,7 @@ SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
 
 echo "Installing Spark"
-export SPARK_VERSION=3.5.4
+export SPARK_VERSION=3.5.5
 export SPARK_HOME=/opt/spark
 
 echo "Printing env"
