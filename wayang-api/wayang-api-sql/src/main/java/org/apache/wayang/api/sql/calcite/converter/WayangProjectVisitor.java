@@ -31,7 +31,10 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -48,6 +51,12 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
     @Override
     Operator visit(final WayangProject wayangRelNode) {
+        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
+        final SqlImplementor.Context relContext = decompiler.visitInput(wayangRelNode, 0).qualifiedContext();
+        final String[] aliasedFields = wayangRelNode.getProjects().stream().map(rex -> relContext.toSql(null, rex))
+                .map(node -> node.toSqlString(AnsiSqlDialect.DEFAULT).getSql()).map(str -> str.replace("`", ""))
+                .toArray(String[]::new);
+                
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
         // fetch the indexes of colmuns affected, in calcite aggregates and projections
@@ -56,7 +65,9 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         final List<Integer> columnIndexes = wayangRelNode.getProjects().stream().map(proj -> proj.hashCode())
                 .collect(Collectors.toList());
 
-        final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
+        System.out.println("wayangrel project: " + wayangRelNode);
+        System.out.println("project incoming rows: " + wayangRelNode.getInput().getRowType());
+        System.out.println("col: " + columnIndexes);
 
         // list of projects passed to the serializable function, for java & others usage
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
