@@ -44,6 +44,8 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
     Operator visit(final WayangFilter wayangRelNode) {
         final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
         final SqlImplementor.Context relContext = decompiler.visitInput(wayangRelNode, 0).qualifiedContext();
+        System.out.println("on filter: " + wayangRelNode);
+        System.out.println("condition: " + wayangRelNode.getCondition());
         final String sqlCondition = relContext.toSql(null, wayangRelNode.getCondition())
                 .toSqlString(AnsiSqlDialect.DEFAULT)
                 .getSql()
