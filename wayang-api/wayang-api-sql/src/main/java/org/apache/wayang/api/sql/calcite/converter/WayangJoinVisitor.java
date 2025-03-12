@@ -33,6 +33,7 @@ import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
+import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.api.sql.calcite.utils.SqlField;
@@ -100,7 +101,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         rightVisitor.visit(wayangRelNode.getRight(), wayangRelNode.getId(), null);
 
         // TODO: prolly breaks on bushy joins
-        final String joiningTableName = leftVisitor.getName() instanceof String 
+        final String joiningTableName = leftVisitor.getName() instanceof String
                 ? leftVisitor.getName()
                 : rightVisitor.getName();
 
@@ -158,7 +159,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
      * This method determines how key extraction works due to cases where the right
      * table in a join might have a larger table index
      * than the left.
-     * 
+     *
      * @param leftKeyIndex  key index of left table
      * @param rightKeyIndex key index of right table
      * @return a {@link JoinOperator} with {@link KeyExtractors} set
@@ -181,6 +182,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 final int newRightKeyIndex = rightKeyIndex
                         - wayangRelNode.getInput(0).getRowType().getFieldCount();
                 return new scala.Tuple2<>(leftKeyIndex, newRightKeyIndex);
+
             }
             default: // both equal
                 throw new UnsupportedOperationException();
@@ -191,7 +193,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
      * This method handles the {@link JoinOperator} creation, used in conjunction
      * with:
      * {@link #determineKeyExtractionDirection(Integer, Integer, WayangJoin)}
-     * 
+     *
      * @param wayangRelNode
      * @param leftKeyIndex
      * @param rightKeyIndex
@@ -206,12 +208,24 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                     + wayangRelNode.getInputs().size() + ", expected: 2");
 
         final TransformationDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
-                new KeyExtractor<>(leftKeyIndex),
+                new KeyExtractor<>(leftKeyIndex)
+                .withRowType(
+                    wayangRelNode.getLeft().getRowType().toString(),
+                    wayangRelNode.toString(),
+                    wayangRelNode.getLeft().toString(),
+                    wayangRelNode.getRight().toString()
+                ),
                 Record.class, SqlField.class, leftFieldName)
                 .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName);
 
         final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
-                new KeyExtractor<>(rightKeyIndex),
+                new KeyExtractor<>(rightKeyIndex)
+                .withRowType(
+                    wayangRelNode.getRight().getRowType().toString(),
+                    wayangRelNode.toString(),
+                    wayangRelNode.getLeft().toString(),
+                    wayangRelNode.getRight().toString()
+                ),
                 Record.class, SqlField.class, rightFieldName)
                 .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName);
 

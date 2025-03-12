@@ -254,11 +254,16 @@ public class Job extends OneTimeExecutable {
     }
 
     public ExecutionPlan buildInitialExecutionPlan() throws WayangException {
+        this.optimizationRound.start();
+        System.out.println("Preparing");
         this.prepareWayangPlan();
+        System.out.println("Estimiating");
         this.estimateKeyFigures();
 
         // Get initial execution plan.
+        System.out.println("Creating");
         ExecutionPlan executionPlan = this.createInitialExecutionPlan();
+        this.optimizationRound.stop();
 
         return executionPlan;
     }

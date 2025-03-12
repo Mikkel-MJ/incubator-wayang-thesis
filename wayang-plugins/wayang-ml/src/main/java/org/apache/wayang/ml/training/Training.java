@@ -8,10 +8,7 @@
  * with the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * * Unless required by applicable law or agreed to in writing, software * distributed under the License is distributed on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -42,6 +39,8 @@ import org.apache.wayang.ml.training.GeneratableJob;
 import org.apache.wayang.ml.util.Jobs;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.wayang.api.PlanBuilder;
+import org.apache.wayang.ml.MLContext;
+import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -57,8 +56,8 @@ import scala.collection.JavaConversions;
 
 public class Training {
 
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
@@ -117,32 +116,40 @@ public class Training {
             config.setProperty("wayang.postgres.jdbc.user", psqlUser);
             config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
 
-            config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("spark.app.name", "JOB Query");
+            config.setProperty("spark.rpc.message.maxSize", "2047");
+            config.setProperty("spark.executor.memory", "32g");
             config.setProperty("wayang.flink.mode.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "7071");
-            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
-            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
+            config.setProperty("spark.driver.maxResultSize", "8G");
+            config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty("wayang.core.optimizer.pruning.strategies", "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy");
 
-            WayangContext context = new WayangContext(config);
+            final MLContext wayangContext = new MLContext(config);
+            plugins.stream().forEach(plug -> wayangContext.register(plug));
 
-            for (Plugin plugin : plugins) {
-                context.with(plugin);
-            }
-
+            System.out.println("Getting plan");
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
-            IMDBJOBenchmark.setSources(plan, dataPath);
+            wayangContext.setLogLevel(Level.DEBUG);
 
-            long execTime = 0;
+            //IMDBJOBenchmark.setSources(plan, dataPath);
+            PrintUtils.print("Logical WayangPlan", plan);
+            System.out.println("Set sources");
 
-            Job wayangJob = context.createJob("", plan, jars);
+            System.out.println("Getting Job");
+            Job wayangJob = wayangContext.createJob("", plan, jars);
+            System.out.println("Building ExecutionPlan");
             ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
+            System.out.println("Built plan");
             OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+            System.out.println("Encoding");
             TreeNode wayangNode = TreeEncoder.encode(plan);
             TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
+            System.out.println("Writing");
             //System.out.println(exPlan.toExtensiveString());
             //System.out.println(execNode.toString());
 
@@ -213,13 +220,6 @@ public class Training {
 
             WayangPlan plan = builder.build();
 
-            /*int hashCode = new HashCodeBuilder(17, 37).append(plan).toHashCode();
-            String path = "/var/www/html/data/" + hashCode + "-cardinalities.json";*/
-            long execTime = 0;
-
-            //if (overwriteCardinalities) {
-                //CardinalitySampler.configureWriteToFile(config, path);
-                //
             Job wayangJob = context.createJob("", plan, jars);
             ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
             OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
@@ -244,16 +244,6 @@ public class Training {
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
             plan = builder.build();
-
-            /*
-            Instant start = Instant.now();
-            context.execute(plan, jars);
-            Instant end = Instant.now();
-            execTime = Duration.between(start, end).toMillis();*/
-
-            //CardinalitySampler.readFromFile(path);
-
-            //writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), execTime));
             writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), 1_000_000));
             writer.newLine();
             writer.flush();

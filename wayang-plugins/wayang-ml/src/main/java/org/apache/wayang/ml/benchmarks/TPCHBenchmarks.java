@@ -39,6 +39,11 @@ import org.apache.wayang.apps.tpch.queries.Query10;
 import org.apache.wayang.apps.tpch.queries.Query12;
 import org.apache.wayang.apps.tpch.queries.Query14;
 import org.apache.wayang.apps.tpch.queries.Query19;
+import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.OutputSlot;
+import org.apache.wayang.basic.operators.*;
+import org.apache.wayang.apps.tpch.data.OrderTuple;
 
 import java.util.HashMap;
 import java.util.List;
@@ -105,6 +110,27 @@ public class TPCHBenchmarks {
 
             HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);
             WayangPlan plan = plans.get("query" + args[3]);
+
+            plan.collectReachableTopLevelSources().forEach(source -> {
+                if (source instanceof TextFileSource) {
+
+                    String inputUrl = ((TextFileSource) source).getInputUrl();
+                    System.out.println("SAUCE: " + inputUrl);
+
+                    if (inputUrl.equals("file:///opt/data/orders.tbl")) {
+                        TextFileSource orderText = new TextFileSource(inputUrl, "UTF-8");
+
+                        MapOperator<String, OrderTuple> orderParser = new MapOperator<>(
+                            (line) -> new OrderTuple.Parser().parse(line, '|'),
+                            String.class,
+                            OrderTuple.class
+                        );
+                        orderText.connectTo(0, orderParser, 0);
+
+                    OutputSlot.stealConnections(source.getOutput(0).getOccupiedSlots().get(0).getOwner(), orderParser);
+                    }
+                }
+            });
 
             String[] jars = new String[]{
                 ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class),

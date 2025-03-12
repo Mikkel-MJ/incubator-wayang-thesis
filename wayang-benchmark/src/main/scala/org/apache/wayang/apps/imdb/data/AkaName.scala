@@ -49,7 +49,7 @@ object AkaName extends Serializable {
   def parseCsv(csv: String): AkaName = {
     val csvFormat = CSVFormat.DEFAULT
         .withQuote('"')
-        .withEscape('"')
+        .withEscape('\\')
         .withIgnoreSurroundingSpaces(true)
         .builder()
         .build();

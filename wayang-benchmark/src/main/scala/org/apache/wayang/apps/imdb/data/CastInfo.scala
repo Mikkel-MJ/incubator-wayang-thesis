@@ -12,9 +12,9 @@ case class CastInfo(
     id: Integer,
     personId: Integer,
     movieId: Integer,
-    personRoleId: Optional[Integer],
-    note: Optional[String],
-    nrOrder: Optional[Integer],
+    personRoleId: Integer,
+    note: String,
+    nrOrder: Integer,
     roleId: Integer
 ) extends Serializable
 
@@ -42,9 +42,9 @@ object CastInfo extends Serializable {
         fields(0).toInt,
         fields(1).toInt,
         fields(2).toInt,
-        if (fields(3).nonEmpty) Optional.of(fields(3).toInt) else Optional.empty(),
-        if (fields(4).nonEmpty) Optional.of(fields(4)) else Optional.empty(),
-        if (fields(5).nonEmpty) Optional.of(fields(5).toInt) else Optional.empty(),
+        if (fields(3).nonEmpty) fields(3).toInt else null,
+        if (fields(4).nonEmpty) fields(4) else null,
+        if (fields(5).nonEmpty) fields(5).toInt else null,
         fields(6).toInt
       )
     } catch {
@@ -52,7 +52,7 @@ object CastInfo extends Serializable {
     }
   }
 
-  def toTuple(ci: CastInfo): (Integer, Integer, Integer, Optional[Integer], Optional[String], Optional[Integer], Integer) = {
+  def toTuple(ci: CastInfo): (Integer, Integer, Integer, Integer, String, Integer, Integer) = {
     (ci.id, ci.personId, ci.movieId, ci.personRoleId, ci.note, ci.nrOrder, ci.roleId)
   }
 

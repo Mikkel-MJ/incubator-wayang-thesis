@@ -140,9 +140,13 @@ public class JavaJoinOperator<InputType0, InputType1, KeyType>
                             }
                     )
             );
+
             joinStream = ((JavaChannelInstance) inputs[0]).<InputType0>provideStream().flatMap(dataQuantum0 ->
                     probeTable.getOrDefault(keyExtractor0.apply(dataQuantum0), Collections.emptyList()).stream()
-                            .map(dataQuantum1 -> new Tuple2<>(dataQuantum0, dataQuantum1)));
+                            .map(dataQuantum1 -> {
+                                return new Tuple2<>(dataQuantum0, dataQuantum1);
+                            })
+                    );
             indexingExecutionLineageNode.addPredecessor(inputs[1].getLineage());
             indexingExecutionLineageNode.collectAndMark(executionLineageNodes, producedChannelInstances);
             probingExecutionLineageNode.addPredecessor(inputs[0].getLineage());

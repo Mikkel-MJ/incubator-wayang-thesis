@@ -31,7 +31,7 @@ case class MovieInfo(
     movieId: Integer,
     infoTypeId: Integer,
     info: String,
-    note: Optional[String]
+    note: String
 ) extends Serializable
 
 object MovieInfo extends Serializable {
@@ -59,11 +59,11 @@ object MovieInfo extends Serializable {
       fields(1).toInt,
       fields(2).toInt,
       fields(3),
-      if (fields.length > 4) Optional.of(fields(4)).filter(_.nonEmpty) else Optional.empty()
+      if (fields.length > 4 && fields(4).nonEmpty) fields(4) else null
     )
   }
 
-  def toTuple(m: MovieInfo): (Integer, Integer, Integer, String, Optional[String]) = {
+  def toTuple(m: MovieInfo): (Integer, Integer, Integer, String, String) = {
     (m.id, m.movieId, m.infoTypeId, m.info, m.note)
   }
 

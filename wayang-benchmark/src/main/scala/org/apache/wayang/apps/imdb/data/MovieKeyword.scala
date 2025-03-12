@@ -16,7 +16,7 @@ case class MovieKeyword(
 
 object MovieKeyword extends Serializable {
 
-  val fields = IndexedSeq("id", "movie_id", "keyword_id")
+  val fields = Array("id", "movie_id", "keyword_id")
 
   /**
     * Parse a CSV row into a [[MovieKeyword]] instance.
@@ -50,6 +50,10 @@ object MovieKeyword extends Serializable {
 
   def toArray(mk: MovieKeyword): Array[AnyRef] = {
     Array(mk.id, mk.movieId, mk.keywordId)
+  }
+
+  def getFields(): Array[String] = {
+    fields
   }
 }
 

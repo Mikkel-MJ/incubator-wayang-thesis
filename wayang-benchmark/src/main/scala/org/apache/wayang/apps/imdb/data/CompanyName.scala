@@ -28,11 +28,11 @@ import scala.collection.JavaConverters._
 case class CompanyName(
     id: Integer,
     name: String,
-    countryCode: Optional[String],
-    imdbId: Optional[Integer],
-    namePcodeNf: Optional[String],
-    namePcodeSf: Optional[String],
-    md5sum: Optional[String]
+    countryCode: String,
+    imdbId: Integer,
+    namePcodeNf: String,
+    namePcodeSf: String,
+    md5sum: String
 ) extends Serializable
 
 object CompanyName extends Serializable {
@@ -58,15 +58,15 @@ object CompanyName extends Serializable {
     CompanyName(
       fields(0).toInt,
       fields(1),
-      if (fields.length > 2) Optional.of(fields(2)).filter(_.nonEmpty) else Optional.empty(),
-      if (fields.length > 3 && fields(3).nonEmpty) Optional.of(fields(3).toInt) else Optional.empty(),
-      if (fields.length > 4) Optional.of(fields(4)).filter(_.nonEmpty) else Optional.empty(),
-      if (fields.length > 5) Optional.of(fields(5)).filter(_.nonEmpty) else Optional.empty(),
-      if (fields.length > 6) Optional.of(fields(6)).filter(_.nonEmpty) else Optional.empty(),
+      if (fields.length > 2 && fields(2).nonEmpty) fields(2) else null,
+      if (fields.length > 3 && fields(3).nonEmpty) fields(3).toInt else null,
+      if (fields.length > 4 && fields(4).nonEmpty) fields(4) else null,
+      if (fields.length > 5 && fields(5).nonEmpty) fields(5) else null,
+      if (fields.length > 6 && fields(6).nonEmpty) fields(6) else null,
     )
   }
 
-  def toTuple(c: CompanyName): (Integer, String, Optional[String], Optional[Integer], Optional[String], Optional[String], Optional[String]) = {
+  def toTuple(c: CompanyName): (Integer, String, String, Integer, String, String, String) = {
     (c.id, c.name, c.countryCode, c.imdbId, c.namePcodeNf, c.namePcodeSf, c.md5sum)
   }
 

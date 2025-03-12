@@ -53,6 +53,7 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
         if (tableSource.equals("postgres")) {
             return new PostgresTableSource(tableName, columnNames.toArray(new String[]{}));
         }
+
         if (tableSource.equals("fs")) {
             ModelParser modelParser;
             try {

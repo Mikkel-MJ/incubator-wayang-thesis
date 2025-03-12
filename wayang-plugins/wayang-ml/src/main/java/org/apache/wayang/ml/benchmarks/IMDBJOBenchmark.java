@@ -17,6 +17,10 @@ import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.types.RecordType;
+import org.apache.wayang.core.function.TransformationDescriptor;
+import org.apache.wayang.core.types.DataSetType;
+import org.apache.wayang.core.types.DataUnitType;
 import org.apache.wayang.apps.imdb.data.*;
 
 import java.io.IOException;
@@ -26,10 +30,12 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class IMDBJOBenchmark {
-    static SqlContext sqlContext;
+    public static SqlContext sqlContext;
 
     public static WayangPlan getWayangPlan(
         final String path,
@@ -45,7 +51,7 @@ public class IMDBJOBenchmark {
 
         WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
 
-        ((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
+        //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
 
         return plan;
     }
@@ -127,8 +133,9 @@ public class IMDBJOBenchmark {
 
     // Only source in postgres, compute elsewhere
     public static void setSources(WayangPlan plan, String dataPath) {
-        final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
         /*
+        final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
+
         operators.forEach(o -> {
             if (!(o.isSource() || o.isSink())) {
                 o.addTargetPlatform(Spark.platform());
@@ -143,15 +150,52 @@ public class IMDBJOBenchmark {
             if (op instanceof TableSource) {
                 String tableName = ((TableSource) op).getTableName();
                 String filePath = dataPath + tableName + ".csv";
-                TextFileSource replacement = new TextFileSource(filePath);
+                TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
 
                 MapOperator<String, Record> parser;
 
+                /*
+                if (tableName.equals("movie_companies")) {
+                    parser = new MapOperator<String, Record>(
+                        new TransformationDescriptor<>(
+                            line -> {
+                                //System.out.println(line);
+                                //System.out.println(line.replaceAll("\"", "\\\""));
+                                //Object[] values = new Object[]{25010,104018,6,1,"(2008) (USA) (TV)"};
+                                //Record comp = new Record(values);
+                                Object[] parsed = MovieCompanies.toArray(MovieCompanies.parseCsv(line));
+                                Record record = new Record(parsed);
+
+                                return record;
+                            },
+                            DataUnitType.createBasic(String.class),
+                            DataUnitType.createBasicUnchecked(Record.class)
+                        ),
+                        DataSetType.createDefault(String.class),
+                        DataSetType.createDefault(new RecordType(MovieCompanies.getFields()))
+                    );
+
+                    MapOperator<Record, Record> projection = MapOperator.createProjection(
+                            (RecordType) ((TableSource) op).getType().getDataUnitType(),
+                            MovieCompanies.getFields()
+                    );
+
+                    assert projection.getOutputType().getDataUnitType().equals(((TableSource) op).getType().getDataUnitType());
+
+                    replacement.connectTo(0, parser, 0);
+                    parser.connectTo(0, projection, 0);
+                    System.out.println("Replacing: " + op);
+                    System.out.println("Type: " + ((TableSource) op).getType().getDataUnitType());
+                    System.out.println("Replacement Type: " + parser.getOutputType().getDataUnitType());
+
+                    OutputSlot.stealConnections(op, projection);
+                }*/
+
                 switch (tableName) {
-                    case "movie_companies":
-                        parser = new MapOperator<>(
+                    case "movie_companies": parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
+                                Record record = new Record(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
+                                return record;
                             },
                             String.class,
                             Record.class
@@ -176,8 +220,7 @@ public class IMDBJOBenchmark {
 
                     case "comp_cast_type":
                         parser = new MapOperator<>(
-                            (line) -> {
-                                return new Record(CompCastType.toArray(CompCastType.parseCsv(line)));
+                            (line) -> { return new Record(CompCastType.toArray(CompCastType.parseCsv(line)));
                             },
                             String.class,
                             Record.class
@@ -242,24 +285,12 @@ public class IMDBJOBenchmark {
                             String.class,
                             Record.class
                         );
-                        OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
-                        break;
-                    /*
-                    case "title":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new Record(Title.toArray(Title.parseCsv(line)));
-                            },
-                            String.class,
-                            Record.class
-                        );
+
                         OutputSlot.stealConnections(op, parser);
 
-                        replacement.connectTo(0, parser, 0);
                         break;
-                    */
                     case "cast_info":
                         parser = new MapOperator<>(
                             (line) -> {

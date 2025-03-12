@@ -60,6 +60,10 @@ public class Record implements Serializable, Copyable<Record> {
     }
 
     public Object getField(int index) {
+        if (index >= this.size()) {
+            System.out.println(this);
+        }
+
         return this.values[index];
     }
 

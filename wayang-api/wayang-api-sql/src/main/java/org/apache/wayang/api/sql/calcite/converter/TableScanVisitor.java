@@ -14,7 +14,7 @@ public class TableScanVisitor extends RelVisitor {
      * This visitor visits {@RelNode}s and collects {@link LogicalTableScan}.
      * Use by providing a root {@link RelNode} to
      * {@link #visit(RelNode, int, RelNode)}.
-     * 
+     *
      * @param catalog
      * @param tableNameToCounterMap
      * @param fieldIndexToTableMap

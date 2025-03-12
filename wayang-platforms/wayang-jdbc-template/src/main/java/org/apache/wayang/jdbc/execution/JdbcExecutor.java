@@ -120,6 +120,7 @@ public class JdbcExecutor extends ExecutorTemplate {
     @Override
     public void execute(final ExecutionStage stage, final OptimizationContext optimizationContext,
             final ExecutionState executionState) {
+
         final Collection<ExecutionTask> startTasks = stage.getStartTasks();
 
         // order all tasks by whether or not a given task is reachable from another
@@ -226,7 +227,8 @@ public class JdbcExecutor extends ExecutorTemplate {
                     .findFirst().orElse(validPipelineOperator.get(0)));
         }
 
-        final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
+        final String selectStatement = "*";
+        //final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
 
         final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins,
                 selectStatement);
@@ -400,6 +402,7 @@ public class JdbcExecutor extends ExecutorTemplate {
             }
         }
         sb.append(';');
+
         return sb.toString();
     }
 

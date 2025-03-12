@@ -30,12 +30,12 @@ case class MovieCompanies(
     movieId: Integer,
     companyId: Integer,
     companyTypeId: Integer,
-    note: Optional[String]
+    note: String
 ) extends Serializable
 
 object MovieCompanies extends Serializable {
 
-  val fields = IndexedSeq("id", "movie_id", "company_id", "company_type_id", "note")
+  val fields = Array("id", "movie_id", "company_id", "company_type_id", "note")
 
   /**
     * Parse a CSV row into a [[MovieCompanies]] instance.
@@ -58,20 +58,27 @@ object MovieCompanies extends Serializable {
         fields(1).toInt,
         fields(2).toInt,
         fields(3).toInt,
-        if (fields.length > 4) Optional.of(fields(4)) else Optional.empty()
+        if (fields.length > 4 && fields(4).nonEmpty) fields(4) else null.asInstanceOf[java.lang.String]
       )
     } catch {
-      case _: Throwable => throw new Exception("Exception: " + (csv.map(c => s"[$c]").mkString(", ")))
+      case e: Exception => {
+        e.printStackTrace;
+        throw new Exception("Exception: " + (csv.map(c => s"[$c]").mkString(", ")))
+      }
     }
 
   }
 
-  def toTuple(m: MovieCompanies): (Integer, Integer, Integer, Integer, Optional[String]) = {
+  def toTuple(m: MovieCompanies): (Integer, Integer, Integer, Integer, String) = {
     (m.id, m.movieId, m.companyId, m.companyTypeId, m.note)
   }
 
   def toArray(m: MovieCompanies) : Array[AnyRef] = {
     Array(m.id, m.movieId, m.companyId, m.companyTypeId, m.note)
+  }
+
+  def getFields(): Array[String] = {
+    fields
   }
 }
 

@@ -31,7 +31,7 @@ case class PersonInfo(
     personId: Integer,
     infoTypeId: Integer,
     info: String,
-    note: Optional[String]
+    note: String
 ) extends Serializable
 
 object PersonInfo extends Serializable {
@@ -58,11 +58,11 @@ object PersonInfo extends Serializable {
       fields(1).toInt,
       fields(2).toInt,
       fields(3),
-      if (fields.length > 4) Optional.of(fields(4)) else Optional.empty()
+      if (fields.length > 4 && fields(4).nonEmpty) fields(4) else null
     )
   }
 
-  def toTuple(p: PersonInfo): (Integer, Integer, Integer, String, Optional[String]) = {
+  def toTuple(p: PersonInfo): (Integer, Integer, Integer, String, String) = {
     (p.id, p.personId, p.infoTypeId, p.info, p.note)
   }
 

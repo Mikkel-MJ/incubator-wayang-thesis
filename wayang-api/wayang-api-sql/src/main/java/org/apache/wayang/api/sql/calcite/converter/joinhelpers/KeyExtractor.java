@@ -1,12 +1,15 @@
 package org.apache.wayang.api.sql.calcite.converter.joinhelpers;
 
-import java.util.function.Function;
-
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
+import java.util.function.Function;
+import java.util.Arrays;
+
 public class KeyExtractor<T> implements FunctionDescriptor.SerializableFunction<Record, T> {
     private final int index;
+
+    private String[] rowTypes;
 
     /**
      * Extracts a key for a joinOperator.
@@ -19,7 +22,17 @@ public class KeyExtractor<T> implements FunctionDescriptor.SerializableFunction<
         this.index = index;
     }
 
+    public KeyExtractor withRowType(String... rowTypes) {
+        this.rowTypes = rowTypes;
+
+        return this;
+    }
+
     public T apply(final Record record) {
+        /*
+        System.out.println("[Record]: " + record);
+        System.out.println("[RowType]: " + Arrays.toString(this.rowTypes));
+        System.out.println("[Index]: " + this.index);*/
         return (T) record.getField(index);
     }
 }

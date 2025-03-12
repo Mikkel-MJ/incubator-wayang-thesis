@@ -23,6 +23,7 @@ import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.flink.Flink;
@@ -170,7 +171,6 @@ public class JOBenchmark {
             );
             BufferedWriter writer = new BufferedWriter(fw);
 
-            final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
 
             System.out.println("Operators: " + operators.size());
 
