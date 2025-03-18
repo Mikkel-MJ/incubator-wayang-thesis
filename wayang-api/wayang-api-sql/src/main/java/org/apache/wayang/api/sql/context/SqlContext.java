@@ -29,11 +29,16 @@ import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.plan.RelOptRule;
 
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
@@ -127,12 +132,15 @@ public class SqlContext extends WayangContext {
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
                 WayangRules.WAYANG_AGGREGATE_RULE,
-                WayangRules.WAYANG_FILTER_INTO_JOIN_RULE);
+                WayangRules.WAYANG_FILTER_INTO_JOIN_RULE
+        );
 
         final RelNode wayangRel = optimizer.optimize(
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
+
+        System.out.println(wayangRel.explain());
 
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
@@ -178,8 +186,7 @@ public class SqlContext extends WayangContext {
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
-                WayangRules.WAYANG_FILTER_INTO_JOIN_RULE);
+                WayangRules.WAYANG_AGGREGATE_RULE);
 
         final RelNode wayangRel = optimizer.optimize(
                 relNode,

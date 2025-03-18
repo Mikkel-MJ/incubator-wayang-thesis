@@ -162,4 +162,4 @@ Even though this app is written in Scala, you can launch it in a regular JVM. Ru
   - admissible values: `slots`, `plans`, `plans2`, `none`, `random`
 - `wayang.core.optimizer.enumeration.invertconcatenations` invert the above mentioned enumeration order
   - admissible value: `false` (default), `true`
-  
+

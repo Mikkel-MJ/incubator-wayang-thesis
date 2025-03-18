@@ -94,6 +94,11 @@ public class JOBenchmark {
             config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
             config.setProperty("spark.driver.maxResultSize", "8G");
             config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty(
+                "wayang.core.optimizer.pruning.strategies",
+                "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy,org.apache.wayang.core.optimizer.enumeration.LatentOperatorPruningStrategy"
+            );
+            config.setProperty("wayang.core.optimizer.pruning.topk", "100");
 
             final String calciteModel = "{\n" +
                     "    \"version\": \"1.0\",\n" +

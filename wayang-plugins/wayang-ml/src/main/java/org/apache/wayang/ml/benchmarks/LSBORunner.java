@@ -56,6 +56,7 @@ import org.apache.wayang.ml.training.GeneratableJob;
 import org.apache.wayang.ml.benchmarks.IMDBJOBenchmark;
 import org.apache.wayang.ml.benchmarks.JOBenchmark;
 import org.apache.wayang.ml.util.Jobs;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -86,8 +87,8 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
@@ -119,30 +120,26 @@ public class LSBORunner {
         config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
 
         config.setProperty("spark.master", "spark://spark-cluster:7077");
-        config.setProperty("spark.app.name", "LSBO Query " + args[2]);
-        config.setProperty("spark.executor.memory", "16g");
+        config.setProperty("spark.app.name", "JOB Query");
+        config.setProperty("spark.rpc.message.maxSize", "2047");
+        config.setProperty("spark.executor.memory", "32g");
         config.setProperty("wayang.flink.mode.run", "distribution");
         config.setProperty("wayang.flink.parallelism", "8");
         config.setProperty("wayang.flink.master", "flink-cluster");
         config.setProperty("wayang.flink.port", "7071");
         config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
-        config.setProperty("spark.executor.memory", "16g");
-        config.setProperty("spark.driver.maxResultSize", "4G");
+        config.setProperty("spark.driver.maxResultSize", "8G");
+        config.setProperty("wayang.ml.experience.enabled", "false");
+        config.setProperty(
+            "wayang.core.optimizer.pruning.strategies",
+            "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy,org.apache.wayang.core.optimizer.enumeration.LatentOperatorPruningStrategy"
+        );
+        config.setProperty("wayang.core.optimizer.pruning.topk", "100");
 
-        String[] jars = new String[]{
-            ReflectionUtils.getDeclaringJar(LSBORunner.class),
-            ReflectionUtils.getDeclaringJar(Query1Wayang.class),
-            ReflectionUtils.getDeclaringJar(Query3.class),
-            ReflectionUtils.getDeclaringJar(Query5.class),
-            ReflectionUtils.getDeclaringJar(Query6.class),
-            ReflectionUtils.getDeclaringJar(Query10.class),
-            ReflectionUtils.getDeclaringJar(Query12.class),
-            ReflectionUtils.getDeclaringJar(Query14.class),
-            ReflectionUtils.getDeclaringJar(Query19.class),
-            ReflectionUtils.getDeclaringJar(DataQuanta.class),
-            ReflectionUtils.getDeclaringJar(JOBenchmark.class),
-            ReflectionUtils.getDeclaringJar(IMDBJOBenchmark.class),
-        };
+        String[] jars = ArrayUtils.addAll(
+            ReflectionUtils.getAllJars(LSBORunner.class),
+            ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
+        );
 
         /*
         HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);
@@ -150,7 +147,7 @@ public class LSBORunner {
 
         try {
             //WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
-            WayangPlan plan = getJOBPlan(plugins, config, args[2], jars);
+            WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
 
             //Set sink to be on Java
             /*
@@ -165,10 +162,10 @@ public class LSBORunner {
 
     }
 
-    private static WayangPlan getJOBPlan(List<Plugin> plugins, Configuration config, String queryPath, String[] jars) {
+    private static WayangPlan getJOBPlan(List<Plugin> plugins, String dataPath, Configuration config, String queryPath, String[] jars) {
         try {
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(queryPath, config, plugins.toArray(Plugin[]::new), jars);
-            IMDBJOBenchmark.setSources(plan, queryPath);
+            IMDBJOBenchmark.setSources(plan, dataPath);
 
             return plan;
         } catch (Exception e) {

@@ -55,7 +55,13 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.plan.RelOptRule;
 
+import org.apache.wayang.api.sql.calcite.rules.WayangRules;
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.api.sql.calcite.converter.WayangRelConverter;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
@@ -65,8 +71,10 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Collectors;
 import java.util.Properties;
 
 public class Optimizer {
