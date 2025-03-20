@@ -57,6 +57,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
     @Override
     Operator visit(final WayangAggregate wayangRelNode) {
+        System.out.println("agg visiting: " + wayangRelNode);
         final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
         final SqlImplementor.Context relContext = decompiler.visitInput(wayangRelNode, 0).qualifiedContext();
         final SqlBasicCall sqlCondition = (SqlBasicCall) relContext.toSql(wayangRelNode.getAggCallList().get(0));
@@ -133,7 +134,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
             aggregateOperator = new GlobalReduceOperator<Record>(reduceDescriptor);
         }
-
+        System.out.println("agg created: " + aggregateOperator);
         mapOperator.connectTo(0, aggregateOperator, 0);
 
         final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(
