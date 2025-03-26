@@ -24,13 +24,14 @@ import org.apache.wayang.core.util.ReflectionUtils;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * A Type that represents a record with a schema, might be replaced with something standard like JPA entity.
  */
-public class Record implements Serializable, Copyable<Record> {
+public class Record implements Serializable, Copyable<Record>, Comparable<Record> {
 
-    private Object[] values;
+    private final Object[] values;
 
     public Record(Object... values) {
         this.values = values;
@@ -61,6 +62,10 @@ public class Record implements Serializable, Copyable<Record> {
 
     public Object getField(int index) {
         return this.values[index];
+    }
+
+    public Stream<Object> stream(){
+        return Arrays.stream(values).sequential();
     }
 
     /**
@@ -123,4 +128,23 @@ public class Record implements Serializable, Copyable<Record> {
         return this.values.length;
     }
 
+
+    //TODO: write tests for this
+    //TODO: for udfs using this it will always sort in one direction, we need to be able to sort in both ascending and descending order
+    @Override
+    public int compareTo(Record that) {
+        assert (this.size() == that.size()) : "Cannot compare this record: " + this + ", with that record: " + that + ", due to size mismatch.";
+
+        for (int i = 0; i < this.size(); i++) {
+            assert (this.values[i] instanceof Comparable && that.values[i] instanceof Comparable) : "Attempted to sort on two objects that were not comparable, see, this.values: " + this.values + ", that.values: " + that.values;
+            final Comparable<Object> thisField = (Comparable<Object>) this.values[i]; //TODO: this unchecked cast could probably be circumvented by better type management
+            final int comparison = thisField.compareTo(that.values[i]);
+            
+            if (comparison != 0) {
+                return comparison;
+            }
+        }
+
+        return 1;
+    }
 }
