@@ -133,18 +133,12 @@ public class Record implements Serializable, Copyable<Record>, Comparable<Record
     //TODO: for udfs using this it will always sort in one direction, we need to be able to sort in both ascending and descending order
     @Override
     public int compareTo(Record that) {
-        assert (this.size() == that.size()) : "Cannot compare this record: " + this + ", with that record: " + that + ", due to size mismatch.";
+        System.out.println("that: " + that);
+        assert (this.size() == 1 && that.size() == 1) : "Cannot compare this record: " + this + ", with that record: " + that + ", due to size mismatch.";
 
-        for (int i = 0; i < this.size(); i++) {
-            assert (this.values[i] instanceof Comparable && that.values[i] instanceof Comparable) : "Attempted to sort on two objects that were not comparable, see, this.values: " + this.values + ", that.values: " + that.values;
-            final Comparable<Object> thisField = (Comparable<Object>) this.values[i]; //TODO: this unchecked cast could probably be circumvented by better type management
-            final int comparison = thisField.compareTo(that.values[i]);
-            
-            if (comparison != 0) {
-                return comparison;
-            }
-        }
-
-        return 1;
+        final Comparable<Object> thisField = (Comparable<Object>) this.values[0]; //TODO: this unchecked cast could probably be circumvented by better type management
+        final int comparison = thisField.compareTo(that.values[0]);
+        
+        return thisField.compareTo(comparison);
     }
 }
