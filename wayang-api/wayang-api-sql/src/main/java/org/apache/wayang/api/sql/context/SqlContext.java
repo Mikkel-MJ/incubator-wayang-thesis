@@ -33,6 +33,11 @@ import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.rules.*;
+import org.apache.calcite.plan.hep.HepRelVertex;
+import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.volcano.RelSubset;
 
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
@@ -59,6 +64,7 @@ import java.util.Collection;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
+import java.util.LinkedList;
 
 public class SqlContext extends WayangContext {
 
@@ -120,25 +126,30 @@ public class SqlContext extends WayangContext {
 
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
+        System.out.println(relNode.explain());
+
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(relNode, 0, null);
 
         final AliasFinder aliasFinder = new AliasFinder(visitor);
 
-        final RuleSet rules = RuleSets.ofList(
+        final RuleSet wayangRules = RuleSets.ofList(
+                CoreRules.FILTER_INTO_JOIN_DUMB,
+                //CoreRules.MULTI_JOIN_OPTIMIZE,
+                CoreRules.JOIN_COMMUTE,
+                CoreRules.JOIN_ASSOCIATE,
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
-                WayangRules.WAYANG_FILTER_INTO_JOIN_RULE
+                WayangRules.WAYANG_AGGREGATE_RULE
         );
 
         final RelNode wayangRel = optimizer.optimize(
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
-                rules);
+                wayangRules);
 
         System.out.println(wayangRel.explain());
 

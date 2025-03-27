@@ -135,7 +135,6 @@ public class FlinkExecutor extends PushExecutorTemplate {
                 this.logger.info("{} was not executed eagerly as requested.", task);
             }else {
                 try {
-                    //TODO validate the execute in different contexts
                     this.fee.execute();
                 } catch (Exception e) {
                     throw new WayangException(e);

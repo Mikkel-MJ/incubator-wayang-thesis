@@ -11,4 +11,22 @@ FROM postgres.cast_info AS ci,
      postgres.movie_keyword AS mk,
      postgres.name AS n,
      postgres.title AS t
-WHERE     it1.info = 'LD language'     AND it2.info = 'top 250 rank'     AND mi.info = 'English'     AND n.gender = 'f'     AND t.id = mi.movie_id     AND t.id = mi_idx.movie_id     AND t.id = ci.movie_id     AND t.id = mk.movie_id     AND ci.movie_id = mi.movie_id     AND ci.movie_id = mi_idx.movie_id     AND ci.movie_id = mk.movie_id     AND mi.movie_id = mi_idx.movie_id     AND mi.movie_id = mk.movie_id     AND mi_idx.movie_id = mk.movie_id     AND n.id = ci.person_id     AND it1.id = mi.info_type_id     AND it2.id = mi_idx.info_type_id     AND k.id = mk.keyword_id;
+WHERE
+    it1.info = 'LD language'
+    AND it2.info = 'top 250 rank'
+    AND mi.info = 'English'
+    AND n.gender = 'f'
+    AND t.id = mi.movie_id
+    AND t.id = mi_idx.movie_id
+    AND t.id = ci.movie_id
+    AND t.id = mk.movie_id
+    AND ci.movie_id = mi.movie_id
+    AND ci.movie_id = mi_idx.movie_id
+    AND ci.movie_id = mk.movie_id
+    AND mi.movie_id = mi_idx.movie_id
+    AND mi.movie_id = mk.movie_id
+    AND mi_idx.movie_id = mk.movie_id
+    AND n.id = ci.person_id
+    AND it1.id = mi.info_type_id
+    AND it2.id = mi_idx.info_type_id
+    AND k.id = mk.keyword_id;

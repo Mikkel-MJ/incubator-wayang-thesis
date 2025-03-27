@@ -78,7 +78,6 @@ public class FlinkObjectFileSink<Type> extends ObjectFileSink<Type> implements F
             targetPath = this.textFileUrl;
         }
 
-        //TODO: remove the set parallelism 1
         DataSetChannel.Instance input = (DataSetChannel.Instance) inputs[0];
         final DataSink<Type> tDataSink = input.<Type>provideDataSet()
                 .write(new WayangFileOutputFormat<Type>(targetPath), targetPath, FileSystem.WriteMode.OVERWRITE)

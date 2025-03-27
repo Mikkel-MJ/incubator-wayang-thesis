@@ -27,6 +27,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.RelOptSchema;
@@ -72,6 +73,7 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -146,8 +148,16 @@ public class Optimizer {
                 validatorConfig);
 
         VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
-        planner.addRule(CoreRules.FILTER_INTO_JOIN);
+
+        // Set up the trait def (mandatory in VolcanoPlanner)
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+
+        // Add some core rules
+        planner.addRule(CoreRules.FILTER_INTO_JOIN);
+        planner.addRule(CoreRules.MULTI_JOIN_OPTIMIZE);
+
+        // Create an empty trait set
+        RelTraitSet traitSet = planner.emptyTraitSet().replace(Convention.NONE);
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
@@ -309,5 +319,28 @@ public class Optimizer {
             configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
             return configProperties;
         }
+    }
+
+    /**
+     * This method prepares the RelNode tree for Wayang as there are certain
+     * operations
+     * that Wayang cannot yet handle, this includes
+     * {@link WayangMultiConditionJoinSplitRule}
+     *
+     * @param node
+     * @param rules
+     * @return
+     */
+    public RelNode prepare(final RelNode node, Collection<RelOptRule> rules) {
+        // use hep as it doesnt take cost into consideration while volcano planner does.
+        final HepProgramBuilder programBuilder = HepProgram.builder();
+        //programBuilder.addRuleInstance(rule);
+        programBuilder.addRuleCollection(rules);
+
+        final HepProgram program = programBuilder.build();
+        final HepPlanner planner = new HepPlanner(program);
+        planner.setRoot(node);
+
+        return planner.findBestExp();
     }
 }
