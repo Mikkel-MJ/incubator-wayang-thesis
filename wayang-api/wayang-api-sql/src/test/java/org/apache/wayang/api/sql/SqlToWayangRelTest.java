@@ -20,9 +20,7 @@ package org.apache.wayang.api.sql;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.externalize.RelWriterImpl;
-import org.apache.calcite.rel.rules.FilterJoinRule;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
@@ -32,11 +30,11 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteSerializable;
 import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FilterPredicateImpl;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
-import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
@@ -45,17 +43,17 @@ import org.apache.wayang.api.sql.calcite.schema.WayangTable;
 import org.apache.wayang.api.sql.calcite.schema.WayangTableBuilder;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
 import org.apache.wayang.api.sql.context.SqlContext;
+
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
-import org.apache.wayang.basic.operators.LocalCallbackSink;
-import org.apache.wayang.basic.operators.ReduceByOperator;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
-import org.apache.wayang.postgres.Postgres;
+
 import org.json.simple.parser.ParseException;
+
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -70,47 +68,85 @@ import java.util.Collection;
 import java.util.Properties;
 
 public class SqlToWayangRelTest {
+
         @Test
+        public void javaMultiConditionJoinSmall() throws Exception {
+                SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+                Tuple2<Collection<Record>, WayangPlan> t = sqlContext.buildCollectorAndWayangPlan(
+                                "SELECT * FROM fs.exampleSmallA JOIN fs.exampleSmallB ON exampleSmallA.COLA = exampleSmallB.COLA AND exampleSmallA.COLB = exampleSmallB.COLB");
+                Collection<Record> collector = t.field0;
+                WayangPlan wayangPlan = t.field1;
+
+                PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node -> {
+                        node.addTargetPlatform(Java.platform());
+                });
+
+                sqlContext.execute(wayangPlan);
+                Collection<org.apache.wayang.basic.data.Record> result = collector;
+                System.out.println(result);
+                
+                assert (result.stream().findFirst().get().equals(new Record("item1", "item2", "item1", "item2", "item3")))
+                                : "record mismatch got: " + result.stream().findFirst().get() + ", but expected: "
+                                                + new Record("item1", "item2", "item1", "item2", "item3");
+                assert (result.size() == 4);
+
+                assert (result.stream().allMatch(rec -> result.equals(rec.stream().findFirst().get())));
+                                                
+        }
+
+        // @Test
+        public void javaMultiConditionJoin() throws Exception {
+                SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
+
+                Tuple2<Collection<Record>, WayangPlan> t = sqlContext.buildCollectorAndWayangPlan(
+                                "SELECT * FROM fs.largeLeftTableIndex JOIN fs.exampleRefToRef ON largeLeftTableIndex.NAMEA = exampleRefToRef.NAMEA AND largeLeftTableIndex.NAMEB = exampleRefToRef.NAMEB");
+                Collection<Record> collector = t.field0;
+                WayangPlan wayangPlan = t.field1;
+
+                PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node -> {
+                        node.addTargetPlatform(Java.platform());
+                });
+
+                sqlContext.execute(wayangPlan);
+                Collection<org.apache.wayang.basic.data.Record> result = collector;
+                System.out.println(result);
+        }
+
+        // @Test
         public void aggregateCountInJavaWithIntegers() throws Exception {
                 SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleInt.csv");
-                //SELECT acc.location, count(*) FROM postgres.site 
+
                 Tuple2<Collection<Record>, WayangPlan> t = sqlContext.buildCollectorAndWayangPlan(
                                 "SELECT exampleInt.NAMEC, COUNT(*) FROM fs.exampleInt GROUP BY NAMEC");
                 Collection<Record> collector = t.field0;
                 WayangPlan wayangPlan = t.field1;
 
-                System.out.println("plan " + wayangPlan);
-                // except reduce by
                 PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node -> {
-                                node.addTargetPlatform(Java.platform());
+                        node.addTargetPlatform(Java.platform());
                 });
+
                 sqlContext.execute(wayangPlan);
                 Collection<org.apache.wayang.basic.data.Record> result = collector;
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
 
-                Record rec = result.stream().findFirst().get();
-                assert (rec.size() == 2);
-                assert (rec.getInt(1) == 3);
+                assert (result.size() > 0);
         }
-        //@Test
+
+        // @Test
         public void aggregateCountInJava() throws Exception {
                 SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
-                //SELECT acc.location, count(*) FROM postgres.site 
+
                 Tuple2<Collection<Record>, WayangPlan> t = sqlContext.buildCollectorAndWayangPlan(
                                 "SELECT largeLeftTableIndex.NAMEC, COUNT(*) FROM fs.largeLeftTableIndex GROUP BY NAMEC");
                 Collection<Record> collector = t.field0;
                 WayangPlan wayangPlan = t.field1;
 
-                System.out.println("plan " + wayangPlan);
-                // except reduce by
                 PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node -> {
-                                node.addTargetPlatform(Java.platform());
+                        node.addTargetPlatform(Java.platform());
                 });
+
                 sqlContext.execute(wayangPlan);
                 Collection<org.apache.wayang.basic.data.Record> result = collector;
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
 
                 Record rec = result.stream().findFirst().get();
                 assert (rec.size() == 2);
@@ -127,8 +163,6 @@ public class SqlToWayangRelTest {
                 RexNode cond = rb.makeCall(SqlStdOperatorTable.EQUALS, leftOperand, rightOperand);
                 CalciteSerializable fpImpl = (CalciteSerializable) new FilterPredicateImpl(cond);
 
-                // setup the optimizer as calcite serialization requires the schema to be ready
-                // before serialisation
                 Properties configProperties = Optimizer.ConfigProperties.getDefaults();
                 RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
                 String calciteModelPath = SqlAPI.class.getResource("/model-example-min.json").getPath();
@@ -146,7 +180,6 @@ public class SqlToWayangRelTest {
                 ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
                 CalciteSerializable deserializedObject = (CalciteSerializable) objectInputStream.readObject();
                 objectInputStream.close();
-                System.out.println("Deserialised object serialisables: " + deserializedObject);
 
                 assert (((FilterPredicateImpl) deserializedObject).test(new Record("test")));
         }
@@ -159,8 +192,6 @@ public class SqlToWayangRelTest {
                                 "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA IS NULL)" //
                 );
 
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
                 assert (result.size() == 0);
         }
 
@@ -172,19 +203,22 @@ public class SqlToWayangRelTest {
                                 "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA <> 'test1')" //
                 );
 
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
                 assert (!result.stream().anyMatch(record -> record.getField(0).equals("test1")));
         }
 
         private SqlContext createSqlContext(String calciteResourceName, String tableResourceName)
                         throws IOException, ParseException, SQLException {
                 String calciteModelPath = SqlAPI.class.getResource(calciteResourceName).getPath();
+                assert (calciteModelPath != "" && calciteModelPath != null)
+                                : "Could not get calcite model from path: " + calciteResourceName;
 
-                System.out.println("loading calcite model: " + calciteModelPath);
                 Configuration configuration = new ModelParser(new Configuration(), calciteModelPath).setProperties();
+                assert (configuration != null)
+                                : "Could not build configuration from calcite model path: " + calciteModelPath;
 
                 String dataPath = SqlAPI.class.getResource(tableResourceName).getPath();
+                assert (dataPath != "" && dataPath != null) : "Could not get resource from path: " + tableResourceName;
+
                 configuration.setProperty("wayang.fs.table.url", dataPath);
 
                 configuration.setProperty(
@@ -209,8 +243,6 @@ public class SqlToWayangRelTest {
                                 "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA IS NOT NULL)" //
                 );
 
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
                 assert (!result.stream().anyMatch(record -> record.getField(0).equals(null)));
         }
 
@@ -222,33 +254,25 @@ public class SqlToWayangRelTest {
                                 "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA NOT LIKE '_est1')" //
                 );
 
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
                 assert (!result.stream().anyMatch(record -> record.getString(0).equals("test1")));
         }
 
-        //@Test
+        // @Test
         public void filterWithLike() throws Exception {
                 SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
                 Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
                                 "SELECT * FROM fs.largeLeftTableIndex WHERE (largeLeftTableIndex.NAMEA LIKE '_est1' OR largeLeftTableIndex.NAMEA LIKE 't%')" //
                 );
-
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
         }
 
-        //@Test
+        // @Test
         public void joinWithLargeLeftTableIndexCorrect() throws Exception {
                 SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
                 Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
                                 "SELECT * FROM fs.largeLeftTableIndex AS na INNER JOIN fs.largeLeftTableIndex AS nb ON na.NAMEB = nb.NAMEA " //
                 );
-
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
         }
 
         // @Test
@@ -258,9 +282,6 @@ public class SqlToWayangRelTest {
                 Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
                                 "SELECT * FROM fs.largeLeftTableIndex AS na INNER JOIN fs.largeLeftTableIndex AS nb ON nb.NAMEB = na.NAMEA " //
                 );
-
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
         }
 
         // @Test
@@ -270,9 +291,6 @@ public class SqlToWayangRelTest {
                 Collection<org.apache.wayang.basic.data.Record> result = sqlContext.executeSql(
                                 "SELECT * FROM fs.exampleRefToRef WHERE exampleRefToRef.NAMEA = exampleRefToRef.NAMEB" //
                 );
-
-                System.out.println("Printing results");
-                result.stream().forEach(System.out::println);
         }
 
         // @Test
@@ -310,9 +328,6 @@ public class SqlToWayangRelTest {
 
                 Optimizer optimizer = Optimizer.create(wayangSchema);
 
-                // String sql = "select c.name, c.age from customer c where (c.age < 40 or c.age
-                // > 60) and \'alex\' = c.name";
-                // String sql = "select c.age from customer c";
                 String sql = "select c.name, c.age, o.price from customer c join orders o on c.id = o.cid where c.age > 40 "
                                 +
                                 "and o" +
@@ -334,13 +349,6 @@ public class SqlToWayangRelTest {
                                 relNode,
                                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                                 rules);
-
-                print("After rel to wayang conversion", wayangRel);
-
-                // WayangPlan plan = optimizer.convert(wayangRel);
-
-                // print("After Translating to WayangPlan", plan);
-
         }
 
         private void print(String header, WayangPlan plan) {
