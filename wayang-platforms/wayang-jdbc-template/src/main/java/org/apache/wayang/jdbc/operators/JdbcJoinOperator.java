@@ -29,7 +29,12 @@ import org.apache.wayang.core.optimizer.costs.LoadProfileEstimator;
 import org.apache.wayang.core.optimizer.costs.LoadProfileEstimators;
 
 import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * PostgreSQL implementation for the {@link JoinOperator}.
@@ -44,8 +49,8 @@ public abstract class JdbcJoinOperator<KeyType>
      * @see JoinOperator#JoinOperator(Record, Record...)
      */
     public JdbcJoinOperator(
-            TransformationDescriptor<Record, KeyType> keyDescriptor0,
-            TransformationDescriptor<Record, KeyType> keyDescriptor1) {
+            final TransformationDescriptor<Record, KeyType> keyDescriptor0,
+            final TransformationDescriptor<Record, KeyType> keyDescriptor1) {
         super(
                 keyDescriptor0,
                 keyDescriptor1,
@@ -58,14 +63,41 @@ public abstract class JdbcJoinOperator<KeyType>
      *
      * @param that that should be copied
      */
-    public JdbcJoinOperator(JoinOperator<Record, Record, KeyType> that) {
+    public JdbcJoinOperator(final JoinOperator<Record, Record, KeyType> that) {
         super(that);
     }
 
     @Override
-    public String createSqlClause(Connection connection, FunctionCompiler compiler) {
+    public String createSqlClause(final Connection connection, final FunctionCompiler compiler) {
         final Tuple<String, String> left = this.keyDescriptor0.getSqlImplementation();
         final Tuple<String, String> right = this.keyDescriptor1.getSqlImplementation();
+
+        System.out.println("left pslit test: " + left.field1.split(",").length);
+        System.out.println("jdbc sqlclause:");
+        System.out.println("left: " + left);
+        System.out.println("right: " + right);
+
+        if (left.field1.split(",").length > 1) {
+            final String[] leftConditions = left.field1.split(",");
+            final String[] rightConditions = right.field1.split(",");
+
+            final String leftTable = left.field0.split(" AS ")[0].strip();
+            final String rightTable = right.field0.split(" AS ")[0].strip();
+
+            final int amountOfConditions = left.field1.split(",").length;
+            final List<String> conditionStatements = new ArrayList<>();
+
+            for (int i = 0; i < amountOfConditions; i++) {
+                final String lhs = leftConditions[i];
+                final String rhs = rightConditions[i];
+
+                conditionStatements.add(lhs + "=" + rhs);
+            }
+            
+            return left.field0.contains(" AS ") 
+                    ? "JOIN " + leftTable + " AS " + leftTable + " ON " + conditionStatements.stream().collect(Collectors.joining(" AND "))
+                    : "JOIN " + rightTable + " AS " + rightTable + " ON " + conditionStatements.stream().collect(Collectors.joining(" AND "));
+        }
 
         // LHS of join condition:
         final String leftTableName = left.field0.strip();
@@ -74,7 +106,6 @@ public abstract class JdbcJoinOperator<KeyType>
         // RHS of join condition
         final String rightTableName = right.field0.strip();
         final String rightKey = right.field1.strip();
-
 
         // TODO: this aliasing should be handled more smoothly mb it could be a field?
         if (leftTableName.contains(" AS ")) {
@@ -96,7 +127,7 @@ public abstract class JdbcJoinOperator<KeyType>
     }
 
     @Override
-    public Optional<LoadProfileEstimator> createLoadProfileEstimator(Configuration configuration) {
+    public Optional<LoadProfileEstimator> createLoadProfileEstimator(final Configuration configuration) {
         final Optional<LoadProfileEstimator> optEstimator = JdbcExecutionOperator.super.createLoadProfileEstimator(
                 configuration);
         LoadProfileEstimators.nestUdfEstimator(optEstimator, this.keyDescriptor0, configuration);
