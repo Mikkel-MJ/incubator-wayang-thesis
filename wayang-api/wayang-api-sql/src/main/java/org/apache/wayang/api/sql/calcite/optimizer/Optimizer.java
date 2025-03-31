@@ -153,8 +153,7 @@ public class Optimizer {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
         // Add some core rules
-        planner.addRule(CoreRules.FILTER_INTO_JOIN);
-        planner.addRule(CoreRules.MULTI_JOIN_OPTIMIZE);
+        //planner.addRule(CoreRules.FILTER_INTO_JOIN);
 
         // Create an empty trait set
         RelTraitSet traitSet = planner.emptyTraitSet().replace(Convention.NONE);
