@@ -18,13 +18,14 @@
 package org.apache.wayang.api.sql.calcite.rel;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 
 import java.util.Set;
 
@@ -50,6 +51,26 @@ public class WayangJoin extends Join implements WayangRel {
             JoinRelType joinType,
             boolean semiJoinDone) {
         return new WayangJoin(getCluster(), relTraitSet, left, right, condition, variablesSet, joinType);
+    }
+
+    @Override
+    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        // Check if the condition is a literal "true"
+        if (condition.isAlwaysTrue()) {
+            //CustomCostFactory costFactory = (CustomCostFactory) planner.getCostFactory();
+            RelOptCostFactory costFactory = planner.getCostFactory();
+
+            return costFactory.makeInfiniteCost(); // Custom low cost for this specific case
+        }
+
+        if (condition.isA(SqlKind.AND)) {
+            RelOptCostFactory costFactory = planner.getCostFactory();
+
+            return costFactory.makeInfiniteCost(); // Custom low cost for this specific case
+        }
+
+        // Default cost (inherit from parent class)
+        return super.computeSelfCost(planner, mq);
     }
 
     @Override
