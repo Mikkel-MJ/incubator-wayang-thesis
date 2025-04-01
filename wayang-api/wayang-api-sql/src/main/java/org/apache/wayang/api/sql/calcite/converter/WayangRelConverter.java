@@ -32,15 +32,18 @@ public class WayangRelConverter {
     public WayangRelConverter(final Configuration configuration) {
         this.configuration = configuration;
     }
-    
+
     public WayangRelConverter() {
         this.configuration = null;
     }
 
     /**
-     * Some visitors may rely on configuration like the {@link WayangTableScanVisitor}, that uses it
+     * Some visitors may rely on configuration like the
+     * {@link WayangTableScanVisitor}, that uses it
      * to specify its calcite schema when fetching from files on disk
-     * @return {@link Configuration}, or null if {@link WayangRelConverter} is not constructed with one.
+     * 
+     * @return {@link Configuration}, or null if {@link WayangRelConverter} is not
+     *         constructed with one.
      */
     public Configuration getConfiguration() {
         return configuration;
@@ -54,7 +57,9 @@ public class WayangRelConverter {
         } else if (node instanceof WayangFilter) {
             return new WayangFilterVisitor(this, aliasFinder).visit((WayangFilter) node);
         } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isA(SqlKind.AND)) {
-            return new WayangMultiJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
+            return new WayangMultiConditionJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
+        } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isAlwaysTrue()) {
+            return new WayangCrossJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
         } else if (node instanceof WayangJoin) {
             return new WayangJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
         } else if (node instanceof WayangAggregate) {
