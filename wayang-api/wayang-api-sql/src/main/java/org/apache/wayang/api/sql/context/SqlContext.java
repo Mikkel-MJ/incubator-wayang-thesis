@@ -135,13 +135,13 @@ public class SqlContext extends WayangContext {
 
         final RuleSet wayangRules = RuleSets.ofList(
             CoreRules.FILTER_INTO_JOIN,
-            CoreRules.FILTER_MERGE,
-            CoreRules.FILTER_AGGREGATE_TRANSPOSE,
-            CoreRules.JOIN_COMMUTE,
-            CoreRules.JOIN_COMMUTE_OUTER,
+            //CoreRules.FILTER_MERGE,
+            //CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+            //CoreRules.JOIN_COMMUTE,
+            //CoreRules.JOIN_COMMUTE_OUTER,
             CoreRules.JOIN_ASSOCIATE,
-            CoreRules.JOIN_TO_MULTI_JOIN,  // Treats joins together
-            CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW,
+            //CoreRules.JOIN_TO_MULTI_JOIN,  // Treats joins together
+            //CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW,
             WayangRules.WAYANG_TABLESCAN_RULE,
             WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
             WayangRules.WAYANG_PROJECT_RULE,
