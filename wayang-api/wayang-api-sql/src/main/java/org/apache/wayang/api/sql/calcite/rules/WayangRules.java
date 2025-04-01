@@ -91,7 +91,6 @@ public class WayangRules {
         }
 
         public RelNode convert(final RelNode rel) {
-            System.out.println("convert project: " + rel);
             final LogicalProject project = (LogicalProject) rel;
 
             return new WayangProject(
@@ -117,7 +116,6 @@ public class WayangRules {
 
         @Override
         public RelNode convert(final RelNode rel) {
-            System.out.println("convert filter: " + rel);
             final LogicalFilter filter = (LogicalFilter) rel;
 
             return new WayangFilter(
@@ -149,7 +147,6 @@ public class WayangRules {
 
         @Override
         public @Nullable RelNode convert(final RelNode relNode) {
-            System.out.println("convert table scan: " + relNode);
             final TableScan scan = (TableScan) relNode;
             final RelOptTable relOptTable = scan.getTable();
 
@@ -183,7 +180,6 @@ public class WayangRules {
 
         @Override
         public @Nullable RelNode convert(final RelNode relNode) {
-            System.out.println("convert join: " + relNode);
             final LogicalJoin join = (LogicalJoin) relNode;
 
             if (join.getCondition().isA(SqlKind.AND)) {
@@ -276,7 +272,6 @@ public class WayangRules {
 
         @Override
         public @Nullable RelNode convert(final RelNode relNode) {
-            System.out.println("convert aggregate");
             final LogicalAggregate aggregate = (LogicalAggregate) relNode;
             final RelNode input = convert(aggregate.getInput(),
                     aggregate.getInput().getTraitSet().replace(WayangConvention.INSTANCE));

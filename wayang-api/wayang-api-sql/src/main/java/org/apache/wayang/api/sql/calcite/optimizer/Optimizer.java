@@ -151,6 +151,7 @@ public class Optimizer {
 
         // Set up the trait def (mandatory in VolcanoPlanner)
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        planner.setNoneConventionHasInfiniteCost(true);
 
         // Add some core rules
         //planner.addRule(CoreRules.FILTER_INTO_JOIN);
