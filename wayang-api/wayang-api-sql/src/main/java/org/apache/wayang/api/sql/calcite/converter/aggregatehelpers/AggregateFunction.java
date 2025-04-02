@@ -15,15 +15,11 @@ public class AggregateFunction extends CalciteAggSerializable
         implements FunctionDescriptor.SerializableBinaryOperator<Record> {
     public AggregateFunction(final List<AggregateCall> aggregateCalls) {
         super(aggregateCalls.toArray(AggregateCall[]::new));
-        System.out.println("agg func created");
-
     }
 
     @Override
     public Record apply(final Record record1, final Record record2) {
-        System.out.println("applying agg func: ");
         final List<AggregateCall> aggregateCalls = Arrays.asList(super.serializables);
-        System.out.println("agg call list size: " + aggregateCalls.size());
         final int l = record1.size();
         final Object[] resValues = new Object[l];
         final boolean countDone = false;
@@ -33,15 +29,10 @@ public class AggregateFunction extends CalciteAggSerializable
         }
 
         int counter = l - aggregateCalls.size() - 1;
-        System.out.println("counter: " + counter);
         for (final AggregateCall aggregateCall : aggregateCalls) {
             final Object field1 = record1.getField(counter);
             final Object field2 = record2.getField(counter);
 
-            System.out.println("record1: " + record1);
-            System.out.println("record2: " + record2);
-            System.out.println("field1: " + field1);
-            System.out.println("field2: " + field2);
             switch (aggregateCall.getAggregation().kind) {
                 case SUM:
                     resValues[counter] = this.castAndMap(field1, field2, null, Long::sum, Integer::sum, Double::sum);
@@ -56,24 +47,22 @@ public class AggregateFunction extends CalciteAggSerializable
                     break;
                 case COUNT:
                     Object obj = this.castAndMap(field1, field2,
-                    (a, b) -> (a != null ? 1 : 0) + (b != null ? 1 : 0),
-                    (a, b) -> (a != null ? 1 : 0) + (b != null ? 1 : 0),
-                    (a, b) -> a+b,
-                    (a, b) -> (a != null ? 1 : 0) + (b != null ? 1 : 0));
-                    System.out.println("writing to results: " + Arrays.toString(resValues) + ", at: " + counter + ", obj: " + obj);
+                            (a, b) -> (a != null ? 1 : 0) + (b != null ? 1 : 0),
+                            (a, b) -> (a != null ? 1 : 0) + (b != null ? 1 : 0),
+                            (a, b) -> a + b,
+                            (a, b) -> (a != null ? 1 : 0) + (b != null ? 1 : 0));
                     resValues[counter] = obj;
                     break;
                 case AVG:
                     throw new UnsupportedOperationException("Averages not currently supported");
-                    //resValues[counter] = this.castAndMap(field1, field2, null, null, null, null);
-                    //break;
+                // resValues[counter] = this.castAndMap(field1, field2, null, null, null, null);
+                // break;
                 default:
                     throw new IllegalStateException("Unsupported operation: " + aggregateCall.getAggregation().kind);
             }
             counter++;
         }
 
-        System.out.println("returning: " + Arrays.toString(resValues));
         return new Record(resValues);
     }
 
@@ -100,9 +89,6 @@ public class AggregateFunction extends CalciteAggSerializable
             // condition above
             final Optional<Object> aWrapped = Optional.ofNullable(a);
             final Optional<Object> bWrapped = Optional.ofNullable(b);
-
-            System.out.println("left: " + a);
-            System.out.println("right: " + b);
 
             // force .getClass() to be safe so
             // we can pass null objects to

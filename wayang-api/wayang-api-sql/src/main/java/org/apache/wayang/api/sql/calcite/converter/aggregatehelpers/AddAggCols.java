@@ -9,7 +9,8 @@ import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteA
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class AddAggCols extends CalciteAggSerializable implements FunctionDescriptor.SerializableFunction<Record, Record> {
+public class AddAggCols extends CalciteAggSerializable
+        implements FunctionDescriptor.SerializableFunction<Record, Record> {
     public AddAggCols(final List<AggregateCall> aggregateCalls) {
         super(aggregateCalls.toArray(AggregateCall[]::new));
     }
@@ -21,22 +22,23 @@ public class AddAggCols extends CalciteAggSerializable implements FunctionDescri
         final int l = record.size();
         final int newRecordSize = l + aggregateCalls.size() + 1;
         final Object[] resValues = new Object[newRecordSize];
-
-        int i;
-        for (i = 0; i < l; i++) {
+        
+        for (int i = 0; i < l; i++) {
             resValues[i] = record.getField(i);
         }
 
+        int i = l;
         for (final AggregateCall aggregateCall : aggregateCalls) {
-            final String name = aggregateCall.getAggregation().getName();
-            if (name.equals("COUNT")) {
-                resValues[i] = 1;
-            } else {
-                resValues[i] = record.getField(aggregateCall.getArgList().get(0));
+            switch (aggregateCall.getAggregation().kind) {
+                case COUNT:
+                    resValues[i] = 1;
+                    break;
+                default:
+                    resValues[i] = record.getField(aggregateCall.getArgList().get(0));
             }
             i++;
         }
-        
+
         resValues[newRecordSize - 1] = 1;
         return new Record(resValues);
     }
