@@ -28,7 +28,6 @@ public class GlobalReduceMapping implements Mapping {
                 PostgresPlatform.getInstance()));
     }
 
-
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern<GlobalReduceOperator<Record>> operatorPattern = new OperatorPattern<>(
                 "reduce",
@@ -39,6 +38,7 @@ public class GlobalReduceMapping implements Mapping {
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<GlobalReduceOperator<Record>>(
-                (matchedOperator, epoch) -> new PostgresGlobalReduceOperator<>(matchedOperator).at(epoch));
+            (matchedOperator, epoch) -> new PostgresGlobalReduceOperator<>(matchedOperator).at(epoch)
+        );
     }
 }
