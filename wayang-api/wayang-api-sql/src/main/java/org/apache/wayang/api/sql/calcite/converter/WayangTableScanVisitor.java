@@ -56,7 +56,7 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
         if (tableSource.equals("fs")) {
             ModelParser modelParser;
             try {
-                modelParser = new ModelParser();
+                modelParser = this.wayangRelConverter.getConfiguration() == null ? new ModelParser() : new ModelParser(this.wayangRelConverter.getConfiguration());
             } catch (final Exception e) {
                 throw new RuntimeException(e);
             }
@@ -70,10 +70,10 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
             final String separator = modelParser.getSeparator();
 
             if (Objects.equals(separator, "")) {
-                return new JavaCSVTableSource(url,
+                return new JavaCSVTableSource<>(url,
                         DataSetType.createDefault(Record.class), fieldTypes);
             } else {
-                return new JavaCSVTableSource(url,
+                return new JavaCSVTableSource<>(url,
                         DataSetType.createDefault(Record.class), fieldTypes, separator.charAt(0));
             }
         } else throw new RuntimeException("Source not supported");
