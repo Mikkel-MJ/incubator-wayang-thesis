@@ -33,13 +33,11 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoiningTableExtractor;
-import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MultiKeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MultiMapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
-import org.apache.wayang.api.sql.calcite.utils.SqlField;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
@@ -72,14 +70,6 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
 
         final List<RexCall> subConditions = call.operands.stream()
                 .map(RexCall.class::cast)
-                .collect(Collectors.toList());
-
-        List<?> originalCols = subConditions.stream()
-                .map(subCall -> subCall.operands.stream()
-                        .map(RexInputRef.class::cast)
-                        .map(RexInputRef::getIndex)
-                        .map(key -> wayangRelNode.getRowType().getFieldList().get(key))
-                        .collect(Collectors.toList()))
                 .collect(Collectors.toList());
 
         // calcite generates the RexInputRef indexes via looking at the union
@@ -118,16 +108,6 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
         final Map<RelDataTypeField, String> columnToOriginMapRight = CalciteSources
                 .createColumnToTableOriginMap(wayangRelNode.getInput(1));
 
-        /*
-         * if (!condition.isA(SqlKind.AND)) {
-         * throw new UnsupportedOperationException(
-         * "Only equality joins supported but got: " + condition.getKind()
-         * + " from relNode: " + wayangRelNode + ", with inputs: "
-         * + wayangRelNode.getInputs() + ", joinType: "
-         * + wayangRelNode.getJoinType());
-         * }
-         */
-
         final JoiningTableExtractor leftVisitor = new JoiningTableExtractor(true);
         leftVisitor.visit(wayangRelNode.getLeft(), wayangRelNode.getId(), null);
 
@@ -161,14 +141,6 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
         final List<String> leftCatalog = CalciteSources.getSqlColumnNames(wayangRelNode.getLeft());
         final List<String> rightCatalog = CalciteSources.getSqlColumnNames(wayangRelNode.getRight());
 
-        System.out.println("dirty left field: " + leftFields);
-        System.out.println("dirty right field: " + rightFields);
-        System.out.println("left catalog: " + leftCatalog);
-        System.out.println("right catalog: " + rightCatalog);
-        System.out.println("main catalog: " + CalciteSources.getSqlColumnNames(wayangRelNode));
-        System.out.println("left catalog: " + CalciteSources.getSqlColumnNames(wayangRelNode.getLeft()));
-        System.out.println("right catalog: " + CalciteSources.getSqlColumnNames(wayangRelNode.getRight()));
-
         final List<String> cleanedLeftFieldNames = leftFields.stream()
                 .map(leftField -> CalciteSources
                         .findSqlName(CalciteSources.tableNameOriginOf(wayangRelNode.getLeft(), leftField.getIndex())
@@ -184,28 +156,8 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
         final String cleanLeftFieldString = cleanedLeftFieldNames.stream().collect(Collectors.joining(","));
         final String cleanRightFieldString = cleanedRightFieldNames.stream().collect(Collectors.joining(","));
 
-        System.out.println("-----------------------------------------------------------------");
-        System.out.println("table origins left: " + Arrays.stream(leftTableKeyIndexes)
-                .map(key -> CalciteSources.tableNameOriginOf(wayangRelNode.getLeft(), key))
-                .collect(Collectors.toList()));
-        System.out.println("table origins right: " + Arrays.stream(rightTableKeyIndexes)
-                .map(key -> CalciteSources.tableNameOriginOf(wayangRelNode.getRight(), key))
-                .collect(Collectors.toList()));
-        System.out.println("join field list: " + wayangRelNode.getRowType().getFieldList());
-        System.out.println("left field list: " + wayangRelNode.getLeft().getRowType().getFieldList());
-        System.out.println("right field list: " + wayangRelNode.getRight().getRowType().getFieldList());
-        System.out.println("condition: " + condition);
-        System.out.println("left field count: " + wayangRelNode.getLeft().getRowType().getFieldCount());
-        System.out.println("left indexes: " + Arrays.toString(leftTableKeyIndexes));
-        System.out.println("right indexes: " + Arrays.toString(rightTableKeyIndexes));
-        System.out.println("left fields: " + leftFields);
-        System.out.println("right fields: " + rightFields);
-        System.out.println("clean left field string: " + cleanLeftFieldString);
-        System.out.println("clean right field string: " + cleanRightFieldString);
-
         // if join is joining the LHS of a join condition "JOIN left ON left = right"
         // then we pick the first case, otherwise the 2nd "JOIN right ON left = right"
-        System.out.println("left table name " + leftTableName);
         final JoinOperator<Record, Record, Record> join = joiningTableName == leftTableName
                 ? this.getJoinOperator(
                         leftTableKeyIndexes,
@@ -224,10 +176,6 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
                         leftTableName,
                         cleanLeftFieldString);
 
-        System.out.println("accessed column: " + originalCols);
-        System.out.println("got string: " + join.getKeyDescriptor0().getSqlImplementation() + " and: "
-                + join.getKeyDescriptor1().getSqlImplementation());
-        System.out.println("---------------------------------------------------------");
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
