@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation.Direction;
-import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 
