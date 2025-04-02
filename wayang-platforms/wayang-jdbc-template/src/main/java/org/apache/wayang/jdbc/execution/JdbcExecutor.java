@@ -19,9 +19,11 @@
 package org.apache.wayang.jdbc.execution;
 
 import org.apache.wayang.basic.channels.FileChannel;
+import org.apache.wayang.basic.operators.CartesianOperator;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.optimizer.OptimizationContext;
+import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.plan.executionplan.ExecutionStage;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
@@ -35,6 +37,7 @@ import org.apache.wayang.core.util.fs.FileSystems;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel.Instance;
 import org.apache.wayang.jdbc.compiler.FunctionCompiler;
+import org.apache.wayang.jdbc.operators.JdbcCartesianOperator;
 import org.apache.wayang.jdbc.operators.JdbcExecutionOperator;
 import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
 import org.apache.wayang.jdbc.operators.JdbcGlobalReduceOperator;
@@ -62,6 +65,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,20 +76,6 @@ import java.util.stream.Stream;
  * {@link Executor} implementation for the {@link JdbcPlatformTemplate}.
  */
 public class JdbcExecutor extends ExecutorTemplate {
-
-    private final JdbcPlatformTemplate platform;
-
-    private final Connection connection;
-
-    private final Logger logger = LogManager.getLogger(this.getClass());
-
-    private final FunctionCompiler functionCompiler = new FunctionCompiler();
-
-    public JdbcExecutor(final JdbcPlatformTemplate platform, final Job job) {
-        super(job.getCrossPlatformExecutor());
-        this.platform = platform;
-        this.connection = this.platform.createDatabaseDescriptor(job.getConfiguration()).createJdbcConnection();
-    }
 
     protected class ExecutionTaskOrderingComparator implements Comparator<ExecutionTask> {
         final Map<ExecutionTask, Set<ExecutionTask>> ordering;
@@ -114,6 +104,20 @@ public class JdbcExecutor extends ExecutorTemplate {
         }
     }
 
+    private final JdbcPlatformTemplate platform;
+
+    private final Connection connection;
+
+    private final Logger logger = LogManager.getLogger(this.getClass());
+
+    private final FunctionCompiler functionCompiler = new FunctionCompiler();
+
+    public JdbcExecutor(final JdbcPlatformTemplate platform, final Job job) {
+        super(job.getCrossPlatformExecutor());
+        this.platform = platform;
+        this.connection = this.platform.createDatabaseDescriptor(job.getConfiguration()).createJdbcConnection();
+    }
+
     @Override
     public void execute(final ExecutionStage stage, final OptimizationContext optimizationContext,
             final ExecutionState executionState) {
@@ -125,14 +129,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
-
-        System.out.println("sorted list: " + allTasksWithTableSources.stream()
-                .filter(task -> task.getOperator() instanceof JdbcJoinOperator).collect(Collectors.toList()));
-        System.out.println("can reach map filtered: " + stage.canReachMap().entrySet().stream()
-                .filter(pair -> pair.getKey().getOperator() instanceof JdbcJoinOperator)
-                .map(pair -> pair.getKey() + "->" + pair.getValue().stream()
-                        .filter(task -> task.getOperator() instanceof JdbcJoinOperator).collect(Collectors.toList()))
-                .collect(Collectors.toList()));
 
         final List<ExecutionTask> allTasks = allTasksWithTableSources.stream()
                 .filter(task -> !(task.getOperator() instanceof TableSource))
@@ -150,6 +146,10 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
         Collections.reverse(joinTasks);
+        final List<ExecutionTask> cartesianProductTasks = allTasks.stream()
+                .filter(task -> task.getOperator() instanceof JdbcCartesianOperator)
+                .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
+                .collect(Collectors.toList());
         final Set<ExecutionOperator> flattenOperators = joinTasks.stream()
                 .map(task -> task.getOutputChannel(0).getConsumers().get(0).getOperator())
                 .collect(Collectors.toSet());
@@ -172,7 +172,8 @@ public class JdbcExecutor extends ExecutorTemplate {
         final Map<ExecutionTask, Boolean> taskInputIsTableMap = projectionTasks.stream()
                 .collect(Collectors.toMap(
                         task -> task,
-                        task -> !(task.getInputChannel(0).getProducerOperator() instanceof JdbcJoinOperator)));
+                        task -> !(task.getInputChannel(0)
+                                .getProducerOperator() instanceof JdbcJoinOperator)));
 
         // collect projections necessary in select statement
         final String collectedProjections = projectionTasks.stream()
@@ -220,7 +221,8 @@ public class JdbcExecutor extends ExecutorTemplate {
         // as they are a flattening operator and not relevant for select statement
         final List<ExecutionOperator> validPipelineOperator = boundaryPipeline.stream()
                 .filter(task -> !flattenOperators
-                        .contains(stage.getPreceedingTask(task).iterator().next().getOperator()))
+                        .contains(stage.getPreceedingTask(task).iterator().next()
+                                .getOperator()))
                 .map(ExecutionTask::getOperator)
                 .collect(Collectors.toList());
 
@@ -233,7 +235,17 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         final String selectStatement = projectionStatement.length() == 0 ? "*" : projectionStatement;
 
-        final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins,
+        System.out.println("ops: "
+                + cartesianProductTasks.stream().flatMap(task -> this.traverseChildrenAndCollect(task)
+                        .stream().map(subTask -> subTask.getOperator())).collect(Collectors.toList()));
+
+        final Collection<String> cartesians = cartesianProductTasks.stream()
+                .map(task -> "CROSS JOIN " + this.traverseChildrenAndCollect(task).stream().map(subTask -> subTask.getOperator())
+                        .filter(op -> op instanceof TableSource).findFirst().map(TableSource.class::cast).get()
+                        .getTableName())
+                .collect(Collectors.toList());
+
+        final String query = this.createSqlQuery(joinedTableNames, conditions, projection, joins, cartesians,
                 selectStatement);
 
         System.out.println("Decompiled SQL query: " + query);
@@ -245,20 +257,128 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .filter(task -> task.getOutputChannel(0)
                         .getConsumers()
                         .stream()
-                        .anyMatch(consumer -> consumer.getOperator() instanceof SqlToStreamOperator));
+                        .anyMatch(consumer -> consumer
+                                .getOperator() instanceof SqlToStreamOperator));
 
         final Collection<Instance> outBoundChannels = allBoundaryOperators
                 .map(task -> this.instantiateOutboundChannel(task, optimizationContext))
                 .collect(Collectors.toList()); //
 
         assert outBoundChannels.size() <= 1
-                : "Only one boundary operator is allowed per execution stage, but found " + outBoundChannels.size();
+                : "Only one boundary operator is allowed per execution stage, but found "
+                        + outBoundChannels.size();
 
         // set the string query generated above to each channel
         outBoundChannels.forEach(chann -> {
             chann.setSqlQuery(query);
             executionState.register(chann); // register at this execution stage so it gets executed
         });
+    }
+
+    @Override
+    public void dispose() {
+        try {
+            this.connection.close();
+        } catch (final SQLException e) {
+            this.logger.error("Could not close JDBC connection to PostgreSQL correctly.", e);
+        }
+    }
+
+    @Override
+    public Platform getPlatform() {
+        return this.platform;
+    }
+
+    /**
+     * Creates a SQL query.
+     *
+     * @param tableName  the table to be queried
+     * @param conditions conditions for the {@code WHERE} clause
+     * @param projection projection for the {@code SELECT} clause
+     * @param joins      join clauses for multiple {@code JOIN} clauses
+     * @return the SQL query
+     */
+    protected String createSqlQuery(final String tableName, final Collection<String> conditions,
+            final String projection,
+            final Collection<String> joins, final Collection<String> cartesians, final String selectStatement) {
+        final StringBuilder sb = new StringBuilder(1000);
+
+        final Set<String> projectionTableNames = Arrays.stream(projection.split(","))
+                .map(name -> name.split("\\.")[0])
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        final Set<String> joinTableNames = joins.stream()
+                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[0])
+                .collect(Collectors.toSet());
+        final Set<String> joinTableAliases = joins.stream()
+                .filter(join -> join.contains(" AS "))
+                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[1])
+                .collect(Collectors.toSet());
+
+        System.out.println("cartesians: " + cartesians);
+        System.out.println("joins: " + joins);
+        System.out.println("projection: " + projection);
+        System.out.println("select stmt: " + selectStatement);
+        // Union of projectionTableNames, leftJoinTableNames, and rightJoinTableNames
+        final Set<String> unionSet = new HashSet<>();
+        unionSet.addAll(projectionTableNames);
+
+        /*
+         * unionSet.addAll(leftJoinTableNames);
+         * unionSet.addAll(rightJoinTableNames);
+         */
+
+        // Remove tables that will be joined on, from the from clause
+        unionSet.removeAll(joinTableNames);
+        // Remove aliases from the from statement:
+        if (joinTableAliases != null)
+            unionSet.removeAll(joinTableAliases);
+
+        // match JOIN x AS x* ON x*.col = y.col
+        // group1: x
+        // group2: x*
+        // group3: x*.col
+        // group4: y.col
+        if (joins.size() > 0) {
+            final String regex = "JOIN\\s+(?<joiningTable>\\w+)(?:\\s+AS\\s+(?<alias>\\w+))?\\s+ON\\s+(?<left>\\w+\\.\\w+)\\s*=\\s*(?<right>\\w+\\.\\w+)";
+            final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+
+            final Matcher matcher = pattern.matcher(joins.stream().findFirst().orElse(""));
+
+            matcher.find();
+
+            final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0])
+                    ? matcher.group(4)
+                    : matcher.group(3);
+            unionSet.add(nonUsedTable.split("\\.")[0]);
+        }
+
+        final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
+
+        sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
+        System.out.println("joins: " + joins);
+        // build joins in sql query
+        for (final String crossJoin : cartesians) sb.append(" ").append(crossJoin);
+
+        if (!joins.isEmpty()) {
+            final String separator = " ";
+            for (final String join : joins) {
+                sb.append(separator).append(join);
+            }
+        }
+
+
+        // build filters
+        if (!conditions.isEmpty()) {
+            sb.append(" WHERE ");
+            String separator = "";
+            for (final String condition : conditions) {
+                sb.append(separator).append(condition);
+                separator = " AND ";
+            }
+        }
+        sb.append(';');
+        return sb.toString();
     }
 
     /**
@@ -276,10 +396,50 @@ public class JdbcExecutor extends ExecutorTemplate {
         while (current.getOperator() instanceof JdbcGlobalReduceOperator
                 || current.getOperator() instanceof JdbcProjectionOperator) {
             pipeline.add(current);
-            current = stage.getPreceedingTask(current).iterator().next(); // should only be one task in practice
+            current = stage.getPreceedingTask(current).iterator().next(); // should only be one task in
+                                                                          // practice
         }
 
         return pipeline;
+    }
+
+    public List<ExecutionTask> traverseChildrenAndCollect(ExecutionTask root) {
+        final List<ExecutionTask> acc = new ArrayList<>();
+        System.out.println("niit acc: " + acc + " root " + root);
+        Arrays.stream(root.getInputChannels()).forEach(chann -> traverseAndCollect(chann.getProducer(), acc));
+        System.out.println("acc done: " + acc);
+        return acc;
+    }
+
+    public void traverseAndCollect(ExecutionTask root, List<ExecutionTask> acc) {
+        System.out.println("accumulator: " + acc + " root: " + root);
+        if (root.getOperator() instanceof JdbcCartesianOperator || root.getOperator() instanceof JdbcJoinOperator) return;
+        acc.add(root);
+        System.out.println("accumulator2: " + acc + " root: " + root);
+
+        Arrays.stream(root.getInputChannels()).forEach(chann -> traverseAndCollect(chann.getProducer(), acc));
+    }
+
+    private TableSource getJoiningTable(final List<ExecutionTask> tasks) {
+        final List<ExecutionTask> subTasks = tasks.stream()
+                .flatMap(task -> Arrays.stream(task.getInputChannels()).map(Channel::getProducer))
+                .filter(task -> !(task.getOperator() instanceof JdbcJoinOperator))
+                .collect(Collectors.toList());
+
+        final List<Operator> operators = subTasks.stream()
+                .map(ExecutionTask::getOperator)
+                .collect(Collectors.toList());
+
+        final Optional<TableSource> tableSource = operators.stream()
+                .filter(op -> op instanceof TableSource)
+                .map(TableSource.class::cast)
+                .findFirst();
+
+        System.out.println("sub: " + subTasks);
+        System.out.println("ops: " + operators);
+        System.out.println("tabs: " + tableSource);
+
+        return subTasks.size() == 0 ? null : tableSource.isPresent() ? tableSource.get() : getJoiningTable(subTasks);
     }
 
     /**
@@ -324,93 +484,6 @@ public class JdbcExecutor extends ExecutorTemplate {
     }
 
     /**
-     * Creates a SQL query.
-     *
-     * @param tableName  the table to be queried
-     * @param conditions conditions for the {@code WHERE} clause
-     * @param projection projection for the {@code SELECT} clause
-     * @param joins      join clauses for multiple {@code JOIN} clauses
-     * @return the SQL query
-     */
-    protected String createSqlQuery(final String tableName, final Collection<String> conditions,
-            final String projection,
-            final Collection<String> joins, final String selectStatement) {
-        final StringBuilder sb = new StringBuilder(1000);
-
-        final Set<String> projectionTableNames = Arrays.stream(projection.split(","))
-                .map(name -> name.split("\\.")[0])
-                .map(String::trim)
-                .collect(Collectors.toSet());
-        final Set<String> joinTableNames = joins.stream()
-                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[0])
-                .collect(Collectors.toSet());
-        final Set<String> joinTableAliases = joins.stream()
-                .filter(join -> join.contains(" AS "))
-                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[1])
-                .collect(Collectors.toSet());
-
-        
-        System.out.println("joins: " + joins);
-        System.out.println("projection: " + projection);
-        System.out.println("select stmt: " + selectStatement);
-        // Union of projectionTableNames, leftJoinTableNames, and rightJoinTableNames
-        final Set<String> unionSet = new HashSet<>();
-        unionSet.addAll(projectionTableNames);
-
-        /*
-         * unionSet.addAll(leftJoinTableNames);
-         * unionSet.addAll(rightJoinTableNames);
-         */
-
-        // Remove tables that will be joined on, from the from clause
-        unionSet.removeAll(joinTableNames);
-        // Remove aliases from the from statement:
-        if (joinTableAliases != null) unionSet.removeAll(joinTableAliases);
-
-        // match JOIN x AS x* ON x*.col = y.col
-        // group1: x
-        // group2: x*
-        // group3: x*.col
-        // group4: y.col
-        if (joins.size() > 0) {
-            final String regex = "JOIN\\s+(?<joiningTable>\\w+)(?:\\s+AS\\s+(?<alias>\\w+))?\\s+ON\\s+(?<left>\\w+\\.\\w+)\\s*=\\s*(?<right>\\w+\\.\\w+)";
-            final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-
-            final Matcher matcher = pattern.matcher(joins.stream().findFirst().orElse(""));
-
-            matcher.find();
-
-            final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0]) ? matcher.group(4)
-                    : matcher.group(3);
-            unionSet.add(nonUsedTable.split("\\.")[0]);
-        }
-
-        final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
-
-        sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
-        System.out.println("joins: " + joins);
-        // build joins in sql query
-        if (!joins.isEmpty()) {
-            final String separator = " ";
-            for (final String join : joins) {
-                sb.append(separator).append(join);
-            }
-        }
-
-        // build filters
-        if (!conditions.isEmpty()) {
-            sb.append(" WHERE ");
-            String separator = "";
-            for (final String condition : conditions) {
-                sb.append(separator).append(condition);
-                separator = " AND ";
-            }
-        }
-        sb.append(';');
-        return sb.toString();
-    }
-
-    /**
      * Creates a SQL clause that corresponds to the given {@link Operator}.
      *
      * @param operator for that the SQL clause should be generated
@@ -418,20 +491,6 @@ public class JdbcExecutor extends ExecutorTemplate {
      */
     private String getSqlClause(final Operator operator) {
         return ((JdbcExecutionOperator) operator).createSqlClause(this.connection, this.functionCompiler);
-    }
-
-    @Override
-    public void dispose() {
-        try {
-            this.connection.close();
-        } catch (final SQLException e) {
-            this.logger.error("Could not close JDBC connection to PostgreSQL correctly.", e);
-        }
-    }
-
-    @Override
-    public Platform getPlatform() {
-        return this.platform;
     }
 
     private void saveResult(final FileChannel.Instance outputFileChannelInstance, final ResultSet rs)
