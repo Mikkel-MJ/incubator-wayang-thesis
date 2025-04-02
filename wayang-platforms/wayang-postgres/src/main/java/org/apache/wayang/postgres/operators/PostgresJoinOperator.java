@@ -43,7 +43,7 @@ public class PostgresJoinOperator<KeyType> extends JdbcJoinOperator<KeyType> imp
     }
 
     @Override
-    protected PostgresJoinOperator createCopy() {
+    protected PostgresJoinOperator<?> createCopy() {
         return new PostgresJoinOperator<KeyType>(this);
     }
 }
