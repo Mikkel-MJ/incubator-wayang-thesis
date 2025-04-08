@@ -35,6 +35,7 @@ public class OrtTensorEncoder {
         ArrayList<long[][]> flatTrees = new ArrayList<>();
 
         for (TreeNode tree : trees) {
+            System.out.println("[ENCODER]: " + tree);
             flatTrees.add(this.flatten(tree));
         }
 
@@ -50,7 +51,9 @@ public class OrtTensorEncoder {
         ArrayList<long[][]> indexes = trees.stream()
                 .map(this::treeConvIndexes)
                 .collect(Collectors.toCollection(ArrayList::new)); //weird structure
+        System.out.println("[Indexes]: " + Arrays.deepToString(indexes.get(0)));
         indexes = padAndCombine(indexes);
+        System.out.println("[Indexes]: " + indexes);
 
         return new Tuple<>(flatTrees, indexes);
     }
@@ -76,6 +79,7 @@ public class OrtTensorEncoder {
         ArrayList<long[]> acc = new ArrayList<>(); //in place of a generator
         treeConvIndexesStep(indexTree,acc); //mutates acc
 
+        System.out.println("[TCI]: " + Arrays.toString(acc.get(0)));
         long[] flatAcc = acc.stream()
                 .flatMapToLong(Arrays::stream)
                 .toArray();
@@ -92,14 +96,15 @@ public class OrtTensorEncoder {
         }
 
         if (root.isLeaf()) {
-            acc.add(new long[]{root.encoded[0], 0, 0});
+            //acc.add(new long[]{root.encoded[0], 0, 0});
+            acc.add(new long[]{root.encoded[0]});
 
             return;
         }
 
         long ID  = root.encoded[0];
-        long lID = root.left != null ? root.left.encoded[0] : 0;
-        long rID = root.right != null ? root.right.encoded[0]: 0;
+        long lID = (root.left != null && !root.left.isNullOperator()) ? root.left.encoded[0] : 0;
+        long rID = (root.right != null && !root.right.isNullOperator()) ? root.right.encoded[0]: 0;
 
         acc.add(new long[]{ID, lID, rID});
         treeConvIndexesStep(root.left, acc);
@@ -130,10 +135,10 @@ public class OrtTensorEncoder {
         }
 
         TreeNode rightSubTree = null;
-        TreeNode leftSubTree = root.left != null ? preorderIndexes(root.left, idx+1) : null;
+        TreeNode leftSubTree = (root.left != null) ? preorderIndexes(root.left, idx+1) : null;
 
         // Not that shrimple
-        if (root.right != null) {
+        if (root.right != null && root.right.operator != null) {
             long maxIndexInLeftSubTree = rightMost(leftSubTree);
             rightSubTree = preorderIndexes(root.right, maxIndexInLeftSubTree + 1);
         }
@@ -143,7 +148,7 @@ public class OrtTensorEncoder {
 
     public long rightMost(TreeNode root){
         // this null
-        if (root == null) return 0;
+        if (root == null || root.isNullOperator()) return 0;
 
         // left null, right null
         if (root.isLeaf()) {
@@ -151,7 +156,7 @@ public class OrtTensorEncoder {
         }
 
         // left non null, right null
-        if (root.right == null && root.left != null) {
+        if ((root.right == null || root.right.isNullOperator()) && (root.left != null && root.left.operator != null)) {
             return rightMost(root.left);
         }
 
@@ -214,7 +219,7 @@ public class OrtTensorEncoder {
      * @return
      */
     public long[][] flatten(TreeNode root){
-        if (root == null) {
+        if (root == null || root.isNullOperator()) {
             return new long[0][0];
         }
 
@@ -227,13 +232,13 @@ public class OrtTensorEncoder {
     }
 
     public void flattenStep(TreeNode v, ArrayList<long[]> acc){
-        if (v == null) {
+        if (v == null || v.isNullOperator()) {
             return;
         }
 
         // Remove the 0th item - its the Id
         long[] values = Arrays.copyOf(v.encoded, v.encoded.length);
-        //values[0] = 0;
+        values[0] = 0;
         acc.add(values);
 
         if (v.isLeaf()) {

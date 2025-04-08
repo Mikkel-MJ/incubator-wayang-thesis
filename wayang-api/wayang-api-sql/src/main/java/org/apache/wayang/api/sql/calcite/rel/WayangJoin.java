@@ -59,13 +59,13 @@ public class WayangJoin extends Join implements WayangRel {
         if (condition.isAlwaysTrue()) {
             RelOptCostFactory costFactory = planner.getCostFactory();
 
-            return costFactory.makeInfiniteCost();
+            return costFactory.makeHugeCost();
         }
 
         if (condition.isA(SqlKind.AND)) {
             RelOptCostFactory costFactory = planner.getCostFactory();
 
-            return costFactory.makeInfiniteCost();
+            return costFactory.makeHugeCost();
         }
 
         // Default cost (inherit from parent class)
