@@ -381,6 +381,7 @@ public class OrtMLModel {
 
             start = Instant.now();
             TreeNode decoded = decoder.decode(decoderInput);
+            System.out.println("Decoder Output: " + decoded);
             decoded.softmax();
             end = Instant.now();
 

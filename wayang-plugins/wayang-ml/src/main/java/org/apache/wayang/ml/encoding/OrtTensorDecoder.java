@@ -38,48 +38,63 @@ public class OrtTensorDecoder {
      * @param mlOutput takes the out put from @
      */
     public TreeNode decode(Tuple<ArrayList<long[][]>,ArrayList<long[][]>> mlOutput){
-        ArrayList<long[][]> valueStructure = mlOutput.field0;
-        ArrayList<long[][]> indexStructure = mlOutput.field1;
+        long[][] values = mlOutput.field0.get(0);
+        long[][] indexedTree = mlOutput.field1.get(0);
+        System.out.println("Index tree: " + Arrays.deepToString(indexedTree));
+        long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
 
-        for (int i = 0; i < valueStructure.size(); i++) { //iterate for each tree, in practice should only be 1
-            long[][] values      = valueStructure.get(i);
-            long[][] indexedTree = indexStructure.get(i);
-            long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
-            for (int j = 0; j < flatIndexTree.length; j+=3) {
-                final long curID = flatIndexTree[j];
+        for (int j = 0; j < flatIndexTree.length; j++) {
+            final long curID = flatIndexTree[j];
+            System.out.println("Looking at ID " + curID);
 
-                // Skip 0s
-                if (curID == 0) {
-                    continue;
-                }
-
-                long lID   = flatIndexTree[j+1];
-                long rID   = flatIndexTree[j+2];
-
-                long[] value = Arrays.stream(values)
-                        .flatMapToLong(arr -> LongStream.of(arr[(int) curID]))
-                        .toArray();
-
-                // Skip 0s
-                if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
-                    continue;
-                }
-
-                //fetch l,r from map such that we can reference values.
-                TreeNode l       = nodeToIDMap.containsKey(lID)   ? nodeToIDMap.get(lID)   : new TreeNode();
-                TreeNode r       = nodeToIDMap.containsKey(rID)   ? nodeToIDMap.get(rID)   : new TreeNode();
-                TreeNode curTreeNode = nodeToIDMap.containsKey(curID) ? nodeToIDMap.get(curID) : new TreeNode(value, l, r);
-
-                //set values
-                curTreeNode.encoded = value;
-                curTreeNode.left     = l;
-                curTreeNode.right     = r;
-
-                //put values back into map so we can look them up in next loop
-                nodeToIDMap.put(curID,curTreeNode);
-                nodeToIDMap.put(lID,l);
-                nodeToIDMap.put(rID,r);
+            // Skip 0s
+            if (curID == 0) {
+                continue;
             }
+
+            long[] value = Arrays.stream(values)
+                    .flatMapToLong(arr -> LongStream.of(arr[(int) curID]))
+                    .toArray();
+
+            // Skip 0s
+            if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
+                System.out.println("SKIPPING 0s");
+                continue;
+            }
+
+
+            //set values
+            //fetch l,r from map such that we can reference values.
+            TreeNode curTreeNode = nodeToIDMap.containsKey(curID) ? nodeToIDMap.get(curID) : new TreeNode(value, null, null);
+
+            // Skip Nulloperator
+            if (curTreeNode.isNullOperator()) {
+                System.out.println("SKIPPING Nulloperator");
+                continue;
+            }
+
+            System.out.println("Setting: " + Arrays.toString(value) + " for " + curTreeNode);
+            curTreeNode.encoded = value;
+
+            //TODO: The assumption that you can always look for 3 nodes
+            //in a subtree doesn't hold anymore, it needs fixing
+            if (flatIndexTree.length > j+1) {
+                long lID   = flatIndexTree[j+1];
+                TreeNode l       = nodeToIDMap.containsKey(lID)   ? nodeToIDMap.get(lID)   : new TreeNode();
+                curTreeNode.left     = l;
+                nodeToIDMap.put(lID,l);
+
+                if (flatIndexTree.length > j+2) {
+                    long rID   = flatIndexTree[j+2];
+                    TreeNode r       = nodeToIDMap.containsKey(rID)   ? nodeToIDMap.get(rID)   : new TreeNode();
+                    curTreeNode.right     = r;
+                    nodeToIDMap.put(rID,r);
+                }
+            }
+
+            //put values back into map so we can look them up in next loop
+            nodeToIDMap.put(curID,curTreeNode);
+            System.out.println("Put " + curTreeNode + " into " + curID);
         }
 
         return this.nodeToIDMap.get(1L);

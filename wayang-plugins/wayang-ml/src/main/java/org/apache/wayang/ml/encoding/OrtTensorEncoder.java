@@ -92,7 +92,8 @@ public class OrtTensorEncoder {
         }
 
         if (root.isLeaf()) {
-            acc.add(new long[]{root.encoded[0], 0, 0});
+            //acc.add(new long[]{root.encoded[0], 0, 0});
+            acc.add(new long[]{root.encoded[0]});
 
             return;
         }
@@ -232,7 +233,13 @@ public class OrtTensorEncoder {
         }
 
         // Remove the 0th item - its the Id
-        long[] values = Arrays.copyOf(v.encoded, v.encoded.length);
+        long[] values;
+
+        if (v.isNullOperator()) {
+            values = OneHotEncoder.encodeNullOperator();
+        } else {
+            values = Arrays.copyOf(v.encoded, v.encoded.length);
+        }
         //values[0] = 0;
         acc.add(values);
 
