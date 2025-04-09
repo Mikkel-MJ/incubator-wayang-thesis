@@ -285,12 +285,12 @@ public class TreeNode {
 
         this.encoded = values;
 
-        if (this.left != null) {
-            left.softmax();
+        if (this.left != null && this.left.encoded != OneHotEncoder.encodeNullOperator()) {
+            this.left.softmax();
         }
 
-        if (this.right != null) {
-            right.softmax();
+        if (this.right != null && this.right.encoded != OneHotEncoder.encodeNullOperator()) {
+            this.right.softmax();
         }
     }
 

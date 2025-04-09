@@ -58,7 +58,7 @@ public class OrtTensorDecoder {
 
             // Skip 0s
             if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
-                System.out.println("SKIPPING 0s");
+                System.out.println("SKIPPING 0s for " + Arrays.toString(value));
                 continue;
             }
 
@@ -68,10 +68,11 @@ public class OrtTensorDecoder {
             TreeNode curTreeNode = nodeToIDMap.containsKey(curID) ? nodeToIDMap.get(curID) : new TreeNode(value, null, null);
 
             // Skip Nulloperator
+            /*
             if (curTreeNode.isNullOperator()) {
-                System.out.println("SKIPPING Nulloperator");
+                System.out.println("SKIPPING Nulloperator for " + curTreeNode);
                 continue;
-            }
+            }*/
 
             System.out.println("Setting: " + Arrays.toString(value) + " for " + curTreeNode);
             curTreeNode.encoded = value;
@@ -80,15 +81,23 @@ public class OrtTensorDecoder {
             //in a subtree doesn't hold anymore, it needs fixing
             if (flatIndexTree.length > j+1) {
                 long lID   = flatIndexTree[j+1];
-                TreeNode l       = nodeToIDMap.containsKey(lID)   ? nodeToIDMap.get(lID)   : new TreeNode();
-                curTreeNode.left     = l;
-                nodeToIDMap.put(lID,l);
+
+                if (nodeToIDMap.containsKey(lID)) {
+                    TreeNode l = nodeToIDMap.get(lID);
+                    curTreeNode.left = l;
+                    nodeToIDMap.put(lID,l);
+                    System.out.println("Setting left for " + lID + "with " + l);
+                }
 
                 if (flatIndexTree.length > j+2) {
                     long rID   = flatIndexTree[j+2];
-                    TreeNode r       = nodeToIDMap.containsKey(rID)   ? nodeToIDMap.get(rID)   : new TreeNode();
-                    curTreeNode.right     = r;
-                    nodeToIDMap.put(rID,r);
+
+                    if (nodeToIDMap.containsKey(rID)) {
+                        TreeNode r = nodeToIDMap.get(rID);
+                        curTreeNode.right = r;
+                        nodeToIDMap.put(rID,r);
+                        System.out.println("Setting right for " + rID + "with " + r);
+                    }
                 }
             }
 
