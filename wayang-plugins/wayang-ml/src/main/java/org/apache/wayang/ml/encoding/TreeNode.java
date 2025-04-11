@@ -76,6 +76,7 @@ public class TreeNode {
 
         if (left != null) {
             if (left.isNullOperator()) {
+                System.out.println("No update of platforms on null operators");
                 leftString = Arrays.toString(OneHotEncoder.encodeNullOperator()).replace("[", "((").replace("]", "),)").replaceAll("\\s+", "");
             } else {
                 leftString = left.toString();
@@ -210,10 +211,9 @@ public class TreeNode {
             return this;
         }
 
-        /*
         if (this.encoded == OneHotEncoder.encodeNullOperator()) {
             return this;
-        }*/
+        }
 
         if (node.encoded == null) {
             assert this.encoded != null;
@@ -267,9 +267,10 @@ public class TreeNode {
         // [0, 0, 0, 0, 0, 0, 0, 0, 0]
         Set<Integer> disallowed = Set.of(1, 2, 4, 7, 8);
 
-        if (this.encoded == null) {
+        if (this.encoded == null || this.encoded == OneHotEncoder.encodeNullOperator()) {
             return;
         }
+
 
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
@@ -285,11 +286,11 @@ public class TreeNode {
 
         this.encoded = values;
 
-        if (this.left != null && this.left.encoded != OneHotEncoder.encodeNullOperator()) {
+        if (this.left != null) {
             this.left.softmax();
         }
 
-        if (this.right != null && this.right.encoded != OneHotEncoder.encodeNullOperator()) {
+        if (this.right != null) {
             this.right.softmax();
         }
     }
@@ -299,7 +300,7 @@ public class TreeNode {
     }
 
     public boolean isNullOperator() {
-        return this.operator == null;
+        return this.operator == null && this.encoded == OneHotEncoder.encodeNullOperator();
     }
 
 

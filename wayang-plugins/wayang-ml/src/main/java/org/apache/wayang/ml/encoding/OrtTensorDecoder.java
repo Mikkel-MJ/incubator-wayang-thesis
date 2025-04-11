@@ -49,6 +49,7 @@ public class OrtTensorDecoder {
 
             // Skip 0s
             if (curID == 0) {
+                nodeToIDMap.put(curID, new TreeNode());
                 continue;
             }
 
@@ -58,7 +59,7 @@ public class OrtTensorDecoder {
 
             // Skip 0s
             if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
-                System.out.println("SKIPPING 0s for " + Arrays.toString(value));
+                System.out.println("SKIPPING 0s");
                 continue;
             }
 
@@ -70,40 +71,55 @@ public class OrtTensorDecoder {
             // Skip Nulloperator
             /*
             if (curTreeNode.isNullOperator()) {
-                System.out.println("SKIPPING Nulloperator for " + curTreeNode);
+                System.out.println("SKIPPING Nulloperator");
                 continue;
             }*/
 
-            System.out.println("Setting: " + Arrays.toString(value) + " for " + curTreeNode);
             curTreeNode.encoded = value;
 
             //TODO: The assumption that you can always look for 3 nodes
             //in a subtree doesn't hold anymore, it needs fixing
             if (flatIndexTree.length > j+1) {
-                long lID   = flatIndexTree[j+1];
+                long lID = flatIndexTree[j+1];
+
+                TreeNode left;
+
+                long[] lValues = Arrays.stream(values)
+                        .flatMapToLong(arr -> LongStream.of(arr[(int) lID]))
+                        .toArray();
 
                 if (nodeToIDMap.containsKey(lID)) {
-                    TreeNode l = nodeToIDMap.get(lID);
-                    curTreeNode.left = l;
-                    nodeToIDMap.put(lID,l);
-                    System.out.println("Setting left for " + lID + "with " + l);
+                    left = nodeToIDMap.get(lID);
+                } else {
+                    left = new TreeNode(lValues, null, null);
                 }
 
+                left.encoded = lValues;
+                nodeToIDMap.put(lID, left);
+                curTreeNode.left = left;
+
                 if (flatIndexTree.length > j+2) {
-                    long rID   = flatIndexTree[j+2];
+                    long rID = flatIndexTree[j+2];
+                    TreeNode right;
+
+                    long[] rValues = Arrays.stream(values)
+                            .flatMapToLong(arr -> LongStream.of(arr[(int) rID]))
+                            .toArray();
 
                     if (nodeToIDMap.containsKey(rID)) {
-                        TreeNode r = nodeToIDMap.get(rID);
-                        curTreeNode.right = r;
-                        nodeToIDMap.put(rID,r);
-                        System.out.println("Setting right for " + rID + "with " + r);
+                        right = nodeToIDMap.get(rID);
+                    } else {
+                        right = new TreeNode(rValues, null, null);
                     }
+
+                    right.encoded = rValues;
+                    nodeToIDMap.put(rID, right);
+                    curTreeNode.right = right;
                 }
             }
 
             //put values back into map so we can look them up in next loop
-            nodeToIDMap.put(curID,curTreeNode);
-            System.out.println("Put " + curTreeNode + " into " + curID);
+            nodeToIDMap.put(curID, curTreeNode);
         }
 
         return this.nodeToIDMap.get(1L);
