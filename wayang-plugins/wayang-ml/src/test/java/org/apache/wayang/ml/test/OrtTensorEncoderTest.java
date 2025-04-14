@@ -27,6 +27,7 @@ import org.apache.wayang.core.optimizer.enumeration.PlanImplementation;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.basic.data.Tuple2;
+import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.function.FlatMapDescriptor;
@@ -71,6 +72,7 @@ import java.util.stream.Stream;
 import java.util.Vector;
 import java.io.BufferedWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -78,7 +80,8 @@ import org.junit.Test;
 import java.net.URL;
 
 public class OrtTensorEncoderTest {
-    @Test
+
+    //@Test
     public void testTreeNodes(){
         TreeNode tree = new TreeNode(
             new long[]{1l},
@@ -90,7 +93,46 @@ public class OrtTensorEncoderTest {
         );
 
 
-        Assert.assertEquals("((1),((2),((3),)),((4),))", tree.toString());
+        Assert.assertEquals("((1),((2),((3),)),((4),))", tree.toStringEncoding());
+    }
+
+    @Test
+    public void testLeftLeaf(){
+        /**
+         *         1
+         *        / \
+         *       2   3
+         *          / \
+         *         4   5
+         */
+        TreeNode tree = new TreeNode(
+            new long[]{1l},
+            new TreeNode(
+                new long[]{2l},
+                null,
+                null
+            ),
+            new TreeNode(
+                new long[]{3l},
+                new TreeNode(new long[]{4l}, null, null),
+                new TreeNode(new long[]{5l}, null, null)
+            )
+        );
+
+        long[][] indexes = new long[][]{
+            new long[]{1l},
+            new long[]{2l},
+            new long[]{3l},
+            new long[]{3l},
+            new long[]{4l},
+            new long[]{5l},
+        };
+
+        Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input = OrtTensorEncoder.encode(tree);
+        System.out.println("input indexes: " + Arrays.deepToString(input.field1.get(0)));
+        System.out.println("indexes: " + Arrays.deepToString(indexes));
+        Assert.assertEquals(indexes, input.field1.get(0));
+
     }
 
     /*

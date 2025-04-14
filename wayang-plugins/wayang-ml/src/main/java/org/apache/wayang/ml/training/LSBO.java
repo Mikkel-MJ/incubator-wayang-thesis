@@ -100,7 +100,7 @@ public class LSBO {
             OneHotMappings.encodeIds = true;
             TreeNode wayangNode = TreeEncoder.encode(plan);
             //TreeNode execNode = TreeEncoder.encode(exPlan, true).withIdsFrom(wayangNode);
-            String encodedInput = wayangNode.toString() + ":" + wayangNode.toString() + ":1";
+            String encodedInput = wayangNode.toStringEncoding() + ":" + wayangNode.toStringEncoding() + ":1";
             ArrayList<String> input = new ArrayList<>();
             input.add(encodedInput);
 
@@ -139,7 +139,7 @@ public class LSBO {
                 Instant end = Instant.now();
                 execTime = Duration.between(start, end).toMillis();
 
-                encodedInput = wayangNode.toString() + ":" + encoded.toString() + ":" + execTime;
+                encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + execTime;
                 //System.out.println(encodedInput);
 
                 ArrayList<String> latency = new ArrayList<>();
@@ -161,7 +161,7 @@ public class LSBO {
                 System.out.println(e);
 
                 // Send longest possible time back, only execution failed
-                encodedInput = wayangNode.toString() + ":" + encoded.toString() + ":" + Long.MAX_VALUE;
+                encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + Long.MAX_VALUE;
                 //System.out.println(encodedInput);
 
                 ArrayList<String> latency = new ArrayList<>();
@@ -228,7 +228,7 @@ public class LSBO {
                 decoded.softmax();
 
                 // Now set the platforms on the wayangPlan
-                System.out.println("Decoded: " + decoded.toString());
+                System.out.println("Decoded: " + decoded.toStringEncoding());
                 encoded = encoded.withPlatformChoicesFrom(decoded);
                 WayangPlan decodedPlan = TreeDecoder.decode(encoded);
 

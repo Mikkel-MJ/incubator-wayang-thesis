@@ -63,7 +63,6 @@ public class TreeEncoder implements Encoder {
 
         for (Operator sink : sinks) {
             TreeNode sinkNode = traversePIOperator(sink, junctions, tree);
-            sinkNode.isRoot = true;
             result.add(sinkNode);
         }
 
@@ -83,7 +82,6 @@ public class TreeEncoder implements Encoder {
 
         for (Operator sink : sinks) {
             TreeNode sinkNode = traverse(sink, tree);
-            sinkNode.isRoot = true;
             result.add(sinkNode);
         }
 
@@ -94,6 +92,7 @@ public class TreeEncoder implements Encoder {
         TreeNode resultNode = result.get(0);
 
         //rebalance to make it a guaranteed binary tree
+        System.out.println("[Before rebalancing]: " + resultNode);
         resultNode.rebalance();
 
         return resultNode;
@@ -109,7 +108,6 @@ public class TreeEncoder implements Encoder {
 
         for (ExecutionTask sink : sinks) {
             TreeNode sinkNode = traverse(sink, tree, ignoreConversions);
-            sinkNode.isRoot = true;
             result.add(sinkNode);
         }
 
@@ -294,7 +292,7 @@ public class TreeEncoder implements Encoder {
         for (Operator input : inputs) {
             TreeNode next = traverse(input, visited);
 
-            if (currentNode.left == null) {
+            if (currentNode.getLeft() == null) {
                 currentNode.left = next;
             } else {
                 currentNode.right = next;
@@ -325,7 +323,7 @@ public class TreeEncoder implements Encoder {
                 return next;
             }
 
-            if (currentNode.left == null) {
+            if (currentNode.getLeft() == null) {
                 currentNode.left = next;
             } else {
                 currentNode.right = next;

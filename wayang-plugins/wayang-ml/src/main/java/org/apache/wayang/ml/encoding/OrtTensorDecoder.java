@@ -31,6 +31,7 @@ import java.util.stream.LongStream;
 
 public class OrtTensorDecoder {
     private HashMap<Long, TreeNode> nodeToIDMap = new HashMap<>();
+    private HashMap<Long, TreeNode> visitedRoots = new HashMap<>();
 
     //TODO: figure out output structure, from ml model
     /**
@@ -43,13 +44,19 @@ public class OrtTensorDecoder {
         System.out.println("Index tree: " + Arrays.deepToString(indexedTree));
         long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
 
-        for (int j = 0; j < flatIndexTree.length; j++) {
+        for (int j = 0; j < flatIndexTree.length; j+=3) {
             final long curID = flatIndexTree[j];
-            System.out.println("Looking at ID " + curID);
+            //System.out.println("Looking at ID " + curID);
+
+            // Skip over roots that have been visited before
+            if (visitedRoots.containsKey(curID)) {
+                continue;
+            }
+
+            visitedRoots.put(curID, null);
 
             // Skip 0s
             if (curID == 0) {
-                nodeToIDMap.put(curID, new TreeNode());
                 continue;
             }
 
@@ -81,6 +88,7 @@ public class OrtTensorDecoder {
             //in a subtree doesn't hold anymore, it needs fixing
             if (flatIndexTree.length > j+1) {
                 long lID = flatIndexTree[j+1];
+                //System.out.println("Root " + curID + ", left " + lID);
 
                 TreeNode left;
 
@@ -95,12 +103,18 @@ public class OrtTensorDecoder {
                 }
 
                 left.encoded = lValues;
-                nodeToIDMap.put(lID, left);
+
+                if (lID != 0) {
+                    nodeToIDMap.put(lID, left);
+                }
+
                 curTreeNode.left = left;
 
                 if (flatIndexTree.length > j+2) {
                     long rID = flatIndexTree[j+2];
                     TreeNode right;
+
+                    //System.out.println("Root " + curID + ", right " + rID);
 
                     long[] rValues = Arrays.stream(values)
                             .flatMapToLong(arr -> LongStream.of(arr[(int) rID]))
@@ -113,7 +127,11 @@ public class OrtTensorDecoder {
                     }
 
                     right.encoded = rValues;
-                    nodeToIDMap.put(rID, right);
+
+                    if (rID != 0) {
+                        nodeToIDMap.put(rID, right);
+                    }
+
                     curTreeNode.right = right;
                 }
             }

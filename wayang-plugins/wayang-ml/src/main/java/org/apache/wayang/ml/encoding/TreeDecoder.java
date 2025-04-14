@@ -115,11 +115,11 @@ public class TreeDecoder {
         }
 
         if (node.left != null) {
-            updateOperatorPlatforms(node.left);
+            updateOperatorPlatforms(TreeNode.class.cast(node.left));
         }
 
         if (node.right != null) {
-            updateOperatorPlatforms(node.right);
+            updateOperatorPlatforms(TreeNode.class.cast(node.right));
         }
     }
 }

@@ -288,7 +288,7 @@ public class Training {
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
             plan = builder.build();
-            writer.write(String.format("%s:%s:%d", wayangNode.toString(), execNode.toString(), 1_000_000));
+            writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));
             writer.newLine();
             writer.flush();
           } catch(Exception e) {

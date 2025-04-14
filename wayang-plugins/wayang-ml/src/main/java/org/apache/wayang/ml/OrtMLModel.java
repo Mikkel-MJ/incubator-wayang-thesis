@@ -271,12 +271,12 @@ public class OrtMLModel {
         long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
-        int indexDims = encoded.getTreeSize();
+        int indexDims = encoded.size();
         long featureDims = input1Dims[1];
         System.out.println("Input 1 Dims: " + Arrays.toString(input1Dims));
         System.out.println("Input 2 Dims: " + Arrays.toString(input2Dims));
         System.out.println("Feature Vector size: " + input1Dims[1]);
-        System.out.println("Index Dims: " + encoded.getTreeSize());
+        System.out.println("Index Dims: " + encoded.size());
         Instant start = Instant.now();
 
         float[][] inputValueStructure = new float[(int) featureDims][(int) input1Dims[2]];
@@ -299,6 +299,8 @@ public class OrtMLModel {
         */
 
         long[][] encoderIndexes = input.field1.get(0);
+
+        System.out.println("Encoder indexes: " + Arrays.deepToString(encoderIndexes));
         long maxIndex = Arrays.stream(encoderIndexes)
                         .flatMapToLong(Arrays::stream)
                         .max()
@@ -339,7 +341,7 @@ public class OrtMLModel {
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
 
-            System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
+            //System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
             System.out.println("Input indexes: " + Arrays.deepToString(encoderIndexes));
 
             Instant end = Instant.now();
@@ -381,7 +383,8 @@ public class OrtMLModel {
 
             start = Instant.now();
             TreeNode decoded = decoder.decode(decoderInput);
-            System.out.println("Decoder Output: " + decoded);
+
+            //System.out.println("Decoder Output: " + decoded);
             decoded.softmax();
             end = Instant.now();
 

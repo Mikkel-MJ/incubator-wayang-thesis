@@ -121,6 +121,8 @@ public class MLContext extends WayangContext {
             // Log Encoding time
             Instant start = Instant.now();
             TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
+
+            System.out.println("Encoded: " + wayangNode.toStringEncoding());
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
             Logging.writeToFile(
@@ -144,7 +146,7 @@ public class MLContext extends WayangContext {
 
             this.getConfiguration().setProperty(
                 "wayang.ml.experience.original",
-                wayangNode.toString()
+                wayangNode.toStringEncoding()
             );
 
             this.getConfiguration().setProperty(
