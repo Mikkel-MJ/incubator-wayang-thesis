@@ -92,8 +92,9 @@ public class TreeEncoder implements Encoder {
         TreeNode resultNode = result.get(0);
 
         //rebalance to make it a guaranteed binary tree
-        System.out.println("[Before rebalancing]: " + resultNode);
+        System.out.println("[Before rebalancing]: " + resultNode.size());
         resultNode.rebalance();
+        System.out.println("[After rebalancing]: " + resultNode.size());
 
         return resultNode;
     }
@@ -115,7 +116,11 @@ public class TreeEncoder implements Encoder {
             return null;
         }
 
-        return result.get(0);
+        TreeNode resultNode = result.get(0);
+
+        resultNode.rebalance();
+
+        return resultNode;
     }
 
     private static TreeNode traversePIOperator(

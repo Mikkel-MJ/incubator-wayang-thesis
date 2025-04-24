@@ -298,9 +298,11 @@ public class OrtMLModel {
         long[][] inputIndexStructure = input.field1.get(0);
         */
 
+        System.out.println("Input value structure: " + Arrays.deepToString(inputValueStructure));
+
         long[][] encoderIndexes = input.field1.get(0);
 
-        System.out.println("Encoder indexes: " + Arrays.deepToString(encoderIndexes));
+        //System.out.println("Encoder indexes: " + Arrays.deepToString(encoderIndexes));
         long maxIndex = Arrays.stream(encoderIndexes)
                         .flatMapToLong(Arrays::stream)
                         .max()
@@ -341,7 +343,7 @@ public class OrtMLModel {
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
 
-            //System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
+            System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
             System.out.println("Input indexes: " + Arrays.deepToString(encoderIndexes));
 
             Instant end = Instant.now();
@@ -354,9 +356,15 @@ public class OrtMLModel {
 
 
             start = Instant.now();
-            long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
+            //long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
+
+            long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) encoded.size() + 1];
+
+            System.out.println("ML result length: " + resultTensor[0][0].length);
+            System.out.println("Actual tree length: " + encoded.size());
             for (int i = 0; i < resultTensor[0].length; i++)  {
-                for (int j = 0; j < resultTensor[0][i].length; j++) {
+                //for (int j = 0; j < resultTensor[0][i].length; j++) {
+                for (int j = 0; j < encoded.size() + 1; j++) {
                     // Just shift the decimal point
                     longResult[0][i][j] = (long) (resultTensor[0][i][j] * 1_000_000_000);
                     //longResult[0][i][j] = (long) (resultTensor[0][i][j]);
@@ -372,8 +380,8 @@ public class OrtMLModel {
             mlResult.add(longResult[0]);
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
             end = Instant.now();
-            System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
-            System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
+            //System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
+            //System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
             execTime = Duration.between(start, end).toMillis();
 
             Logging.writeToFile(

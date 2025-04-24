@@ -192,7 +192,7 @@ public class Training {
 
                 writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));
                 writer.newLine();
-                writer.flush();
+                writer.flush();*/
               } catch(WayangException e) {
                   e.printStackTrace();
                   /*

@@ -42,6 +42,7 @@ public class OrtTensorDecoder {
         long[][] values = mlOutput.field0.get(0);
         long[][] indexedTree = mlOutput.field1.get(0);
         System.out.println("Index tree: " + Arrays.deepToString(indexedTree));
+        System.out.println("Index tree size: " + indexedTree.length);
         long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
 
         for (int j = 0; j < flatIndexTree.length; j+=3) {

@@ -131,12 +131,15 @@ public class OrtTensorEncoder {
         //orderedNodes.add(root);
 
         if (root.isNullOperator()) {
-            System.out.println("is null operator in preorderindexes: " + root);
             return new TreeNode(new long[]{0}, null, null);
         }
 
         if (root.isLeaf()) {
-            return new TreeNode(new long[]{idx}, null, null);
+            return new TreeNode(
+                new long[]{idx},
+                new TreeNode(new long[]{0}, null, null),
+                new TreeNode(new long[]{0}, null, null)
+            );
         }
 
         TreeNode rightSubTree = null;
@@ -167,6 +170,10 @@ public class OrtTensorEncoder {
         // left non null, right null
         if (root.getRight() == null && root.getLeft() != null) {
             return rightMost(root.getLeft());
+        }
+
+        if (root.getRight().encoded[0] == 0 && root.getLeft().encoded[0] == 0) {
+            return root.encoded[0];
         }
 
         // Check for null operator
