@@ -152,8 +152,8 @@ public abstract class BinaryTree<T> {
             /*
             System.out.println("Is leaf, adding two 0s");
             left = create();
-            right = create();*/
-
+            right = create();
+            */
             return;
         }
 

@@ -311,7 +311,9 @@ public class OrtMLModel {
         assert maxIndex + 1 <= inputValueStructure[0].length : "There isn't a corresponding value for each index";
 
         System.out.println("Input value Structure size: " + inputValueStructure[0].length);
-        System.out.println("Value input0 size: " + input.field0.get(0).length);
+        System.out.println("Value input0 size: " + input.field0.size());
+        System.out.println("Value input0 0 size: " + input.field0.get(0).length);
+        System.out.println("Value input0 0 0 size: " + input.field0.get(0)[0].length);
         System.out.println("Index input1 size: " + input.field1.get(0).length);
 
         for (int i = 0; i < input.field1.get(0).length; i++) {
@@ -344,6 +346,9 @@ public class OrtMLModel {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
 
             System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
+            System.out.println("ML resultTensor size: " + resultTensor.length);
+            System.out.println("ML resultTensor 0 size: " + resultTensor[0].length);
+            System.out.println("ML resultTensor 0 0 size: " + resultTensor[0][0].length);
             System.out.println("Input indexes: " + Arrays.deepToString(encoderIndexes));
 
             Instant end = Instant.now();
