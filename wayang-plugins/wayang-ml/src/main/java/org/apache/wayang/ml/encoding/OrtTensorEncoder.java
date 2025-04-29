@@ -266,7 +266,7 @@ public class OrtTensorEncoder {
         } else {
             values = Arrays.copyOf(v.encoded, v.encoded.length);
         }
-        //values[0] = 0;
+        values[0] = 0;
         acc.add(values);
 
         if (v.isLeaf()) {

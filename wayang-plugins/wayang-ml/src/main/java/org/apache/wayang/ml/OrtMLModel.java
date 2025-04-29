@@ -21,6 +21,7 @@ package org.apache.wayang.ml;
 import ai.onnxruntime.NodeInfo;
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtLoggingLevel;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import ai.onnxruntime.providers.OrtCUDAProviderOptions;
@@ -36,6 +37,7 @@ import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.Logging;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -93,6 +95,7 @@ public class OrtMLModel {
 
             options.setInterOpNumThreads(16);
             options.setIntraOpNumThreads(16);
+            options.setSessionLogLevel(OrtLoggingLevel.ORT_LOGGING_LEVEL_VERBOSE);
             //options.addCUDA(cudaProviderOptions);
             this.session = env.createSession(filePath, options);
         }
@@ -299,6 +302,7 @@ public class OrtMLModel {
         */
 
         System.out.println("Input value structure: " + Arrays.deepToString(inputValueStructure));
+        System.out.println("Input value shape: [1, " + featureDims + ", " + input1Dims[2] + "]");
 
         long[][] encoderIndexes = input.field1.get(0);
 
@@ -361,20 +365,43 @@ public class OrtMLModel {
 
 
             start = Instant.now();
-            //long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
+            /*
+            long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
 
-            long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) encoded.size() + 1];
+            //long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) encoded.size() + 1];
 
             System.out.println("ML result length: " + resultTensor[0][0].length);
             System.out.println("Actual tree length: " + encoded.size());
             for (int i = 0; i < resultTensor[0].length; i++)  {
-                //for (int j = 0; j < resultTensor[0][i].length; j++) {
-                for (int j = 0; j < encoded.size() + 1; j++) {
+                for (int j = 0; j < resultTensor[0][i].length; j++) {
+                //for (int j = 0; j < encoded.size() + 1; j++) {
                     // Just shift the decimal point
                     longResult[0][i][j] = (long) (resultTensor[0][i][j] * 1_000_000_000);
                     //longResult[0][i][j] = (long) (resultTensor[0][i][j]);
                 }
+            }*/
+
+
+            int rows = resultTensor[0].length;
+            int cols = resultTensor[0][0].length;
+            Float[][] transposed = new Float[cols][rows];
+
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    transposed[j][i] = resultTensor[0][i][j];
+                }
             }
+
+            long[][] platformChoices = Arrays.stream(transposed)
+                .map(row -> {
+                    Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
+                    long[] result = Arrays.stream(row)
+                            .mapToLong(v -> v == max ? 1L : 0L)
+                            .toArray();
+
+                    return result;
+                })
+                .toArray(long[][]::new);
 
             int valueDim = resultTensor[0][0].length;
             int indexDim = input.field1.get(0).length;
@@ -382,7 +409,8 @@ public class OrtMLModel {
             //assert valueDim == indexDim : "Index dim " + indexDim + " != " + valueDim + " valueDim";
 
             ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
-            mlResult.add(longResult[0]);
+            mlResult.add(platformChoices);
+
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
             end = Instant.now();
             //System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
@@ -408,6 +436,13 @@ public class OrtMLModel {
             );
             // Now set the platforms on the wayangPlan
             start = Instant.now();
+
+            System.out.println("Encoded size: " + encoded.size());
+            System.out.println("Decoded size: " + decoded.size());
+
+            System.out.println("Encoded tree: " + encoded.toStringEncoding());
+            assert decoded.size() == encoded.size() : "Mismatch in Decode and Encode tree sizes";
+
             TreeNode reconstructed = encoded.withPlatformChoicesFrom(decoded);
             WayangPlan decodedPlan = TreeDecoder.decode(reconstructed);
             end = Instant.now();

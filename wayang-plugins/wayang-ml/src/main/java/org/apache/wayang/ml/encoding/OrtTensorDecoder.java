@@ -26,6 +26,7 @@ import org.apache.wayang.core.util.Tuple;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -39,37 +40,72 @@ public class OrtTensorDecoder {
      * @param mlOutput takes the out put from @
      */
     public TreeNode decode(Tuple<ArrayList<long[][]>,ArrayList<long[][]>> mlOutput){
-        long[][] values = mlOutput.field0.get(0);
+        long[][] platformChoices = mlOutput.field0.get(0);
         long[][] indexedTree = mlOutput.field1.get(0);
         System.out.println("Index tree: " + Arrays.deepToString(indexedTree));
         System.out.println("Index tree size: " + indexedTree.length);
         long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
 
+        /*
+        //transpose values
+        // Assume values is a 2D long array: long[][] values = mlOutput.field0.get(0);
+        int rows = values.length;
+        int cols = values[0].length;
+        long[][] transposed = new long[cols][rows];
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                transposed[j][i] = values[i][j];
+            }
+        }
+
+        long[][] platformChoices = Arrays.stream(transposed)
+            .map(row -> {
+                long max = Arrays.stream(row).max().orElse(Long.MIN_VALUE);
+                return Arrays.stream(row)
+                        .map(v -> v == max ? 1L : 0L)
+                        .toArray();
+            })
+            .toArray(long[][]::new);
+        */
+
+        System.out.println("Platform choices:" + Arrays.deepToString(platformChoices));
+
+        //System.out.println("Flat index tree: " + Arrays.toString(flatIndexTree));
+        //System.out.println("Flat index tree length: " + flatIndexTree.length);
+
         for (int j = 0; j < flatIndexTree.length; j+=3) {
             final long curID = flatIndexTree[j];
+
+            System.out.println("Values: " + Arrays.toString(platformChoices[(int) curID]));
             //System.out.println("Looking at ID " + curID);
 
             // Skip over roots that have been visited before
+            /*
             if (visitedRoots.containsKey(curID)) {
                 continue;
             }
 
-            visitedRoots.put(curID, null);
+            visitedRoots.put(curID, null);*/
 
             // Skip 0s
+            /*
             if (curID == 0) {
+                System.out.println("Skipping 0");
                 continue;
-            }
+            }*/
 
+            /*
             long[] value = Arrays.stream(values)
                     .flatMapToLong(arr -> LongStream.of(arr[(int) curID]))
-                    .toArray();
+                    .toArray();*/
+            long[] value = platformChoices[(int) curID];
 
-            // Skip 0s
+            /* //Skip 0s
             if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
                 System.out.println("SKIPPING 0s");
                 continue;
-            }
+            }*/
 
 
             //set values
@@ -85,17 +121,16 @@ public class OrtTensorDecoder {
 
             curTreeNode.encoded = value;
 
-            //TODO: The assumption that you can always look for 3 nodes
-            //in a subtree doesn't hold anymore, it needs fixing
             if (flatIndexTree.length > j+1) {
                 long lID = flatIndexTree[j+1];
-                //System.out.println("Root " + curID + ", left " + lID);
-
+                System.out.println("Root " + curID + ", left " + lID);
                 TreeNode left;
 
+                /*
                 long[] lValues = Arrays.stream(values)
                         .flatMapToLong(arr -> LongStream.of(arr[(int) lID]))
-                        .toArray();
+                        .toArray();*/
+                long[] lValues = platformChoices[(int) lID];
 
                 if (nodeToIDMap.containsKey(lID)) {
                     left = nodeToIDMap.get(lID);
@@ -105,9 +140,9 @@ public class OrtTensorDecoder {
 
                 left.encoded = lValues;
 
-                if (lID != 0) {
+                //if (lID != 0) {
                     nodeToIDMap.put(lID, left);
-                }
+                //}
 
                 curTreeNode.left = left;
 
@@ -115,11 +150,14 @@ public class OrtTensorDecoder {
                     long rID = flatIndexTree[j+2];
                     TreeNode right;
 
-                    //System.out.println("Root " + curID + ", right " + rID);
+                    System.out.println("Root " + curID + ", right " + rID);
 
+                    /*
                     long[] rValues = Arrays.stream(values)
                             .flatMapToLong(arr -> LongStream.of(arr[(int) rID]))
-                            .toArray();
+                            .toArray();*/
+
+                    long[] rValues = platformChoices[(int) rID];
 
                     if (nodeToIDMap.containsKey(rID)) {
                         right = nodeToIDMap.get(rID);
@@ -129,9 +167,9 @@ public class OrtTensorDecoder {
 
                     right.encoded = rValues;
 
-                    if (rID != 0) {
+                    //if (rID != 0) {
                         nodeToIDMap.put(rID, right);
-                    }
+                    //}
 
                     curTreeNode.right = right;
                 }
@@ -141,6 +179,8 @@ public class OrtTensorDecoder {
             nodeToIDMap.put(curID, curTreeNode);
         }
 
+        System.out.println("No of nodes in map: " + this.nodeToIDMap.size());
+        System.out.println("Decoded tree" + this.nodeToIDMap.get(1L).toStringEncoding());
         return this.nodeToIDMap.get(1L);
     }
 }

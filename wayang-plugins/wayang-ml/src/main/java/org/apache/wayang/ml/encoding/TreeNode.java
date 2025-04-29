@@ -84,7 +84,7 @@ public class TreeNode extends BinaryTree<long[]>{
     public String toStringEncoding() {
         String encodedString = Arrays.toString(encoded).replace("[", "(").replace("]", ")").replaceAll("\\s+", "");
 
-        if (left == null && right == null) {
+        if (this.getLeft() == null && this.getRight() == null) {
             return '(' + encodedString + ",)";
         }
 
@@ -252,6 +252,7 @@ public class TreeNode extends BinaryTree<long[]>{
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
 
+        /*
         for (int i = 0; i < values.length; i++) {
             if (values[i] == 1 && disallowed.contains(i)) {
                 this.encoded[i] = 0;
@@ -259,7 +260,7 @@ public class TreeNode extends BinaryTree<long[]>{
 
                 return;
             }
-        }
+        }*/
 
         this.encoded = values;
 

@@ -149,11 +149,9 @@ public abstract class BinaryTree<T> {
      */
     public void rebalance() {
         if (isLeaf()) {
-            /*
             System.out.println("Is leaf, adding two 0s");
             left = create();
             right = create();
-            */
             return;
         }
 

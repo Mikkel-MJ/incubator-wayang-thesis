@@ -65,8 +65,8 @@ public class Training {
     public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
-        //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
-        trainIMDB(args[0], args[1], args[2], args[3], true);
+        trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
+        //trainIMDB(args[0], args[1], args[2], args[3], true);
     }
 
     /*
@@ -287,6 +287,7 @@ public class Training {
             config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.core.optimizer.pruning.topk", "100");
             plan = builder.build();
             writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));
             writer.newLine();
