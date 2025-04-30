@@ -392,6 +392,14 @@ public class OrtMLModel {
                 }
             }
 
+            /*
+            Float[][] trimmed = new Float[encoded.size() + 1][9];
+
+            // Copy the first 45 rows
+            for (int i = 0; i < encoded.size() + 1; i++) {
+                trimmed[i] = transposed[i];
+            }*/
+
             long[][] platformChoices = Arrays.stream(transposed)
                 .map(row -> {
                     Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);

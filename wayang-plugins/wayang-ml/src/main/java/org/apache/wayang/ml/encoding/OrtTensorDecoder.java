@@ -70,6 +70,7 @@ public class OrtTensorDecoder {
         */
 
         System.out.println("Platform choices:" + Arrays.deepToString(platformChoices));
+        System.out.println("Platform choices dim: " + platformChoices.length);
 
         //System.out.println("Flat index tree: " + Arrays.toString(flatIndexTree));
         //System.out.println("Flat index tree length: " + flatIndexTree.length);
