@@ -24,7 +24,7 @@ echo "Encoding training data with native optimizer"
 
 for query in "$train_path"/*.sql
 do
-    for i in {0..4}; do
+    for i in {0..2}; do
         ./bin/wayang-submit org.apache.wayang.ml.training.Training java,spark,flink,postgres $data_path/ $train_encode_path $query true
     done
 done

@@ -182,8 +182,8 @@ public class JOBenchmark {
             writer.write(args[3] + ": " + operators.size());
             writer.newLine();
             writer.flush();
-            writer.close();
-            */
+            writer.close();&*/
+
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);

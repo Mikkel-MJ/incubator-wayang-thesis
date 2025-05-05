@@ -137,7 +137,6 @@ public class MLContext extends WayangContext {
             execTime = Duration.between(start, end).toMillis();
 
             WayangPlan platformPlan = resultTuple.field0;
-            execTime = Duration.between(start, end).toMillis();
 
             /*Logging.writeToFile(
                 String.format("Optimization: %d", execTime),
@@ -154,6 +153,7 @@ public class MLContext extends WayangContext {
                 resultTuple.field1.toString()
             );
 
+            System.out.println("Sanity check: " + platformPlan.isSane());
             this.execute(platformPlan, udfJars);
         } catch (Exception e) {
             e.printStackTrace();

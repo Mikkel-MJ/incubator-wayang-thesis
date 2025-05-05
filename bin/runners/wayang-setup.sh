@@ -20,7 +20,7 @@ SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
 export DEPENDENCIES_DIR="${WORKDIR}/dependencies"
 
-export HADOOP_VERSION=3.3.0
+export HADOOP_VERSION=3.3.6
 export HADOOP_HOME="${DEPENDENCIES_DIR}/hadoop"
 
 if [ ! -d $HADOOP_HOME ]; then
@@ -32,7 +32,7 @@ if [ ! -d $HADOOP_HOME ]; then
     rm hadoop-${HADOOP_VERSION}.tar.gz
 fi
 
-export SPARK_VERSION=3.5.4
+export SPARK_VERSION=3.5.5
 export SPARK_HOME="${DEPENDENCIES_DIR}/spark"
 
 if [ ! -d $SPARK_HOME ]; then

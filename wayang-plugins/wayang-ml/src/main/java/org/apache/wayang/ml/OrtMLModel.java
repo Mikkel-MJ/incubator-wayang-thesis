@@ -325,7 +325,16 @@ public class OrtMLModel {
         }
 
         OnnxTensor tensorValues = OnnxTensor.createTensor(env, new float[][][]{inputValueStructure});
+        System.out.println("Actual input values: " + tensorValues);
         OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
+        System.out.println("Actual input indexes: " + tensorIndexes);
+        System.out.println("Actual input indexes: " + Arrays.deepToString(inputIndexStructure));
+        long[][][] sliced = new long[1][45][1];
+
+        for (int i = 0; i < 45; i++) {
+            sliced[0][i][0] = inputIndexStructure[0][i][0];
+        }
+
         OrtTensorDecoder decoder = new OrtTensorDecoder();
 
         this.inputMap.put("input1", tensorValues);
@@ -400,11 +409,13 @@ public class OrtMLModel {
                 trimmed[i] = transposed[i];
             }*/
 
+            System.out.println("PRE SOFTMAX: " + Arrays.deepToString(transposed));
+
             long[][] platformChoices = Arrays.stream(transposed)
                 .map(row -> {
                     Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
                     long[] result = Arrays.stream(row)
-                            .mapToLong(v -> v == max ? 1L : 0L)
+                            .mapToLong(v -> v.equals(max) ? 1L : 0L)
                             .toArray();
 
                     return result;
