@@ -87,8 +87,8 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
@@ -146,8 +146,8 @@ public class LSBORunner {
         WayangPlan plan = plans.get("query" + args[2]);*/
 
         try {
-            //WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
-            WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
+            WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
+            //WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
 
             //Set sink to be on Java
             /*

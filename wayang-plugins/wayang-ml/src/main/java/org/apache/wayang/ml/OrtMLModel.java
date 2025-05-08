@@ -36,6 +36,9 @@ import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.Logging;
+import org.apache.wayang.ml.validation.PlatformChoiceValidator;
+import org.apache.wayang.ml.validation.PostgresSourceValidationRule;
+import org.apache.wayang.ml.validation.BitmaskValidationRule;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -276,10 +279,6 @@ public class OrtMLModel {
 
         int indexDims = encoded.size();
         long featureDims = input1Dims[1];
-        System.out.println("Input 1 Dims: " + Arrays.toString(input1Dims));
-        System.out.println("Input 2 Dims: " + Arrays.toString(input2Dims));
-        System.out.println("Feature Vector size: " + input1Dims[1]);
-        System.out.println("Index Dims: " + encoded.size());
         Instant start = Instant.now();
 
         float[][] inputValueStructure = new float[(int) featureDims][(int) input1Dims[2]];
@@ -301,9 +300,6 @@ public class OrtMLModel {
         long[][] inputIndexStructure = input.field1.get(0);
         */
 
-        System.out.println("Input value structure: " + Arrays.deepToString(inputValueStructure));
-        System.out.println("Input value shape: [1, " + featureDims + ", " + input1Dims[2] + "]");
-
         long[][] encoderIndexes = input.field1.get(0);
 
         //System.out.println("Encoder indexes: " + Arrays.deepToString(encoderIndexes));
@@ -314,21 +310,12 @@ public class OrtMLModel {
 
         assert maxIndex + 1 <= inputValueStructure[0].length : "There isn't a corresponding value for each index";
 
-        System.out.println("Input value Structure size: " + inputValueStructure[0].length);
-        System.out.println("Value input0 size: " + input.field0.size());
-        System.out.println("Value input0 0 size: " + input.field0.get(0).length);
-        System.out.println("Value input0 0 0 size: " + input.field0.get(0)[0].length);
-        System.out.println("Index input1 size: " + input.field1.get(0).length);
-
         for (int i = 0; i < input.field1.get(0).length; i++) {
             inputIndexStructure[0][i]  = input.field1.get(0)[i];
         }
 
         OnnxTensor tensorValues = OnnxTensor.createTensor(env, new float[][][]{inputValueStructure});
-        System.out.println("Actual input values: " + tensorValues);
         OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
-        System.out.println("Actual input indexes: " + tensorIndexes);
-        System.out.println("Actual input indexes: " + Arrays.deepToString(inputIndexStructure));
         long[][][] sliced = new long[1][45][1];
 
         for (int i = 0; i < 45; i++) {
@@ -358,12 +345,6 @@ public class OrtMLModel {
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
 
-            System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
-            System.out.println("ML resultTensor size: " + resultTensor.length);
-            System.out.println("ML resultTensor 0 size: " + resultTensor[0].length);
-            System.out.println("ML resultTensor 0 0 size: " + resultTensor[0][0].length);
-            System.out.println("Input indexes: " + Arrays.deepToString(encoderIndexes));
-
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
 
@@ -374,53 +355,13 @@ public class OrtMLModel {
 
 
             start = Instant.now();
-            /*
-            long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
 
-            //long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) encoded.size() + 1];
-
-            System.out.println("ML result length: " + resultTensor[0][0].length);
-            System.out.println("Actual tree length: " + encoded.size());
-            for (int i = 0; i < resultTensor[0].length; i++)  {
-                for (int j = 0; j < resultTensor[0][i].length; j++) {
-                //for (int j = 0; j < encoded.size() + 1; j++) {
-                    // Just shift the decimal point
-                    longResult[0][i][j] = (long) (resultTensor[0][i][j] * 1_000_000_000);
-                    //longResult[0][i][j] = (long) (resultTensor[0][i][j]);
-                }
-            }*/
-
-
-            int rows = resultTensor[0].length;
-            int cols = resultTensor[0][0].length;
-            Float[][] transposed = new Float[cols][rows];
-
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < cols; j++) {
-                    transposed[j][i] = resultTensor[0][i][j];
-                }
-            }
-
-            /*
-            Float[][] trimmed = new Float[encoded.size() + 1][9];
-
-            // Copy the first 45 rows
-            for (int i = 0; i < encoded.size() + 1; i++) {
-                trimmed[i] = transposed[i];
-            }*/
-
-            System.out.println("PRE SOFTMAX: " + Arrays.deepToString(transposed));
-
-            long[][] platformChoices = Arrays.stream(transposed)
-                .map(row -> {
-                    Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
-                    long[] result = Arrays.stream(row)
-                            .mapToLong(v -> v.equals(max) ? 1L : 0L)
-                            .toArray();
-
-                    return result;
-                })
-                .toArray(long[][]::new);
+            long[][] platformChoices = PlatformChoiceValidator.validate(
+                resultTensor,
+                inputIndexStructure,
+                new PostgresSourceValidationRule(),
+                new BitmaskValidationRule()
+            );
 
             int valueDim = resultTensor[0][0].length;
             int indexDim = input.field1.get(0).length;
@@ -456,10 +397,6 @@ public class OrtMLModel {
             // Now set the platforms on the wayangPlan
             start = Instant.now();
 
-            System.out.println("Encoded size: " + encoded.size());
-            System.out.println("Decoded size: " + decoded.size());
-
-            System.out.println("Encoded tree: " + encoded.toStringEncoding());
             assert decoded.size() == encoded.size() : "Mismatch in Decode and Encode tree sizes";
 
             TreeNode reconstructed = encoded.withPlatformChoicesFrom(decoded);

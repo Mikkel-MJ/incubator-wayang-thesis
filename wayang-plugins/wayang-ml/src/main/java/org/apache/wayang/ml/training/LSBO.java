@@ -53,6 +53,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.ServerSocket;
@@ -201,38 +202,45 @@ public class LSBO {
                     }
                 }
 
+                int rows = choices[0].length;
+                int cols = choices[0][0].length;
+                Float[][] transposed = new Float[cols][rows];
+
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < cols; j++) {
+                        transposed[j][i] = choices[0][i][j];
+                    }
+                }
+
                 for (int i = 0; i < jsonIndexes.length(); i++) {
                     for (int j = 0; j < jsonIndexes.getJSONArray(i).length(); j++) {
                         indexes[0][i][j] = ((Integer) jsonIndexes.getJSONArray(i).get(j)).longValue();
                     }
                 }
 
-                long[][][] longResult = new long[1][(int) choices[0].length][(int) choices[0][0].length];
-                for (int i = 0; i < choices[0].length; i++)  {
-                    for (int j = 0; j < choices[0][i].length; j++) {
-                        // Just shift the decimal point
-                        longResult[0][i][j] = (long) (choices[0][i][j] * 1_000_000_000);
-                    }
-                }
+                long[][] platformChoices = Arrays.stream(transposed)
+                    .map(row -> {
+                        Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
+                        long[] result = Arrays.stream(row)
+                                .mapToLong(v -> v.equals(max) ? 1L : 0L)
+                                .toArray();
+
+                        return result;
+                    })
+                    .toArray(long[][]::new);
 
                 OrtTensorDecoder decoder = new OrtTensorDecoder();
                 ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
-                mlResult.add(longResult[0]);
+                mlResult.add(platformChoices);
                 ArrayList<long[][]> indexList = new ArrayList<long[][]>();
                 indexList.add(input.field1.get(0));
                 Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, indexList);
                 TreeNode decoded = decoder.decode(decoderInput);
-                System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
-                System.out.println("Decoder Index Size: " + decoderInput.field1.get(0).length);
-                System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
                 decoded.softmax();
 
                 // Now set the platforms on the wayangPlan
-                System.out.println("Decoded: " + decoded.toStringEncoding());
                 encoded = encoded.withPlatformChoicesFrom(decoded);
                 WayangPlan decodedPlan = TreeDecoder.decode(encoded);
-
-                System.out.println("WayangPlan: " + decodedPlan);
 
                 resultPlans.add(decodedPlan);
             } catch (Exception e) {

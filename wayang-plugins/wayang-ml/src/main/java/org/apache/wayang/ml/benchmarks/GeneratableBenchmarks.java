@@ -46,6 +46,7 @@ import org.apache.wayang.apps.tpch.queries.Query19;
 import org.apache.wayang.ml.training.GeneratableJob;
 import org.apache.wayang.ml.util.Jobs;
 import org.apache.wayang.api.DataQuanta;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
@@ -130,11 +131,15 @@ public class GeneratableBenchmarks {
             //Set sink to be on Java
             //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
 
-            String[] jars = new String[]{
-                ReflectionUtils.getDeclaringJar(GeneratableBenchmarks.class),
-                ReflectionUtils.getDeclaringJar(DataQuanta.class),
-                ReflectionUtils.getDeclaringJar(Query1Wayang.class),
-            };
+            String[] jars = ArrayUtils.addAll(
+                ReflectionUtils.getAllJars(GeneratableBenchmarks.class),
+                ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
+            );
+
+            jars = ArrayUtils.addAll(
+                jars,
+                ReflectionUtils.getAllJars(DataQuanta.class)
+            );
 
             System.out.println("Jars:" + Arrays.toString(jars));
 

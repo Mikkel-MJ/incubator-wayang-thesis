@@ -92,9 +92,7 @@ public class TreeEncoder implements Encoder {
         TreeNode resultNode = result.get(0);
 
         //rebalance to make it a guaranteed binary tree
-        System.out.println("[Before rebalancing]: " + resultNode.size());
         resultNode.rebalance();
-        System.out.println("[After rebalancing]: " + resultNode.size());
 
         return resultNode;
     }
