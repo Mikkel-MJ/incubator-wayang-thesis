@@ -20,6 +20,8 @@ package org.apache.wayang.ml.validation;
 
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.ml.encoding.TreeNode;
+import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.postgres.operators.PostgresTableSource;
 
 import com.google.common.primitives.Longs;
 
@@ -29,29 +31,32 @@ import java.util.Optional;
 import java.util.Set;
 /**
  * ValidationRule to forbid certain platforms
- * when input has not been on Postgres before
+ * when an operator doesn't exist for that platform
  */
-public class BitmaskValidationRule extends ValidationRule {
-    /*
-     * Index of disallowed platform choices
-     */
-    private Set<Integer> disallowed = Set.of(1, 2, 4, 7, 8);
+public class OperatorValidationRule extends ValidationRule {
 
-    public BitmaskValidationRule() {}
+    private int postgresIndex = 5;
+
+    public OperatorValidationRule() {}
 
     public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators
         for(int i = 1; i < choices.length; i++) {
-            for (int j = 0; j < choices[i].length; j++) {
-                Float max = Arrays.stream(choices[i]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
+            TreeNode node = (TreeNode) tree.getNode(i);
 
-                if (choices[i][j].equals(max) && disallowed.contains(j)) {
-                    choices[i][j] = 0f;
-                    //Reset to rerun the validation for the values
-                    j = -1;
+            if (node != null && !node.isNullOperator()) {
+
+                //Prevent TextFileSources from being in postgres
+                if (node.operator instanceof TextFileSource) {
+                    choices[i][postgresIndex] = 0f;
                 }
 
+                //Prevent TextFileSources from being outside of postgres
+                if (node.operator instanceof PostgresTableSource) {
+                    choices[i][postgresIndex] = Float.MAX_VALUE;
+                }
             }
         }
     }
+
 }

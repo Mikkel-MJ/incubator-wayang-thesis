@@ -93,8 +93,6 @@ public class TreeDecoder {
         }*/
 
         if (node.isNullOperator()){
-            System.out.println("2: No update of platforms on null operators");
-
             return;
         }
 
@@ -113,13 +111,11 @@ public class TreeDecoder {
                 operator.get().addTargetPlatform(platform);
             //}
         } else {
-            System.out.println("3: No operator present");
             logger.info("Operator couldn't be recovered, potentially conversion operator: {}", node);
 
             Platform platform = OneHotMappings.getOperatorPlatformFromEncoding(node.encoded).orElseThrow(
                 () -> new WayangException(String.format("Couldnt recover platform with encoding %s", Arrays.toString(node.encoded)))
             );
-            System.out.println("Platform: " + platform);
         }
 
         if (node.left != null) {

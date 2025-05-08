@@ -18,6 +18,8 @@
 
 package org.apache.wayang.ml.validation;
 
+import org.apache.wayang.ml.encoding.TreeNode;
+
 import java.util.Arrays;
 import java.util.Comparator;
 /**
@@ -28,11 +30,13 @@ public class PlatformChoiceValidator {
     public static long[][] validate(
         float[][][] tensor,
         long[][][] indexes,
+        TreeNode tree,
         ValidationRule... rules
     ) {
         Float[][] transposed = transpose(tensor);
+
         for (ValidationRule rule : rules) {
-            rule.validate(transposed, indexes);
+            rule.validate(transposed, indexes, tree);
         }
 
         return getPlatformChoices(transposed);

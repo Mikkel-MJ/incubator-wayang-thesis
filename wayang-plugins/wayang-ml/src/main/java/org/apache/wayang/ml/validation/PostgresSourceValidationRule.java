@@ -19,6 +19,8 @@
 package org.apache.wayang.ml.validation;
 
 import org.apache.wayang.core.util.Tuple;
+import org.apache.wayang.ml.encoding.TreeNode;
+
 import com.google.common.primitives.Longs;
 
 import java.util.Arrays;
@@ -36,7 +38,7 @@ public class PostgresSourceValidationRule extends ValidationRule {
 
     public PostgresSourceValidationRule() {}
 
-    public void validate(Float[][] choices, long[][][] indexes) {
+    public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators
         for(int i = 1; i < choices.length; i++) {
             Float max = Arrays.stream(choices[i]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);

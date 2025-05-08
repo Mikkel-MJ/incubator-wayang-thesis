@@ -22,6 +22,7 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.util.BinaryTree;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -273,5 +274,20 @@ public class TreeNode extends BinaryTree<long[]>{
 
     public boolean isNullOperator() {
         return this.operator == null && Arrays.equals(this.encoded, OneHotEncoder.encodeNullOperator());
+    }
+
+    public TreeNode getNode(int index) {
+        List<TreeNode> nodes = new ArrayList<>();
+
+        //Add null operator
+        nodes.add(new TreeNode());
+
+        this.traverse((node) -> {
+            if (!((TreeNode) node).isNullOperator()) {
+                nodes.add((TreeNode) node);
+            }
+        });
+
+        return nodes.get(index);
     }
 }

@@ -36,9 +36,7 @@ import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.Logging;
-import org.apache.wayang.ml.validation.PlatformChoiceValidator;
-import org.apache.wayang.ml.validation.PostgresSourceValidationRule;
-import org.apache.wayang.ml.validation.BitmaskValidationRule;
+import org.apache.wayang.ml.validation.*;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -359,8 +357,10 @@ public class OrtMLModel {
             long[][] platformChoices = PlatformChoiceValidator.validate(
                 resultTensor,
                 inputIndexStructure,
+                encoded,
                 new PostgresSourceValidationRule(),
-                new BitmaskValidationRule()
+                new BitmaskValidationRule(),
+                new OperatorValidationRule()
             );
 
             int valueDim = resultTensor[0][0].length;

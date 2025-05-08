@@ -18,9 +18,15 @@
 
 package org.apache.wayang.ml.validation;
 
+import org.apache.wayang.ml.encoding.TreeNode;
+
 /**
  * Class used for specifying validation rules on given platform choices
  */
 public abstract class ValidationRule {
-    public void validate(Float[][] choices, long[][][] indexes) {}
+    public void validate(
+        Float[][] choices,
+        long[][][] indexes,
+        TreeNode tree
+    ) {}
 }

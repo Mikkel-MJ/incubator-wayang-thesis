@@ -111,13 +111,11 @@ public abstract class BinaryTree<T> {
         }
 
         if (left != null) {
-            left.traverse(func);
-            //func.accept(left);
+            func.accept(left);
         }
 
         if (right != null) {
-            //func.accept(right);
-            right.traverse(func);
+            func.accept(right);
         }
     }
 
@@ -196,4 +194,37 @@ public abstract class BinaryTree<T> {
 
         return size;
     }
+
+    public BinaryTree<T> getNode(int index) {
+        List<BinaryTree<T>> nodes = new ArrayList<>();
+        return getNodeHelper(this, nodes, index, 1);
+    }
+
+    private BinaryTree<T> getNodeHelper(BinaryTree<T> node, ArrayList<BinaryTree<T>> nodes, int targetIndex, int counter) {
+
+        System.out.println("INDEX: " + counter);
+        if (node == null) {
+            return null;
+        }
+
+        if (counter == targetIndex) {
+            return node;
+        }
+
+        counter++;
+
+        BinaryTree<T> leftResult = getNodeHelper(node.left, targetIndex, counter);
+
+        if (leftResult != null) {
+            return leftResult;
+        }
+
+        return getNodeHelper(node.right, targetIndex, counter);
+    }
+
+    /**
+     *          1
+     *      2       5
+     *  3       4
+     */
 }
