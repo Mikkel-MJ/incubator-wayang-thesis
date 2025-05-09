@@ -1,5 +1,5 @@
 SELECT MIN(kt.kind) AS movie_kind,
-       MIN(t.title) AS complete_nerdy_internet_movie
+       MIN(t.title) AS complete_us_internet_movie
 FROM postgres.complete_cast AS cc,
      postgres.comp_cast_type AS cct1,
      postgres.company_name AS cn,
@@ -14,13 +14,11 @@ FROM postgres.complete_cast AS cc,
 WHERE cct1.kind = 'complete+verified'
   AND cn.country_code = '[us]'
   AND it1.info = 'release dates'
-  AND k.keyword IN ('nerd',
-                    'loner',
-                    'alienation',
-                    'dignity')
   AND kt.kind IN ('movie')
   AND mi.note LIKE '%internet%'
-  AND mi.info LIKE 'USA:% 200%'
+  AND mi.info IS NOT NULL
+  AND (mi.info LIKE 'USA:% 199%'
+       OR mi.info LIKE 'USA:% 200%')
   AND t.production_year > 2000
   AND kt.id = t.kind_id
   AND t.id = mi.movie_id

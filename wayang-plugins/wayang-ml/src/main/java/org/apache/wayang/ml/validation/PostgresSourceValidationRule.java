@@ -50,27 +50,37 @@ public class PostgresSourceValidationRule extends ValidationRule {
 
                 Tuple<Optional<Long>, Optional<Long>> inputIndexes = getInputIndexes((long) i, indexes);
 
+                float epsilon = Float.MIN_NORMAL;
+
                 // Check if this has inputs, aka is not a source
+                System.out.println("Postgres choice identified");
                 if (inputIndexes.getField0().isPresent()) {
                     int leftIndex = inputIndexes.getField0().get().intValue();
+                    System.out.println("Postgres choice hasLeft: " + leftIndex);
 
                     if (choices.length > leftIndex) {
-                        Float maxLeft = Arrays.stream(choices[leftIndex]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
+                        float maxLeft = Arrays.stream(choices[leftIndex]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
 
-                        if (!choices[leftIndex][postgresIndex].equals(maxLeft)) {
+                        if(Math.abs(choices[leftIndex][postgresIndex] - maxLeft) >= epsilon) {
+                            System.out.println("Postgres choice disallowed");
                             isAllowed = false;
+                        } else {
+                            System.out.println("Postgres choice allowed: " + choices[leftIndex][postgresIndex] + "!=" + maxLeft);
                         }
                     }
                 }
 
                 if (inputIndexes.getField1().isPresent()) {
                     int rightIndex = inputIndexes.getField1().get().intValue();
+                    System.out.println("Postgres choice hasRight: " + rightIndex);
 
                     if (choices.length > rightIndex) {
-                        Float maxRight = Arrays.stream(choices[rightIndex]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
-
-                        if (!choices[rightIndex][postgresIndex].equals(maxRight)) {
+                        float maxRight = Arrays.stream(choices[rightIndex]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
+                        if(Math.abs(choices[rightIndex][postgresIndex] - maxRight) >= epsilon) {
+                            System.out.println("Postgres choice disallowed");
                             isAllowed = false;
+                        } else {
+                            System.out.println("Postgres choice allowed: " + choices[rightIndex][postgresIndex] + "!=" + maxRight);
                         }
                     }
                 }

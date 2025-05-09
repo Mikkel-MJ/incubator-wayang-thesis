@@ -358,9 +358,9 @@ public class OrtMLModel {
                 resultTensor,
                 inputIndexStructure,
                 encoded,
-                new PostgresSourceValidationRule(),
                 new BitmaskValidationRule(),
-                new OperatorValidationRule()
+                new OperatorValidationRule(),
+                new PostgresSourceValidationRule()
             );
 
             int valueDim = resultTensor[0][0].length;
