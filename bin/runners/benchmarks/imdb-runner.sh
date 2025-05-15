@@ -16,24 +16,29 @@ cd wayang-0.7.1
 
 data_path=/work/lsbo-paper/data/JOBenchmark/data
 timings_path=/work/lsbo-paper/data/JOBenchmark/data/executions
-test_path=/work/lsbo-paper/data/JOBenchmark/queries/BaseQuerySplit/test
-train_path=/work/lsbo-paper/data/JOBenchmark/queries/BaseQuerySplit/train
+test_path=/work/lsbo-paper/data/JOBenchmark/queries
 model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
 echo "Running JOBenchmark"
 
-#for i in {0..5}; do
-    #for query in "$test_path"/*.sql; do
-    #    timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
-    #    if [ $? -eq 124 ]; then
-    #        echo "Query ${query} timed out"
-    #    fi
-    #done
 
-    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,flink,spark,postgres file://$data_path/ $timings_path $test_path/m_15a.sql
+for query in "$test_path"/*.sql; do
+    for i in {0..2}; do
+        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
+        if [ $? -eq 124 ]; then
+            echo "Query ${query} timed out"
+        fi
+    done
+    # Lord forgive me - for Flink has sinned
+    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
+    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
+    sleep 5s
+done
+
+    #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,flink,spark,postgres file://$data_path/ $timings_path $test_path/m_15a.sql
 
     #for query in "$test_path"/*.sql; do
     #        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $timings_path $query bvae $model_path $data_path
     #done
-#done
+
 

@@ -46,6 +46,7 @@ import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
+import org.apache.wayang.ml.validation.*;
 import org.apache.wayang.core.util.ExplainUtils;
 
 import java.util.HashMap;
@@ -204,13 +205,14 @@ public class LSBO {
 
                 int rows = choices[0].length;
                 int cols = choices[0][0].length;
+                /*
                 Float[][] transposed = new Float[cols][rows];
 
                 for (int i = 0; i < rows; i++) {
                     for (int j = 0; j < cols; j++) {
                         transposed[j][i] = choices[0][i][j];
                     }
-                }
+                }*/
 
                 for (int i = 0; i < jsonIndexes.length(); i++) {
                     for (int j = 0; j < jsonIndexes.getJSONArray(i).length(); j++) {
@@ -218,6 +220,16 @@ public class LSBO {
                     }
                 }
 
+                long[][] platformChoices = PlatformChoiceValidator.validate(
+                    choices,
+                    indexes,
+                    encoded,
+                    new BitmaskValidationRule(),
+                    new OperatorValidationRule(),
+                    new PostgresSourceValidationRule()
+                );
+
+                /*
                 long[][] platformChoices = Arrays.stream(transposed)
                     .map(row -> {
                         Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
@@ -228,6 +240,7 @@ public class LSBO {
                         return result;
                     })
                     .toArray(long[][]::new);
+                */
 
                 OrtTensorDecoder decoder = new OrtTensorDecoder();
                 ArrayList<long[][]> mlResult = new ArrayList<long[][]>();

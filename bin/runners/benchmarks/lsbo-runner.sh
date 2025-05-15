@@ -29,21 +29,21 @@ fi
 
 #queries=(901 950 999)
 
-bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bqs/txt/bvae-b-1.onnx
-bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bqs/txt/bvae-b-5.onnx
-bvae_10_path=/work/lsbo-paper/python-ml/src/Models/imdb/bqs/txt/bvae-b-10.onnx
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/tpch/rebalanced/bvae-1.onnx
+bvae_5_path=/work/lsbo-paper/python-ml/src/Models/tpch/rebalanced/bvae-5.onnx
+bvae_10_path=/work/lsbo-paper/python-ml/src/Models/tpch/rebalanced/bvae-10.onnx
 
 data_path=/work/lsbo-paper/data
 experience_path=/work/lsbo-paper/data/experience/
 train_path=/work/lsbo-paper/data/JOBenchmark/queries/BaseQuerySplit/train
 test_path=/work/lsbo-paper/data/JOBenchmark/queries/BaseQuerySplit/test
 
-#for query in {949..999}; do
-for query in "$test_path"/*.sql; do
+for query in {949..999}; do
+#for query in "$test_path"/*.sql; do
     echo "Start LSBO loop for query ${query}"
-    #./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --stats="./src/Data/splits/imdb/bqs/txt/stats-1.txt" --trainset="./src/Data/splits/imdb/bqs/txt/retrain-1.txt" --zdim 9
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_5_path --stats="./src/Data/splits/imdb/bqs/txt/stats-5.txt" --trainset="./src/Data/splits/imdb/bqs/txt/retrain-5.txt" --zdim 13
-    #./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_10_path --stats="./src/Data/splits/imdb/bqs/txt/stats-10.txt" --trainset="./src/Data/splits/imdb/bqs/txt/retrain-10.txt" --zdim 11
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/" --model-path $bvae_1_path --stats="./src/Data/splits/imdb/bqs/txt/stats-1.txt" --trainset="./src/Data/splits/tpch/bvae/rebalanced/retrain-1.txt" --zdim 19
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/" --model-path $bvae_5_path --stats="./src/Data/splits/imdb/bqs/txt/stats-5.txt" --trainset="./src/Data/splits/tpch/bvae/rebalanced/retrain-5.txt" --zdim 21
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --time 10 --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/" --model-path $bvae_10_path --stats="./src/Data/splits/imdb/bqs/txt/stats-10.txt" --trainset="./src/Data/splits/tpch/bvae/rebalanced/retrain-10.txt" --zdim 15
 
     # Lord forgive me - for Flink has sinned
     sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh

@@ -162,6 +162,11 @@ public class JOBenchmark {
                 ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
             );
 
+            jars = ArrayUtils.addAll(
+                jars,
+                ReflectionUtils.getAllJars(org.apache.calcite.runtime.SqlFunctions.class)
+            );
+
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
             IMDBJOBenchmark.setSources(plan, args[1]);
