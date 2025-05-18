@@ -76,7 +76,7 @@ public class OneHotMappings {
         .sorted(Comparator.comparing(c -> c.getName()))
         .forEach(entry -> mappings.put(entry.getName(), mappings.size()));
 
-        mappings.forEach((k,v) -> System.out.println(k + ": " + v));
+        //mappings.forEach((k,v) -> System.out.println(k + ": " + v));
 
         return mappings;
     }

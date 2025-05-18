@@ -147,12 +147,8 @@ public class Training {
                 //wayangContext.setLogLevel(Level.DEBUG);
 
                 IMDBJOBenchmark.setSources(plan, dataPath);
-                PrintUtils.print("Logical WayangPlan", plan);
-                System.out.println("Set sources");
 
-                System.out.println("Getting Job");
                 Job wayangJob = wayangContext.createJob("", plan, jars);
-                System.out.println("Building ExecutionPlan");
                 ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
 
                 HashMap<Operator, Collection<ExecutionTask>> tree = new HashMap<>();
@@ -167,26 +163,14 @@ public class Training {
 
                     if (operator instanceof TextFileSource) {
                         if (operator.getPlatform().getName() == "PostgreSQL") {
-                            System.out.println(".csv in postgres SCREAAAAAAAAAAAAAAAAAAAAAM");
-
-                            /*
-                            writer.write(query);
-                            writer.newLine();
-                            writer.flush();*/
-
                             return;
                         }
-
-                        System.out.println("All good, correctly set .csv in " + operator.getPlatform().getName());
                     }
                 }
 
-                System.out.println("Built plan");
                 OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
-                System.out.println("Encoding");
                 TreeNode wayangNode = TreeEncoder.encode(plan);
                 TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
-                System.out.println("Writing");
                 //System.out.println(exPlan.toExtensiveString());
                 //System.out.println(execNode.toString());
 
@@ -222,7 +206,6 @@ public class Training {
     ) {
         Class<? extends GeneratableJob> job = Jobs.getJob(index);
 
-        System.out.println("Running job " + index + " : " + job.getName());
         try {
             Constructor<?> cnstr = job.getDeclaredConstructors()[0];
             GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();

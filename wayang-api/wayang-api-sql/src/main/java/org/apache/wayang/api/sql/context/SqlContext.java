@@ -126,8 +126,6 @@ public class SqlContext extends WayangContext {
 
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
-        System.out.println(relNode.explain());
-
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(relNode, 0, null);
 
@@ -154,8 +152,6 @@ public class SqlContext extends WayangContext {
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 wayangRules);
-
-        System.out.println(wayangRel.explain());
 
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
@@ -208,8 +204,6 @@ public class SqlContext extends WayangContext {
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
 
-        PrintUtils.print("Logical WayangPlan", wayangRel);
-
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
 
@@ -218,7 +212,6 @@ public class SqlContext extends WayangContext {
              -> {if (!node.isSink()) node.addTargetPlatform(Postgres.platform());});
             this.execute(getJobName(), wayangPlan);
         } else {
-            Arrays.stream(udfJars).forEach(System.out::println);
             this.execute(getJobName(), wayangPlan, udfJars);
         }
 

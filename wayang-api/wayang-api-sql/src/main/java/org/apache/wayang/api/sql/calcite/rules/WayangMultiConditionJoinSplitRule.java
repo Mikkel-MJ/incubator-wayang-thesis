@@ -72,7 +72,6 @@ public class WayangMultiConditionJoinSplitRule extends RelRule<WayangMultiCondit
     @Override
     public void onMatch(final RelOptRuleCall call) {
         final Join join = call.rel(0);
-        System.out.println("matched split rule with: " + join);
         final RexBuilder rexBuilder = join.getCluster().getRexBuilder();
         final RexCall condition = (RexCall) join.getCondition();
 
@@ -93,16 +92,10 @@ public class WayangMultiConditionJoinSplitRule extends RelRule<WayangMultiCondit
         }
 
 
-        System.out.println("join condition: " + join.getCondition());
-        System.out.println("join left: " + left);
-        System.out.println("join right: " + right);
-        System.out.println("join row type: " + join.getRowType());
-
         // Find the Join in the tree that is a literal [condition=true]
         // that can be used to join the left and right table here
         // Skip first operand as it will be used for this joins condition
         List<RelNode> children = this.traverseAndCollect(join);
-        System.out.println("Children: " + children);
 
         final LinkedList<RelNode> crossJoins = children.stream().filter(input -> {
             if (input instanceof LogicalJoin)  {
@@ -113,7 +106,6 @@ public class WayangMultiConditionJoinSplitRule extends RelRule<WayangMultiCondit
 
             if (input instanceof RelSubset) {
                 RelSubset subset = (RelSubset) input;
-                System.out.println("Input: " + subset.getBestOrOriginal());
 
                 RelNode original = subset.getBestOrOriginal();
 
@@ -138,9 +130,6 @@ public class WayangMultiConditionJoinSplitRule extends RelRule<WayangMultiCondit
         }
 
         for (RexCall operand : operands.subList(1, operands.size())) {
-            System.out.println("Operand: " + operand);
-
-            System.out.println("Cross Join Candidates: " + crossJoins);
 
             if (crossJoins.size() == 0) {
                 return;
@@ -149,7 +138,6 @@ public class WayangMultiConditionJoinSplitRule extends RelRule<WayangMultiCondit
             // Just pick the first cross join available
             RelNode candidate = crossJoins.poll();
 
-            System.out.println("Candidate: " + candidate);
 
             if (candidate == null) {
                 continue;
