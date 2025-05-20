@@ -192,6 +192,7 @@ public class IMDBJOBenchmark {
                 }*/
 
                 switch (tableName) {
+                    /*
                     case "movie_companies": parser = new MapOperator<>(
                             (line) -> {
                                 Record record = new Record(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
@@ -217,7 +218,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         break;
-
+                    */
                     case "comp_cast_type":
                         parser = new MapOperator<>(
                             (line) -> { return new Record(CompCastType.toArray(CompCastType.parseCsv(line)));
@@ -253,11 +254,13 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         break;
+                    /*
                     case "movie_info":
                         parser = new MapOperator<>(
                             (line) -> {
                                 return new Record(MovieInfo.toArray(MovieInfo.parseCsv(line)));
                             },
+
                             String.class,
                             Record.class
                         );
@@ -303,6 +306,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         break;
+                    */
                     case "movie_link":
                         parser = new MapOperator<>(
                             (line) -> {
