@@ -126,11 +126,6 @@ public class SqlContext extends WayangContext {
 
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
-        final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
-        visitor.visit(relNode, 0, null);
-
-        final AliasFinder aliasFinder = new AliasFinder(visitor);
-
         final RuleSet wayangRules = RuleSets.ofList(
             CoreRules.FILTER_INTO_JOIN,
             //CoreRules.FILTER_MERGE,
@@ -152,6 +147,11 @@ public class SqlContext extends WayangContext {
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 wayangRules);
+
+        final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
+        visitor.visit(wayangRel, 0, null);
+
+        final AliasFinder aliasFinder = new AliasFinder(visitor);
 
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
