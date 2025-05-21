@@ -232,12 +232,6 @@ public class WayangRules {
             .map(RexInputRef.class::cast)
             .map(RexInputRef::getIndex)
             .collect(Collectors.toList());
-        System.out.println("join left rows: " + join.getLeft().getRowType());
-        System.out.println(join.getLeft().getRowType().getFieldCount());
-        System.out.println("join right rows: " + join.getRight().getRowType());
-        System.out.println(join.getRight().getRowType().getFieldCount());
-        System.out.println("Keys: " + keys);
-        System.out.println("Field list: " + join.getRowType().getFieldList());
 
         final List<String> fieldTypeNames = keys.stream()
             .map(key -> join.getRowType().getFieldList().get(key))

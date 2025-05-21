@@ -26,6 +26,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 public class OrtTensorEncoder {
+
     /**
      * This method prepares the trees for creation of the OnnxTensor
      * @param trees
@@ -71,7 +72,9 @@ public class OrtTensorEncoder {
      * @return
      */
     public long[][] treeConvIndexes(TreeNode root){
+        //System.out.println("Pre preorder: " + root);
         TreeNode indexTree = preorderIndexes(root, 1);
+        //System.out.println("preorderIndexes: " + indexTree);
 
         ArrayList<long[]> acc = new ArrayList<>(); //in place of a generator
         treeConvIndexesStep(indexTree,acc); //mutates acc
@@ -92,18 +95,19 @@ public class OrtTensorEncoder {
         }
 
         if (root.isLeaf()) {
-            acc.add(new long[]{root.encoded[0], 0, 0});
+            //acc.add(new long[]{root.encoded[0], 0, 0});
+            //acc.add(new long[]{root.encoded[0]});
 
             return;
         }
 
         long ID  = root.encoded[0];
-        long lID = root.left != null ? root.left.encoded[0] : 0;
-        long rID = root.right != null ? root.right.encoded[0]: 0;
+        long lID = root.getLeft() != null ? root.getLeft().encoded[0] : 0;
+        long rID = root.getRight() != null ? root.getRight().encoded[0]: 0;
 
         acc.add(new long[]{ID, lID, rID});
-        treeConvIndexesStep(root.left, acc);
-        treeConvIndexesStep(root.right, acc);
+        treeConvIndexesStep(root.getLeft(), acc);
+        treeConvIndexesStep(root.getRight(), acc);
     }
 
 
@@ -119,23 +123,36 @@ public class OrtTensorEncoder {
      * @param idx needs to default to one.
      */
     public TreeNode preorderIndexes(TreeNode root, long idx){ //this method is very scary - Mads, early 2024 | - True, Juri, late 2024
+        //System.out.println("PreorderIndexes: " + root);
         if (root == null) {
             return null;
         }
 
-        orderedNodes.add(root);
+        //orderedNodes.add(root);
+
+        if (root.isNullOperator()) {
+            return new TreeNode(new long[]{0}, null, null);
+        }
 
         if (root.isLeaf()) {
-            return new TreeNode(new long[]{idx}, null, null);
+            return new TreeNode(
+                new long[]{idx},
+                new TreeNode(new long[]{0}, null, null),
+                new TreeNode(new long[]{0}, null, null)
+            );
         }
 
         TreeNode rightSubTree = null;
-        TreeNode leftSubTree = root.left != null ? preorderIndexes(root.left, idx+1) : null;
+        TreeNode leftSubTree = null;
+
+        if (root.getLeft() != null) {
+            leftSubTree = preorderIndexes(root.getLeft(), idx+1);
+        }
 
         // Not that shrimple
-        if (root.right != null) {
+        if (root.getRight() != null) {
             long maxIndexInLeftSubTree = rightMost(leftSubTree);
-            rightSubTree = preorderIndexes(root.right, maxIndexInLeftSubTree + 1);
+            rightSubTree = preorderIndexes(root.getRight(), maxIndexInLeftSubTree + 1);
         }
 
         return new TreeNode(new long[]{idx}, leftSubTree, rightSubTree);
@@ -151,12 +168,21 @@ public class OrtTensorEncoder {
         }
 
         // left non null, right null
-        if (root.right == null && root.left != null) {
-            return rightMost(root.left);
+        if (root.getRight() == null && root.getLeft() != null) {
+            return rightMost(root.getLeft());
+        }
+
+        if (root.getRight().encoded[0] == 0 && root.getLeft().encoded[0] == 0) {
+            return root.encoded[0];
+        }
+
+        // Check for null operator
+        if (root.getRight().encoded[0] == 0) {
+            return rightMost(root.getLeft());
         }
 
         // left non null, right non null, this non null
-        return rightMost(root.right);
+        return rightMost(root.getRight());
     }
 
     /**
@@ -202,6 +228,7 @@ public class OrtTensorEncoder {
         //testo.preorderIndexes(node,1);
 
         ArrayList<TreeNode> testArr = new ArrayList<>();
+        System.out.println("Plan size: " + node.size());
         testArr.add(node);
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> t = testo.prepareTrees(testArr);
 
@@ -232,15 +259,21 @@ public class OrtTensorEncoder {
         }
 
         // Remove the 0th item - its the Id
-        long[] values = Arrays.copyOf(v.encoded, v.encoded.length);
-        //values[0] = 0;
+        long[] values;
+
+        if (v.isNullOperator()) {
+            values = OneHotEncoder.encodeNullOperator();
+        } else {
+            values = Arrays.copyOf(v.encoded, v.encoded.length);
+        }
+        values[0] = 0;
         acc.add(values);
 
         if (v.isLeaf()) {
             return;
         }
 
-        flattenStep(v.left, acc);
-        flattenStep(v.right, acc);
+        flattenStep(v.getLeft(), acc);
+        flattenStep(v.getRight(), acc);
     }
 }

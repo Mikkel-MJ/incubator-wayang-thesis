@@ -44,6 +44,7 @@ import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.apps.tpch.data.OrderTuple;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -132,17 +133,10 @@ public class TPCHBenchmarks {
                 }
             });
 
-            String[] jars = new String[]{
-                ReflectionUtils.getDeclaringJar(TPCHBenchmarks.class),
-                ReflectionUtils.getDeclaringJar(Query1Wayang.class),
-                ReflectionUtils.getDeclaringJar(Query3.class),
-                ReflectionUtils.getDeclaringJar(Query5.class),
-                ReflectionUtils.getDeclaringJar(Query6.class),
-                ReflectionUtils.getDeclaringJar(Query10.class),
-                ReflectionUtils.getDeclaringJar(Query12.class),
-                ReflectionUtils.getDeclaringJar(Query14.class),
-                ReflectionUtils.getDeclaringJar(Query19.class),
-            };
+            String[] jars = ArrayUtils.addAll(
+                ReflectionUtils.getAllJars(TPCHBenchmarks.class),
+                ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
+            );
 
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {

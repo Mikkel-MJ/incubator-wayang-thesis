@@ -21,6 +21,7 @@ package org.apache.wayang.ml;
 import ai.onnxruntime.NodeInfo;
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtLoggingLevel;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import ai.onnxruntime.providers.OrtCUDAProviderOptions;
@@ -35,7 +36,9 @@ import org.apache.wayang.ml.encoding.OrtTensorEncoder;
 import org.apache.wayang.ml.encoding.TreeDecoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.util.Logging;
+import org.apache.wayang.ml.validation.*;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -93,6 +96,7 @@ public class OrtMLModel {
 
             options.setInterOpNumThreads(16);
             options.setIntraOpNumThreads(16);
+            options.setSessionLogLevel(OrtLoggingLevel.ORT_LOGGING_LEVEL_VERBOSE);
             //options.addCUDA(cudaProviderOptions);
             this.session = env.createSession(filePath, options);
         }
@@ -271,12 +275,8 @@ public class OrtMLModel {
         long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
-        int indexDims = encoded.getTreeSize();
+        int indexDims = encoded.size();
         long featureDims = input1Dims[1];
-        System.out.println("Input 1 Dims: " + Arrays.toString(input1Dims));
-        System.out.println("Input 2 Dims: " + Arrays.toString(input2Dims));
-        System.out.println("Feature Vector size: " + input1Dims[1]);
-        System.out.println("Index Dims: " + encoded.getTreeSize());
         Instant start = Instant.now();
 
         float[][] inputValueStructure = new float[(int) featureDims][(int) input1Dims[2]];
@@ -299,6 +299,8 @@ public class OrtMLModel {
         */
 
         long[][] encoderIndexes = input.field1.get(0);
+
+        //System.out.println("Encoder indexes: " + Arrays.deepToString(encoderIndexes));
         long maxIndex = Arrays.stream(encoderIndexes)
                         .flatMapToLong(Arrays::stream)
                         .max()
@@ -306,16 +308,18 @@ public class OrtMLModel {
 
         assert maxIndex + 1 <= inputValueStructure[0].length : "There isn't a corresponding value for each index";
 
-        System.out.println("Input value Structure size: " + inputValueStructure[0].length);
-        System.out.println("Value input0 size: " + input.field0.get(0).length);
-        System.out.println("Index input1 size: " + input.field1.get(0).length);
-
         for (int i = 0; i < input.field1.get(0).length; i++) {
             inputIndexStructure[0][i]  = input.field1.get(0)[i];
         }
 
         OnnxTensor tensorValues = OnnxTensor.createTensor(env, new float[][][]{inputValueStructure});
         OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
+        long[][][] sliced = new long[1][45][1];
+
+        for (int i = 0; i < 45; i++) {
+            sliced[0][i][0] = inputIndexStructure[0][i][0];
+        }
+
         OrtTensorDecoder decoder = new OrtTensorDecoder();
 
         this.inputMap.put("input1", tensorValues);
@@ -339,9 +343,6 @@ public class OrtMLModel {
         try (Result r = session.run(inputMap, requestedOutputs)) {
             float[][][] resultTensor = unwrapFunc.apply(r, "output");
 
-            System.out.println("ML resultTensor: " + Arrays.deepToString(resultTensor));
-            System.out.println("Input indexes: " + Arrays.deepToString(encoderIndexes));
-
             Instant end = Instant.now();
             long execTime = Duration.between(start, end).toMillis();
 
@@ -352,14 +353,15 @@ public class OrtMLModel {
 
 
             start = Instant.now();
-            long[][][] longResult = new long[1][(int) resultTensor[0].length][(int) resultTensor[0][0].length];
-            for (int i = 0; i < resultTensor[0].length; i++)  {
-                for (int j = 0; j < resultTensor[0][i].length; j++) {
-                    // Just shift the decimal point
-                    longResult[0][i][j] = (long) (resultTensor[0][i][j] * 1_000_000_000);
-                    //longResult[0][i][j] = (long) (resultTensor[0][i][j]);
-                }
-            }
+
+            long[][] platformChoices = PlatformChoiceValidator.validate(
+                resultTensor,
+                inputIndexStructure,
+                encoded,
+                new BitmaskValidationRule(),
+                new OperatorValidationRule(),
+                new PostgresSourceValidationRule()
+            );
 
             int valueDim = resultTensor[0][0].length;
             int indexDim = input.field1.get(0).length;
@@ -367,11 +369,12 @@ public class OrtMLModel {
             //assert valueDim == indexDim : "Index dim " + indexDim + " != " + valueDim + " valueDim";
 
             ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
-            mlResult.add(longResult[0]);
+            mlResult.add(platformChoices);
+
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
             end = Instant.now();
-            System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
-            System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
+            //System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
+            //System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
             execTime = Duration.between(start, end).toMillis();
 
             Logging.writeToFile(
@@ -381,6 +384,8 @@ public class OrtMLModel {
 
             start = Instant.now();
             TreeNode decoded = decoder.decode(decoderInput);
+
+            //System.out.println("Decoder Output: " + decoded);
             decoded.softmax();
             end = Instant.now();
 
@@ -391,6 +396,9 @@ public class OrtMLModel {
             );
             // Now set the platforms on the wayangPlan
             start = Instant.now();
+
+            assert decoded.size() == encoded.size() : "Mismatch in Decode and Encode tree sizes";
+
             TreeNode reconstructed = encoded.withPlatformChoicesFrom(decoded);
             WayangPlan decodedPlan = TreeDecoder.decode(reconstructed);
             end = Instant.now();

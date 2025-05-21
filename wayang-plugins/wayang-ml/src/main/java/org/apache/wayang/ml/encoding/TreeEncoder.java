@@ -63,7 +63,6 @@ public class TreeEncoder implements Encoder {
 
         for (Operator sink : sinks) {
             TreeNode sinkNode = traversePIOperator(sink, junctions, tree);
-            sinkNode.isRoot = true;
             result.add(sinkNode);
         }
 
@@ -83,7 +82,6 @@ public class TreeEncoder implements Encoder {
 
         for (Operator sink : sinks) {
             TreeNode sinkNode = traverse(sink, tree);
-            sinkNode.isRoot = true;
             result.add(sinkNode);
         }
 
@@ -91,7 +89,12 @@ public class TreeEncoder implements Encoder {
             return null;
         }
 
-        return result.get(0);
+        TreeNode resultNode = result.get(0);
+
+        //rebalance to make it a guaranteed binary tree
+        resultNode.rebalance();
+
+        return resultNode;
     }
 
     public static TreeNode encode(ExecutionPlan plan, boolean ignoreConversions) {
@@ -104,7 +107,6 @@ public class TreeEncoder implements Encoder {
 
         for (ExecutionTask sink : sinks) {
             TreeNode sinkNode = traverse(sink, tree, ignoreConversions);
-            sinkNode.isRoot = true;
             result.add(sinkNode);
         }
 
@@ -112,7 +114,11 @@ public class TreeEncoder implements Encoder {
             return null;
         }
 
-        return result.get(0);
+        TreeNode resultNode = result.get(0);
+
+        resultNode.rebalance();
+
+        return resultNode;
     }
 
     private static TreeNode traversePIOperator(
@@ -217,9 +223,11 @@ public class TreeEncoder implements Encoder {
                 .orElseThrow(() -> new WayangException("Operator could not be retrieved from Alternatives"));
             OneHotMappings.addOriginalOperator(original);
 
-            currentNode.encoded = OneHotEncoder.encodeOperator(current);
+            currentNode.encoded = OneHotEncoder.encodeOperator(original);
+            currentNode.operator = original;
         } else {
             OneHotMappings.addOriginalOperator(current);
+            currentNode.operator = current;
 
             if (current.isExecutionOperator()) {
                 currentNode.encoded = OneHotEncoder.encodeOperator((ExecutionOperator) current);
@@ -257,8 +265,10 @@ public class TreeEncoder implements Encoder {
             OneHotMappings.addOriginalOperator(original);
 
             currentNode.encoded = OneHotEncoder.encodeOperator(original);
+            currentNode.operator = original;
         } else {
             OneHotMappings.addOriginalOperator(current);
+            currentNode.operator = current;
 
             if (current.isExecutionOperator()) {
                 currentNode.encoded = OneHotEncoder.encodeOperator((ExecutionOperator) current);
@@ -285,7 +295,7 @@ public class TreeEncoder implements Encoder {
         for (Operator input : inputs) {
             TreeNode next = traverse(input, visited);
 
-            if (currentNode.left == null) {
+            if (currentNode.getLeft() == null) {
                 currentNode.left = next;
             } else {
                 currentNode.right = next;
@@ -306,6 +316,7 @@ public class TreeEncoder implements Encoder {
         ExecutionOperator operator = current.getOperator();
         TreeNode currentNode = new TreeNode();
         currentNode.encoded = OneHotEncoder.encodeOperator(operator);
+        currentNode.operator = operator;
 
         for (ExecutionTask producer : producers) {
             TreeNode next = traverse(producer, visited, ignoreConversions);
@@ -315,7 +326,7 @@ public class TreeEncoder implements Encoder {
                 return next;
             }
 
-            if (currentNode.left == null) {
+            if (currentNode.getLeft() == null) {
                 currentNode.left = next;
             } else {
                 currentNode.right = next;

@@ -15,25 +15,25 @@ cd ${WORKDIR}
 cd wayang-0.7.1
 
 data_path=/work/lsbo-paper/data/JOBenchmark/data
-train_encode_path=/work/lsbo-paper/data/JOBenchmark/encodings/loo/train.txt
-test_encode_path=/work/lsbo-paper/data/JOBenchmark/encodings/loo/test.txt
-train_path=/work/lsbo-paper/data/JOBenchmark/queries/LeaveOneOut/train
+train_encode_path=/work/lsbo-paper/data/JOBenchmark/encodings/generated/train.txt
+test_encode_path=/work/lsbo-paper/data/JOBenchmark/encodings/generated/test.txt
+train_path=/work/lsbo-paper/data/JOBenchmark/queries/Training
 test_path=/work/lsbo-paper/data/JOBenchmark/queries/LeaveOneOut/test
 
 echo "Encoding training data with native optimizer"
 
-#for query in "$train_path"/*.sql
-#do
-#    for i in {0..4}; do
-#        ./bin/wayang-submit org.apache.wayang.ml.training.Training java,spark,flink,postgres $data_path/ $train_encode_path $query true
-#    done
-#done
-
-for query in "$test_path"/*.sql
+for query in "$train_path"/*.sql
 do
-    for i in {0..4}; do
-        ./bin/wayang-submit org.apache.wayang.ml.training.Training java,spark,flink,postgres $data_path/ $test_encode_path $query true
+    for i in {0..2}; do
+        ./bin/wayang-submit org.apache.wayang.ml.training.Training java,spark,flink,postgres $data_path/ $train_encode_path $query true
     done
 done
+
+#for query in "$test_path"/*.sql
+#do
+#    for i in {0..4}; do
+#        ./bin/wayang-submit org.apache.wayang.ml.training.Training java,spark,flink,postgres $data_path/ $test_encode_path $query true
+#    done
+#done
 
 

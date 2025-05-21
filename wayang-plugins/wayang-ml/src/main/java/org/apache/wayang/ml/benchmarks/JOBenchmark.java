@@ -162,6 +162,11 @@ public class JOBenchmark {
                 ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
             );
 
+            jars = ArrayUtils.addAll(
+                jars,
+                ReflectionUtils.getAllJars(org.apache.calcite.runtime.SqlFunctions.class)
+            );
+
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
             IMDBJOBenchmark.setSources(plan, args[1]);
@@ -182,8 +187,8 @@ public class JOBenchmark {
             writer.write(args[3] + ": " + operators.size());
             writer.newLine();
             writer.flush();
-            writer.close();
-            */
+            writer.close();&*/
+
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);

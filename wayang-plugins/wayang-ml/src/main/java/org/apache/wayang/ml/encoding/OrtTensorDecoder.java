@@ -26,11 +26,13 @@ import org.apache.wayang.core.util.Tuple;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 public class OrtTensorDecoder {
     private HashMap<Long, TreeNode> nodeToIDMap = new HashMap<>();
+    private HashMap<Long, TreeNode> visitedRoots = new HashMap<>();
 
     //TODO: figure out output structure, from ml model
     /**
@@ -38,50 +40,148 @@ public class OrtTensorDecoder {
      * @param mlOutput takes the out put from @
      */
     public TreeNode decode(Tuple<ArrayList<long[][]>,ArrayList<long[][]>> mlOutput){
-        ArrayList<long[][]> valueStructure = mlOutput.field0;
-        ArrayList<long[][]> indexStructure = mlOutput.field1;
+        long[][] platformChoices = mlOutput.field0.get(0);
+        long[][] indexedTree = mlOutput.field1.get(0);
+        System.out.println("Index tree: " + Arrays.deepToString(indexedTree));
+        System.out.println("Index tree size: " + indexedTree.length);
+        long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
 
-        for (int i = 0; i < valueStructure.size(); i++) { //iterate for each tree, in practice should only be 1
-            long[][] values      = valueStructure.get(i);
-            long[][] indexedTree = indexStructure.get(i);
-            long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
-            for (int j = 0; j < flatIndexTree.length; j+=3) {
-                final long curID = flatIndexTree[j];
+        /*
+        //transpose values
+        // Assume values is a 2D long array: long[][] values = mlOutput.field0.get(0);
+        int rows = values.length;
+        int cols = values[0].length;
+        long[][] transposed = new long[cols][rows];
 
-                // Skip 0s
-                if (curID == 0) {
-                    continue;
-                }
-
-                long lID   = flatIndexTree[j+1];
-                long rID   = flatIndexTree[j+2];
-
-                long[] value = Arrays.stream(values)
-                        .flatMapToLong(arr -> LongStream.of(arr[(int) curID]))
-                        .toArray();
-
-                // Skip 0s
-                if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
-                    continue;
-                }
-
-                //fetch l,r from map such that we can reference values.
-                TreeNode l       = nodeToIDMap.containsKey(lID)   ? nodeToIDMap.get(lID)   : new TreeNode();
-                TreeNode r       = nodeToIDMap.containsKey(rID)   ? nodeToIDMap.get(rID)   : new TreeNode();
-                TreeNode curTreeNode = nodeToIDMap.containsKey(curID) ? nodeToIDMap.get(curID) : new TreeNode(value, l, r);
-
-                //set values
-                curTreeNode.encoded = value;
-                curTreeNode.left     = l;
-                curTreeNode.right     = r;
-
-                //put values back into map so we can look them up in next loop
-                nodeToIDMap.put(curID,curTreeNode);
-                nodeToIDMap.put(lID,l);
-                nodeToIDMap.put(rID,r);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                transposed[j][i] = values[i][j];
             }
         }
 
+        long[][] platformChoices = Arrays.stream(transposed)
+            .map(row -> {
+                long max = Arrays.stream(row).max().orElse(Long.MIN_VALUE);
+                return Arrays.stream(row)
+                        .map(v -> v == max ? 1L : 0L)
+                        .toArray();
+            })
+            .toArray(long[][]::new);
+        */
+
+        System.out.println("Platform choices:" + Arrays.deepToString(platformChoices));
+        System.out.println("Platform choices dim: " + platformChoices.length);
+
+        //System.out.println("Flat index tree: " + Arrays.toString(flatIndexTree));
+        //System.out.println("Flat index tree length: " + flatIndexTree.length);
+
+        for (int j = 0; j < flatIndexTree.length; j+=3) {
+            final long curID = flatIndexTree[j];
+
+            System.out.println("Values: " + Arrays.toString(platformChoices[(int) curID]));
+            //System.out.println("Looking at ID " + curID);
+
+            // Skip over roots that have been visited before
+            /*
+            if (visitedRoots.containsKey(curID)) {
+                continue;
+            }
+
+            visitedRoots.put(curID, null);*/
+
+            // Skip 0s
+            /*
+            if (curID == 0) {
+                System.out.println("Skipping 0");
+                continue;
+            }*/
+
+            /*
+            long[] value = Arrays.stream(values)
+                    .flatMapToLong(arr -> LongStream.of(arr[(int) curID]))
+                    .toArray();*/
+            long[] value = platformChoices[(int) curID];
+
+            /* //Skip 0s
+            if (LongStream.of(value).reduce(0l, Long::sum) == 0) {
+                System.out.println("SKIPPING 0s");
+                continue;
+            }*/
+
+
+            //set values
+            //fetch l,r from map such that we can reference values.
+            TreeNode curTreeNode = nodeToIDMap.containsKey(curID) ? nodeToIDMap.get(curID) : new TreeNode(value, null, null);
+
+            // Skip Nulloperator
+            /*
+            if (curTreeNode.isNullOperator()) {
+                System.out.println("SKIPPING Nulloperator");
+                continue;
+            }*/
+
+            curTreeNode.encoded = value;
+
+            if (flatIndexTree.length > j+1) {
+                long lID = flatIndexTree[j+1];
+                System.out.println("Root " + curID + ", left " + lID);
+                TreeNode left;
+
+                /*
+                long[] lValues = Arrays.stream(values)
+                        .flatMapToLong(arr -> LongStream.of(arr[(int) lID]))
+                        .toArray();*/
+                long[] lValues = platformChoices[(int) lID];
+
+                if (nodeToIDMap.containsKey(lID)) {
+                    left = nodeToIDMap.get(lID);
+                } else {
+                    left = new TreeNode(lValues, null, null);
+                }
+
+                left.encoded = lValues;
+
+                //if (lID != 0) {
+                    nodeToIDMap.put(lID, left);
+                //}
+
+                curTreeNode.left = left;
+
+                if (flatIndexTree.length > j+2) {
+                    long rID = flatIndexTree[j+2];
+                    TreeNode right;
+
+                    System.out.println("Root " + curID + ", right " + rID);
+
+                    /*
+                    long[] rValues = Arrays.stream(values)
+                            .flatMapToLong(arr -> LongStream.of(arr[(int) rID]))
+                            .toArray();*/
+
+                    long[] rValues = platformChoices[(int) rID];
+
+                    if (nodeToIDMap.containsKey(rID)) {
+                        right = nodeToIDMap.get(rID);
+                    } else {
+                        right = new TreeNode(rValues, null, null);
+                    }
+
+                    right.encoded = rValues;
+
+                    //if (rID != 0) {
+                        nodeToIDMap.put(rID, right);
+                    //}
+
+                    curTreeNode.right = right;
+                }
+            }
+
+            //put values back into map so we can look them up in next loop
+            nodeToIDMap.put(curID, curTreeNode);
+        }
+
+        System.out.println("No of nodes in map: " + this.nodeToIDMap.size());
+        System.out.println("Decoded tree" + this.nodeToIDMap.get(1L).toStringEncoding());
         return this.nodeToIDMap.get(1L);
     }
 }
