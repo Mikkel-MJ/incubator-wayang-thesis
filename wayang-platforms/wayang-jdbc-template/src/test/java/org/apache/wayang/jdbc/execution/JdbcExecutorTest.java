@@ -29,6 +29,7 @@ import org.apache.wayang.core.plan.executionplan.ExecutionStage;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
 import org.apache.wayang.core.platform.CrossPlatformExecutor;
 import org.apache.wayang.core.profiling.NoInstrumentationStrategy;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel;
 import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
@@ -70,7 +71,11 @@ public class JdbcExecutorTest {
 
         ExecutionStage nextStage = mock(ExecutionStage.class);
 
-        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(HsqldbPlatform.getInstance());
+        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(
+            HsqldbPlatform.getInstance(),
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
         ExecutionTask sqlToStreamTask = new ExecutionTask(sqlToStreamOperator);
         tableSourceTask.getOutputChannel(0).addConsumer(sqlToStreamTask, 0);
         sqlToStreamTask.setStage(nextStage);
@@ -119,7 +124,11 @@ public class JdbcExecutorTest {
 
         ExecutionStage nextStage = mock(ExecutionStage.class);
 
-        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(HsqldbPlatform.getInstance());
+        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(
+            HsqldbPlatform.getInstance(),
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
         ExecutionTask sqlToStreamTask = new ExecutionTask(sqlToStreamOperator);
         ageFilterTask.getOutputChannel(0).addConsumer(sqlToStreamTask, 0);
         sqlToStreamTask.setStage(nextStage);
@@ -161,7 +170,11 @@ public class JdbcExecutorTest {
 
         ExecutionStage nextStage = mock(ExecutionStage.class);
 
-        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(HsqldbPlatform.getInstance());
+        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(
+            HsqldbPlatform.getInstance(),
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
         ExecutionTask sqlToStreamTask = new ExecutionTask(sqlToStreamOperator);
         projectionTask.getOutputChannel(0).addConsumer(sqlToStreamTask, 0);
         sqlToStreamTask.setStage(nextStage);
@@ -229,7 +242,11 @@ public class JdbcExecutorTest {
 
         ExecutionStage nextStage = mock(ExecutionStage.class);
 
-        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(HsqldbPlatform.getInstance());
+        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(
+            HsqldbPlatform.getInstance(),
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
         ExecutionTask sqlToStreamTask = new ExecutionTask(sqlToStreamOperator);
         projectionTask.getOutputChannel(0).addConsumer(sqlToStreamTask, 0);
         sqlToStreamTask.setStage(nextStage);

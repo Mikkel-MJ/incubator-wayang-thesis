@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.function.PredicateDescriptor;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
@@ -116,7 +117,11 @@ public class JdbcJoinOperatorTest extends OperatorTestBase {
 
         ExecutionStage nextStage = mock(ExecutionStage.class);
 
-        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(HsqldbPlatform.getInstance());
+        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(
+            HsqldbPlatform.getInstance(),
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
         ExecutionTask sqlToStreamTask = new ExecutionTask(sqlToStreamOperator);
         joinTask.getOutputChannel(0).addConsumer(sqlToStreamTask, 0);
         sqlToStreamTask.setStage(nextStage);

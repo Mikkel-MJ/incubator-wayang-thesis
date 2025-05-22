@@ -58,7 +58,7 @@ import java.util.stream.StreamSupport;
  * This {@link Operator} converts {@link SqlQueryChannel}s to
  * {@link StreamChannel}s.
  */
-public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
+public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Input, Output>
         implements JavaExecutionOperator, JsonSerializable {
 
     private final JdbcPlatformTemplate jdbcPlatform;
@@ -67,20 +67,14 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
      * Creates a new instance.
      *
      * @param jdbcPlatform from which the SQL data comes
-     */
-    public SqlToStreamOperator(final JdbcPlatformTemplate jdbcPlatform) {
-        this(jdbcPlatform, DataSetType.createDefault(Record.class));
-    }
-
-    /**
-     * Creates a new instance.
-     *
-     * @param jdbcPlatform from which the SQL data comes
      * @param dataSetType  type of the {@link Record}s being transformed; see
      *                     {@link RecordType}
      */
-    public SqlToStreamOperator(final JdbcPlatformTemplate jdbcPlatform, final DataSetType<Record> dataSetType) {
-        super(dataSetType, dataSetType, false);
+    public SqlToStreamOperator(
+            final JdbcPlatformTemplate jdbcPlatform,
+            final DataSetType<Input> inputDataSetType,
+            final DataSetType<Output> outputDataSetType) {
+        super(inputDataSetType, outputDataSetType, false);
         this.jdbcPlatform = jdbcPlatform;
     }
 
@@ -104,9 +98,10 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
                 .createDatabaseDescriptor(executor.getConfiguration())
                 .createJdbcConnection();
 
-        final Iterator<Record> resultSetIterator = new ResultSetIterator(connection, input.getSqlQuery());
-        final Spliterator<Record> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
-        final Stream<Record> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
+        System.out.println("[BOUNDARY]: " + output.getLineage().getPredecessor());
+        final Iterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery());
+        final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
+        final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
 
         output.accept(resultSetStream);
 
@@ -144,7 +139,7 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
     /**
      * Exposes a {@link ResultSet} as an {@link Iterator}.
      */
-    public static class ResultSetIterator implements Iterator<Record>, AutoCloseable {
+    public static class ResultSetIterator<Output> implements Iterator<Output>, AutoCloseable {
 
         /**
          * Keeps around the {@link ResultSet} of the SQL query.
@@ -154,7 +149,7 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
         /**
          * The next {@link Record} to be delivered via {@link #next()}.
          */
-        private Record next;
+        private Output next;
 
         /**
          * Creates a new instance.
@@ -189,7 +184,7 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
                     for (int i = 0; i < recordWidth; i++) {
                         values[i] = this.resultSet.getObject(i + 1);
                     }
-                    this.next = new Record(values);
+                    this.next = (Output) values;
                 }
             } catch (final SQLException e) {
                 this.next = null;
@@ -204,8 +199,8 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
         }
 
         @Override
-        public Record next() {
-            final Record curNext = this.next;
+        public Output next() {
+            final Output curNext = this.next;
             this.moveToNext();
             return curNext;
         }
@@ -233,7 +228,12 @@ public class SqlToStreamOperator extends UnaryToUnaryOperator<Record, Record>
     public static SqlToStreamOperator fromJson(final WayangJsonObj wayangJsonObj) {
         final String platformClassName = wayangJsonObj.getString("platform");
         final JdbcPlatformTemplate jdbcPlatform = ReflectionUtils.evaluate(platformClassName + ".getInstance()");
-        return new SqlToStreamOperator(jdbcPlatform);
+        return new SqlToStreamOperator(
+            jdbcPlatform,
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
+
     }
 
     @Override

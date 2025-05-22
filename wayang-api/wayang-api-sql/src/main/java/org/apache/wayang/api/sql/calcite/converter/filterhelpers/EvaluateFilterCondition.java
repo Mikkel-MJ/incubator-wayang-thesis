@@ -133,10 +133,10 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
     }
 
     private boolean like(final Optional<?> o, final RexLiteral toCompare) {
-        //final SqlFunctions.LikeFunction likeFunction = new SqlFunctions.LikeFunction();
+        final SqlFunctions.LikeFunction likeFunction = new SqlFunctions.LikeFunction();
         final String unwrapped = o.map(s -> (String) s).orElse("");
-        //final boolean isMatch = likeFunction.like(unwrapped, toCompare
-        final boolean isMatch = SqlFunctions.like(unwrapped, toCompare
+        final boolean isMatch = likeFunction.like(unwrapped, toCompare
+        //final boolean isMatch = SqlFunctions.like(unwrapped, toCompare
             .toString()
             .replace("'", "") //the calcite sqlToRegex api needs input w/o 's
         );

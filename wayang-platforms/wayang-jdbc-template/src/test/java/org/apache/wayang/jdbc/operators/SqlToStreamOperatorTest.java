@@ -21,6 +21,7 @@ package org.apache.wayang.jdbc.operators;
 import org.junit.Assert;
 import org.junit.Test;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.function.PredicateDescriptor;
@@ -98,7 +99,11 @@ public class SqlToStreamOperatorTest extends OperatorTestBase {
                         0
                 );
 
-        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(HsqldbPlatform.getInstance());
+        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(
+            HsqldbPlatform.getInstance(),
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
         evaluate(
                 sqlToStreamOperator,
                 new ChannelInstance[]{sqlQueryChannelInstance},
@@ -157,7 +162,11 @@ public class SqlToStreamOperatorTest extends OperatorTestBase {
                         0
                 );
 
-        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(HsqldbPlatform.getInstance());
+        SqlToStreamOperator sqlToStreamOperator = new SqlToStreamOperator(
+            HsqldbPlatform.getInstance(),
+            DataSetType.createDefault(Record.class),
+            DataSetType.createDefault(Record.class)
+        );
         evaluate(
                 sqlToStreamOperator,
                 new ChannelInstance[]{sqlQueryChannelInstance},

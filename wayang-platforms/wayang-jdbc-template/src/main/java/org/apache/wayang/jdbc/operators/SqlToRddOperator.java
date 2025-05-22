@@ -83,7 +83,7 @@ public class SqlToRddOperator extends UnaryToUnaryOperator<Record, Record> imple
                 .createDatabaseDescriptor(executor.getConfiguration())
                 .createJdbcConnection();
 
-        Iterator<Record> resultSetIterator = new SqlToStreamOperator.ResultSetIterator(connection, input.getSqlQuery());
+        Iterator<Record> resultSetIterator = new SqlToStreamOperator.ResultSetIterator<Record>(connection, input.getSqlQuery());
         Iterable<Record> resultSetIterable = () -> resultSetIterator;
 
         // Convert the ResultSet to a JavaRDD.

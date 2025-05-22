@@ -118,13 +118,18 @@ public class SqlContext extends WayangContext {
         final Properties configProperties = Optimizer.ConfigProperties.getDefaults();
         final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
-        final Optimizer optimizer = Optimizer.create(calciteSchema, configProperties,
-                relDataTypeFactory);
+        final Optimizer optimizer = Optimizer.create(
+            calciteSchema,
+            configProperties,
+            relDataTypeFactory
+        );
 
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
 
         final RelNode relNode = optimizer.convert(validatedSqlNode);
+
+        System.out.println("[RelNode]: " + relNode.explain());
 
         final RuleSet wayangRules = RuleSets.ofList(
             CoreRules.FILTER_INTO_JOIN,
@@ -149,6 +154,9 @@ public class SqlContext extends WayangContext {
                 wayangRules);
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
+
+        System.out.println("[WayangRel]: " + wayangRel.explain());
+
         visitor.visit(wayangRel, 0, null);
 
         final AliasFinder aliasFinder = new AliasFinder(visitor);

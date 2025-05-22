@@ -26,12 +26,16 @@ import java.util.Optional;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.metadata.RelColumnOrigin;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoiningTableExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
-import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MapFunctionImpl;
+import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
@@ -45,6 +49,9 @@ import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.util.ReflectionUtils;
+
+import java.util.Set;
 
 public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
 
@@ -107,6 +114,9 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
         // remove calcite unique integer identifiers in table.column0 type of names
         final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
+
+        System.out.println("[catalog]: " + catalog);
+
         final String cleanedLeftFieldName = CalciteSources
                 .findSqlName(leftTableName + "." + leftFieldName, catalog).split("\\.")[1];
         final String cleanedRightFieldName = CalciteSources
@@ -116,12 +126,36 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         // the transform descriptor, this depends when each statement shows up in the
         // condition if the leftKeyIndex is less than the right key index this is the normal case,
         // where JOIN x AS x' ON x'.x* = y'.y*, else we need to switch
+
+        /*
         final String leftTableAlias = leftKeyIndex < rightKeyIndex
                 ? aliasFinder.columnIndexToTableName.get(leftKeyIndex)
                 : aliasFinder.columnIndexToTableName.get(rightKeyIndex);
         final String rightTableAlias = leftKeyIndex < rightKeyIndex
                 ? aliasFinder.columnIndexToTableName.get(rightKeyIndex)
                 : aliasFinder.columnIndexToTableName.get(leftKeyIndex);
+        */
+
+        Map<RelDataTypeField, String> tablesMap = CalciteSources.createColumnToTableOriginMap(wayangRelNode);
+
+        RelMetadataQuery mq = wayangRelNode.getCluster().getMetadataQuery();
+        RelColumnOrigin leftOrigin = mq.getColumnOrigins(wayangRelNode, leftKeyIndex).stream().findFirst().get();
+        RelColumnOrigin rightOrigin = mq.getColumnOrigins(wayangRelNode, rightKeyIndex).stream().findFirst().get();
+
+        final String leftTableAlias = leftKeyIndex < rightKeyIndex
+            ? leftOrigin.getOriginTable().getQualifiedName().get(1)
+            : rightOrigin.getOriginTable().getQualifiedName().get(1);
+
+        final String rightTableAlias = leftKeyIndex < rightKeyIndex
+            ? rightOrigin.getOriginTable().getQualifiedName().get(1)
+            : leftOrigin.getOriginTable().getQualifiedName().get(1);
+
+        System.out.println("[alias catalog]: " + aliasFinder.catalog);
+        System.out.println("[LEFT KEY]: " + leftKeyIndex);
+        System.out.println("[RIGHT KEY]: " + rightKeyIndex);
+        System.out.println("[LEFT]: " + leftTableName + " AS " + leftTableAlias);
+        System.out.println("[RIGHT]: " + rightTableName + " AS " + rightTableAlias);
+        System.out.println("[RelNode]: " + wayangRelNode.getRowType().getFieldList());
 
         // if join is joining the LHS of a join condition "JOIN left ON left = right"
         // then we pick the first case, otherwise the 2nd "JOIN right ON left = right"
@@ -143,12 +177,10 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 rightTableName + "." + rightFieldName };
 
         // Join returns Tuple2 - map to a Record
-        final SerializableFunction<Tuple2, Record> mp = new MapFunctionImpl();
-
-        final ProjectionDescriptor<Tuple2, Record> pd = new ProjectionDescriptor<Tuple2, Record>(
-                mp, Tuple2.class, Record.class, joinTableNames);
-
-        final MapOperator<Tuple2, Record> mapOperator = new MapOperator<Tuple2, Record>(pd);
+        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<Tuple2<Record, Record>, Record>(
+                new JoinFlattenResult(),
+                ReflectionUtils.specify(Tuple2.class),
+                Record.class);
 
         join.connectTo(0, mapOperator, 0);
 

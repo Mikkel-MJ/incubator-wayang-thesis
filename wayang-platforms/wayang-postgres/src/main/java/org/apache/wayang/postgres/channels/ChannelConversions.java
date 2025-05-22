@@ -20,6 +20,7 @@ package org.apache.wayang.postgres.channels;
 
 import org.apache.wayang.core.optimizer.channels.ChannelConversion;
 import org.apache.wayang.core.optimizer.channels.DefaultChannelConversion;
+import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.java.channels.StreamChannel;
 import org.apache.wayang.jdbc.operators.SqlToRddOperator;
 import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
@@ -37,7 +38,31 @@ public class ChannelConversions {
     public static final ChannelConversion SQL_TO_STREAM_CONVERSION = new DefaultChannelConversion(
             PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
             StreamChannel.DESCRIPTOR,
-            () -> new SqlToStreamOperator(PostgresPlatform.getInstance())
+            () -> new SqlToStreamOperator(
+                  PostgresPlatform.getInstance(),
+                  DataSetType.createDefault(Record.class),
+                  DataSetType.createDefault(Record.class)
+            )
+    );
+
+    public static final ChannelConversion SQL_TUPLE_TO_STREAM_CONVERSION = new DefaultChannelConversion(
+            PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
+            StreamChannel.DESCRIPTOR,
+            () -> new SqlToStreamOperator(
+                  PostgresPlatform.getInstance(),
+                  ReflectionUtils.specify(Tuple2.class),
+                  DataSetType.createDefault(Record.class)
+            )
+    );
+
+    public static final ChannelConversion SQL_T0_TUPLE_STREAM_CONVERSION = new DefaultChannelConversion(
+            PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
+            StreamChannel.DESCRIPTOR,
+            () -> new SqlToStreamOperator(
+                  PostgresPlatform.getInstance(),
+                  ReflectionUtils.specify(Record.class),
+                  DataSetType.createDefault(Tuple2.class)
+            )
     );
 
     public static final ChannelConversion SQL_TO_UNCACHED_RDD_CONVERSION = new DefaultChannelConversion(
@@ -48,6 +73,7 @@ public class ChannelConversions {
 
     public static final Collection<ChannelConversion> ALL = Arrays.asList(
             SQL_TO_STREAM_CONVERSION,
+            SQL_T0_TUPLE_STREAM_CONVERSION,
             SQL_TO_UNCACHED_RDD_CONVERSION
     );
 
