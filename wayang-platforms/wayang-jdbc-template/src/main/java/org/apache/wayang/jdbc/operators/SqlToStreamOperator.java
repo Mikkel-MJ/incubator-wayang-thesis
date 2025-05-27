@@ -104,10 +104,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         final Iterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(), boundaryOperator);
         final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
-        final Stream<Output> testStream = StreamSupport.stream(resultSetSpliterator, false);
         final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
-
-        System.out.println("[SqlToStream Input]: " + testStream.count());
 
         output.accept(resultSetStream);
 

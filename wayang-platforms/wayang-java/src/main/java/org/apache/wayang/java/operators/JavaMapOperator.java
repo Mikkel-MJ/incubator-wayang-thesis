@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -80,6 +81,7 @@ public class JavaMapOperator<InputType, OutputType>
 
         final Function<InputType, OutputType> function = javaExecutor.getCompiler().compile(this.functionDescriptor);
         JavaExecutor.openFunction(this, function, inputs, operatorContext);
+
         output.accept(input.<InputType>provideStream().map(function));
 
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);

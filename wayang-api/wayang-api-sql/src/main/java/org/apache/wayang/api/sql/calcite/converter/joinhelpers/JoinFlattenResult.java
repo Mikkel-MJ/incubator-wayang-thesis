@@ -22,6 +22,8 @@ import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
+import java.util.Arrays;
+
 /**
  * Flattens the result of a join i.e. a {@link Tuple2} of a left and a right
  * {@link Record} to a single {@link Record}.
@@ -33,6 +35,8 @@ public class JoinFlattenResult implements FunctionDescriptor.SerializableFunctio
         final int length0 = tuple2.getField0() != null ? tuple2.getField0().size() : 0;
         final int length1 = tuple2.getField1() != null ? tuple2.getField1().size() : 0;
 
+        System.out.println("[LEFT FLATTEN]: " + length0);
+        System.out.println("[RIGHT FLATTEN]: " + length1);
         final int totalLength = length0 + length1;
 
         final Object[] fields = new Object[totalLength];
@@ -44,6 +48,8 @@ public class JoinFlattenResult implements FunctionDescriptor.SerializableFunctio
         for (int i = length0; i < totalLength; i++) {
             fields[i] = tuple2.getField1().getField(i - length0);
         }
+
+        System.out.println("[FLATTEN FIELDS]: " + Arrays.toString(fields));
 
         return new Record(fields);
     }
