@@ -39,6 +39,8 @@ import org.apache.wayang.java.operators.JavaExecutionOperator;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel;
 import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
 import org.apache.logging.log4j.LogManager;
+import org.apache.wayang.basic.operators.JoinOperator;
+import org.apache.wayang.basic.data.Tuple2;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -98,10 +100,14 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                 .createDatabaseDescriptor(executor.getConfiguration())
                 .createJdbcConnection();
 
-        System.out.println("[BOUNDARY]: " + output.getLineage().getPredecessor());
-        final Iterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery());
+        final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
+
+        final Iterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(), boundaryOperator);
         final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
+        final Stream<Output> testStream = StreamSupport.stream(resultSetSpliterator, false);
         final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
+
+        System.out.println("[SqlToStream Input]: " + testStream.count());
 
         output.accept(resultSetStream);
 
@@ -111,10 +117,12 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                 executor.getConfiguration()));
         queryLineageNode.addPredecessor(input.getLineage());
         final ExecutionLineageNode outputLineageNode = new ExecutionLineageNode(operatorContext);
+
         outputLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 String.format("wayang.%s.sqltostream.load.output", this.jdbcPlatform.getPlatformId()),
                 executor.getConfiguration()));
         output.getLineage().addPredecessor(outputLineageNode);
+
 
         return queryLineageNode.collectAndMark();
     }
@@ -144,25 +152,40 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         /**
          * Keeps around the {@link ResultSet} of the SQL query.
          */
-        private ResultSet resultSet;
+        public ResultSet resultSet;
 
         /**
          * The next {@link Record} to be delivered via {@link #next()}.
          */
         private Output next;
 
+
+        /**
+         * Keeps around the boundary {@link Operator} of the SqlQuery.
+         */
+        private Operator boundaryOperator;
+
         /**
          * Creates a new instance.
          *
          * @param connection the JDBC connection on which to execute a SQL query
          * @param sqlQuery   the SQL query
+         * @param boundaryOperator   the boundary operator
          */
-        public ResultSetIterator(final Connection connection, final String sqlQuery) {
+        public ResultSetIterator(
+            final Connection connection,
+            final String sqlQuery,
+            final Operator boundaryOperator
+        ) {
             try {
                 // connection.setAutoCommit(false);
                 final Statement st = connection.createStatement();
+                //TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
+                //st.setMaxRows(1000);
                 // st.setFetchSize(100000000);
                 this.resultSet = st.executeQuery(sqlQuery);
+                System.out.println("[SQL EXECUTE]: " + sqlQuery);
+                this.boundaryOperator = boundaryOperator;
             } catch (final SQLException e) {
                 this.close();
                 throw new WayangException("Could not execute SQL. with query string: " + sqlQuery, e);
@@ -184,7 +207,11 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                     for (int i = 0; i < recordWidth; i++) {
                         values[i] = this.resultSet.getObject(i + 1);
                     }
-                    this.next = (Output) values;
+                    if (this.boundaryOperator instanceof JoinOperator) {
+                        this.next = (Output) new Tuple2<Record, Record>(new Record(values), new Record());
+                    } else {
+                        this.next = (Output) new Record(values);
+                    }
                 }
             } catch (final SQLException e) {
                 this.next = null;

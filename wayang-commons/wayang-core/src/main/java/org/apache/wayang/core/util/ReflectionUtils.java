@@ -154,6 +154,48 @@ public class ReflectionUtils {
         return new String[0];
     }
 
+    public static String[] getLibs(Class<?> cls) {
+        try {
+            URL location = cls.getProtectionDomain().getCodeSource().getLocation();
+            URI uri = location.toURI();
+
+            System.out.println("JAR URI: " + uri);
+            File jarFile = new File(uri);
+
+            if (!jarFile.getName().endsWith(".jar")) {
+                System.err.println("Class " + cls + " is not loaded from a JAR file, but from " + jarFile.getAbsolutePath());
+                return new String[0];
+            }
+
+            // Move two up from the class in wayang jars
+            File directory = new File(jarFile.getParentFile().getParentFile().getAbsolutePath() + "/libs");
+            System.out.println("LIB URI: " + directory.getAbsolutePath());
+            if (directory == null || !directory.isDirectory()) {
+                System.err.println("Could not determine JAR directory.");
+                return new String[0];
+            }
+
+            // List all JAR files in the directory
+            return Stream.of(
+                directory.list((dir, name) -> name.endsWith(".jar"))
+            )
+                .map(path -> {
+                    if (!path.contains(directory.getName())) {
+                        return directory.getAbsolutePath() + "/" + path;
+                    }
+
+                    return path;
+                })
+                .toArray(String[]::new);
+
+        } catch (Exception e) {
+            System.err.println("Could not determine JAR file directory.");
+            e.printStackTrace();
+        }
+
+        return new String[0];
+    }
+
 
     /**
      * Provides a resource as an {@link InputStream}.

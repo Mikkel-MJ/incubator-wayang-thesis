@@ -83,12 +83,17 @@ public class SparkGlobalReduceOperator<Type>
         final RddChannel.Instance input = (RddChannel.Instance) inputs[0];
         final CollectionChannel.Instance output = (CollectionChannel.Instance) outputs[0];
 
-
         final Function2<Type, Type, Type> reduceFunction =
                 sparkExecutor.getCompiler().compile(this.reduceDescriptor, this, operatorContext, inputs);
 
         final JavaRDD<Type> inputRdd = input.provideRdd();
-        List<Type> outputList = Collections.singletonList(inputRdd.reduce(reduceFunction));
+        final Type reduction = inputRdd.reduce(reduceFunction);
+        List<Type> outputList = reduction != null ?
+            Collections.singletonList(reduction) :
+            Collections.emptyList();
+
+        System.out.println("[SPARK Reduction size]: " + outputList.size());
+
         output.accept(outputList);
 
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);

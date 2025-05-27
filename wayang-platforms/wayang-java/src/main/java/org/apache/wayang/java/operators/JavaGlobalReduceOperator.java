@@ -38,6 +38,8 @@ import org.apache.wayang.java.execution.JavaExecutor;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BinaryOperator;
@@ -82,7 +84,11 @@ public class JavaGlobalReduceOperator<Type>
         final BinaryOperator<Type> reduceFunction = javaExecutor.getCompiler().compile(this.reduceDescriptor);
         JavaExecutor.openFunction(this, reduceFunction, inputs, operatorContext);
 
+        Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream();
+        System.out.println("[Reduction Input]: " + inputStream.collect(Collectors.toList()));
         final Optional<Type> reduction = ((JavaChannelInstance) inputs[0]).<Type>provideStream().reduce(reduceFunction);
+        System.out.println("[Reduction Result]: " + (reduction.isPresent() ? Collections.singleton(reduction.get()) : Collections.emptyList()));
+
         ((CollectionChannel.Instance) outputs[0]).accept(reduction.isPresent() ?
                 Collections.singleton(reduction.get()) :
                 Collections.emptyList());

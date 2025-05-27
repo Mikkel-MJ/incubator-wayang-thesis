@@ -100,7 +100,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
             final List<String> reductionStatements = new ArrayList<>();
 
             assert reductionFunctions.size() == aliasedFields.length
-                    : "Expected that the amount of reduction functions in reduce statement was eqaul to the amount of used tables";
+                    : "Expected that the amount of reduction functions in reduce statement was equal to the amount of used tables";
 
             // we have an assumption that the ordering is maintained between each list
             for (int i = 0; i < reductionFunctions.size(); i++) {
@@ -131,7 +131,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
         final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);
 
         aggregateOperator.connectTo(0, mapOperator2, 0);
-        return mapOperator2;
 
+        return mapOperator2;
     }
 }

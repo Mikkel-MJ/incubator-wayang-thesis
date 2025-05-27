@@ -24,8 +24,11 @@ import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.java.channels.StreamChannel;
 import org.apache.wayang.jdbc.operators.SqlToRddOperator;
 import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
+import org.apache.wayang.jdbc.operators.SqlToFlinkDataSetOperator;
 import org.apache.wayang.postgres.platform.PostgresPlatform;
 import org.apache.wayang.spark.channels.RddChannel;
+import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.basic.data.Record;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,36 +48,26 @@ public class ChannelConversions {
             )
     );
 
-    public static final ChannelConversion SQL_TUPLE_TO_STREAM_CONVERSION = new DefaultChannelConversion(
-            PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
-            StreamChannel.DESCRIPTOR,
-            () -> new SqlToStreamOperator(
-                  PostgresPlatform.getInstance(),
-                  ReflectionUtils.specify(Tuple2.class),
-                  DataSetType.createDefault(Record.class)
-            )
-    );
-
-    public static final ChannelConversion SQL_T0_TUPLE_STREAM_CONVERSION = new DefaultChannelConversion(
-            PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
-            StreamChannel.DESCRIPTOR,
-            () -> new SqlToStreamOperator(
-                  PostgresPlatform.getInstance(),
-                  ReflectionUtils.specify(Record.class),
-                  DataSetType.createDefault(Tuple2.class)
-            )
-    );
-
     public static final ChannelConversion SQL_TO_UNCACHED_RDD_CONVERSION = new DefaultChannelConversion(
             PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
             RddChannel.UNCACHED_DESCRIPTOR,
             () -> new SqlToRddOperator(PostgresPlatform.getInstance())
     );
 
+    public static final ChannelConversion SQL_TO_FLINK_DATASET_CONVERSION = new DefaultChannelConversion(
+            PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
+            DataSetChannel.DESCRIPTOR,
+            () -> new SqlToFlinkDataSetOperator(
+                  PostgresPlatform.getInstance(),
+                  DataSetType.createDefault(Record.class),
+                  DataSetType.createDefault(Record.class)
+            )
+    );
+
     public static final Collection<ChannelConversion> ALL = Arrays.asList(
             SQL_TO_STREAM_CONVERSION,
-            SQL_T0_TUPLE_STREAM_CONVERSION,
-            SQL_TO_UNCACHED_RDD_CONVERSION
+            SQL_TO_UNCACHED_RDD_CONVERSION,
+            SQL_TO_FLINK_DATASET_CONVERSION
     );
 
 }

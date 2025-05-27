@@ -84,7 +84,6 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
         );
 
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
-
     }
 
     @Override

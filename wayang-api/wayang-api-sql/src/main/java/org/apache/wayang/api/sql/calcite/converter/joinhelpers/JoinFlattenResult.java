@@ -30,8 +30,8 @@ public class JoinFlattenResult implements FunctionDescriptor.SerializableFunctio
 
     @Override
     public Record apply(final Tuple2<Record, Record> tuple2) {
-        final int length0 = tuple2.getField0().size();
-        final int length1 = tuple2.getField1().size();
+        final int length0 = tuple2.getField0() != null ? tuple2.getField0().size() : 0;
+        final int length1 = tuple2.getField1() != null ? tuple2.getField1().size() : 0;
 
         final int totalLength = length0 + length1;
 

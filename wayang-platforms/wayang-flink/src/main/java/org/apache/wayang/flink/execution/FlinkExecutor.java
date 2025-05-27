@@ -80,8 +80,9 @@ public class FlinkExecutor extends PushExecutorTemplate {
         this.numDefaultPartitions = (int) this.getConfiguration().getLongProperty("wayang.flink.parallelism");
         this.fee.setParallelism(this.numDefaultPartitions);
         this.flinkContextReference.noteObtainedReference();
-        this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteRexSerializable.class, DefaultSerializers.ClassSerializer.class);
-        this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.calcite.rel.externalize.RelJson.class, DefaultSerializers.ClassSerializer.class);
+        this.fee.getConfig().enableForceKryo();
+        //this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteRexSerializable.class, DefaultSerializers.ClassSerializer.class);
+        //this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.calcite.rel.externalize.RelJson.class, DefaultSerializers.ClassSerializer.class);
     }
 
     @Override
@@ -130,11 +131,13 @@ public class FlinkExecutor extends PushExecutorTemplate {
         this.registerMeasuredCardinalities(producedChannelInstances);
 
         // Warn if requested eager execution did not take place.
-        if (isRequestEagerExecution ){
-            if( partialExecution == null) {
+        if (isRequestEagerExecution){
+            if(partialExecution == null) {
                 this.logger.info("{} was not executed eagerly as requested.", task);
+                System.out.println(task + " was not executed eagerly as requested");
             }else {
                 try {
+                    System.out.println(task + " executed");
                     this.fee.execute();
                 } catch (Exception e) {
                     throw new WayangException(e);

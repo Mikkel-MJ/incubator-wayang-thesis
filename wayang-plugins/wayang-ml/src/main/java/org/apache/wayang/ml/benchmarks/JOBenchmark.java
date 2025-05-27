@@ -50,6 +50,7 @@ import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.apps.tpch.queries.Query1Wayang;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.calcite.sql.parser.SqlParseException;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -87,12 +88,16 @@ public class JOBenchmark {
             config.setProperty("spark.app.name", "JOB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
             config.setProperty("spark.executor.memory", "32g");
+            config.setProperty("spark.executor.cores", "6");
+            config.setProperty("spark.executor.instances", "1");
+            config.setProperty("spark.default.parallelism", "8");
+            config.setProperty("spark.driver.maxResultSize", "16g");
+            config.setProperty("spark.dynamicAllocation.enabled", "true");
             config.setProperty("wayang.flink.mode.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "7071");
             config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
-            config.setProperty("spark.driver.maxResultSize", "8G");
             config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty(
                 "wayang.core.optimizer.pruning.strategies",
@@ -159,46 +164,51 @@ public class JOBenchmark {
 
             String[] jars = ArrayUtils.addAll(
                 ReflectionUtils.getAllJars(JOBenchmark.class),
-                ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
+                ReflectionUtils.getLibs(JOBenchmark.class)
             );
 
+            /*
             jars = ArrayUtils.addAll(
                 jars,
                 ReflectionUtils.getAllJars(org.apache.calcite.runtime.SqlFunctions.class)
-            );
+            );*/
 
-            WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+            try {
+                WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
-            IMDBJOBenchmark.setSources(plan, args[1]);
+                IMDBJOBenchmark.setSources(plan, args[1]);
 
-            //Set sink to be on Java
-            //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
-            //
-            /*
-            FileWriter fw = new FileWriter(
-                "/var/www/html/data/benchmarks/operators.txt",
-                true
-            );
-            BufferedWriter writer = new BufferedWriter(fw);
+                //Set sink to be on Java
+                //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
+                //
+                /*
+                FileWriter fw = new FileWriter(
+                    "/var/www/html/data/benchmarks/operators.txt",
+                    true
+                );
+                BufferedWriter writer = new BufferedWriter(fw);
 
 
-            System.out.println("Operators: " + operators.size());
+                System.out.println("Operators: " + operators.size());
 
-            writer.write(args[3] + ": " + operators.size());
-            writer.newLine();
-            writer.flush();
-            writer.close();&*/
+                writer.write(args[3] + ": " + operators.size());
+                writer.newLine();
+                writer.flush();
+                writer.close();&*/
 
-            System.out.println(modelType);
-            if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
-                System.out.println("Executing query " + args[3]);
-                wayangContext.execute(plan, jars);
-                System.out.println("Finished execution");
-            } else {
-                System.out.println("Using vae cost model");
-                System.out.println("Executing query " + args[3]);
-                wayangContext.executeVAE(plan, jars);
-                System.out.println("Finished execution");
+                System.out.println(modelType);
+                if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
+                    System.out.println("Executing query " + args[3]);
+                    wayangContext.execute(plan, jars);
+                    System.out.println("Finished execution");
+                } else {
+                    System.out.println("Using vae cost model");
+                    System.out.println("Executing query " + args[3]);
+                    wayangContext.executeVAE(plan, jars);
+                    System.out.println("Finished execution");
+                }
+            } catch (SqlParseException sqlE) {
+                sqlE.printStackTrace();
             }
         } catch (Exception e) {
             e.printStackTrace();

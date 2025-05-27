@@ -36,6 +36,7 @@ echo "Running JOBenchmark"
 #    done
 
     ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,postgres file://$data_path/ $timings_path $test_path/2a.sql
+    #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark flink,postgres file://$data_path/ $timings_path $test_path/2a.sql
 
     #for query in "$test_path"/*.sql; do
     #        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $timings_path $query bvae $model_path $data_path

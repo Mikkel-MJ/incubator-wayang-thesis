@@ -64,6 +64,19 @@ public abstract class LazyExecutionLineageNode {
         }
     }
 
+    /**
+     * Retrieves a predecessor at an index.
+     *
+     * @param index of the predecessor
+     */
+    public LazyExecutionLineageNode getPredecessor(int index) {
+        assert this.predecessors.size() > index :
+            String.format("Lineage predecessor at %d is not present.", index);
+
+        LazyExecutionLineageNode predecessor = (LazyExecutionLineageNode) new LinkedList(this.predecessors).get(index);
+        return predecessor;
+    }
+
 
     /**
      * Traverse this instance and all its predecessors unless they are marked as executed.

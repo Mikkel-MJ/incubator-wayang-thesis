@@ -125,7 +125,7 @@ public class Training {
                 config.setProperty("spark.master", "spark://spark-cluster:7077");
                 config.setProperty("spark.app.name", "JOB Query");
                 config.setProperty("spark.rpc.message.maxSize", "2047");
-                config.setProperty("spark.executor.memory", "32g");
+                config.setProperty("spark.executor.memory", "8g");
                 config.setProperty("wayang.flink.mode.run", "distribution");
                 config.setProperty("wayang.flink.parallelism", "8");
                 config.setProperty("wayang.flink.master", "flink-cluster");
@@ -237,6 +237,7 @@ public class Training {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("spark.executor.cores", "8");
             config.setProperty("wayang.flink.mode.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "8");
             config.setProperty("wayang.flink.master", "flink-cluster");

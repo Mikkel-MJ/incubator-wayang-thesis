@@ -102,16 +102,18 @@ public class FlinkCollectionSource<Type> extends CollectionSource<Type> implemen
             */
 
             System.out.println("Got type: " + firstValue.getClass());
+            System.out.println("Collection size: " + collection.size());
+
             if (firstValue.getClass().getName().contains("scala.Tuple")) {
                 flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(firstValue.getClass(), ScalaTupleSerializer.class);
             }
             //flinkExecutor.fee.getConfig().registerPojoType(firstValue.getClass());
             //flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(firstValue.getClass(), new KryoSerializer(firstValue.getClass(), flinkExecutor.fee.getConfig()));
 
+            final DataSet<Type> datasetOutput = flinkExecutor.fee.fromCollection(
+                collection.parallelStream().collect(Collectors.toList())
+            ).setParallelism(flinkExecutor.fee.getParallelism());
 
-
-            final DataSet<Type> datasetOutput = flinkExecutor.fee.fromCollection(collection.parallelStream().collect(Collectors.toList()))
-                .setParallelism(flinkExecutor.fee.getParallelism());
             /*
             final DataSet<Type> datasetOutput = flinkExecutor.fee.fromParallelCollection(iterator, type)
                 .setParallelism(flinkExecutor.fee.getParallelism());*/

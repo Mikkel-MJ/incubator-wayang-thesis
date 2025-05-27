@@ -106,7 +106,7 @@
         <scala.mayor.version>2.12</scala.mayor.version>
         <spark.version>3.5.4</spark.version>
         <flink.version>1.20.0</flink.version>
-        <calcite.version>1.39.0</calcite.version>
+        <calcite.version>1.35.0</calcite.version>
 
         <java.version>11</java.version>
         <source.level>11</source.level>
@@ -119,7 +119,7 @@
 
         <assertj.version>3.17.2</assertj.version>
         <commons-io.version>2.5</commons-io.version>
-        <guava.version>19.0</guava.version>
+        <guava.version>31.1-jre</guava.version>
         <hamcrest.version>1.3</hamcrest.version>
         <jackson.version>2.10.2</jackson.version>
         <jacoco.version>0.8.5</jacoco.version>

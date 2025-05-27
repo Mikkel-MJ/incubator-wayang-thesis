@@ -36,12 +36,7 @@ import org.apache.wayang.core.util.fs.FileSystems;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel.Instance;
 import org.apache.wayang.jdbc.compiler.FunctionCompiler;
-import org.apache.wayang.jdbc.operators.JdbcExecutionOperator;
-import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
-import org.apache.wayang.jdbc.operators.JdbcGlobalReduceOperator;
-import org.apache.wayang.jdbc.operators.JdbcJoinOperator;
-import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
-import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
+import org.apache.wayang.jdbc.operators.*;
 import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 
@@ -240,7 +235,12 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .filter(task -> task.getOutputChannel(0)
                         .getConsumers()
                         .stream()
-                        .anyMatch(consumer -> consumer.getOperator() instanceof SqlToStreamOperator));
+                        //TODO: change this to fit every conversion of Postgres at least
+                        .anyMatch(consumer -> {
+                            return consumer.getOperator() instanceof SqlToStreamOperator
+                                || consumer.getOperator() instanceof SqlToFlinkDataSetOperator
+                                || consumer.getOperator() instanceof SqlToRddOperator;
+                        }));
 
         final Collection<Instance> outBoundChannels = allBoundaryOperators
                 .map(task -> this.instantiateOutboundChannel(task, optimizationContext))

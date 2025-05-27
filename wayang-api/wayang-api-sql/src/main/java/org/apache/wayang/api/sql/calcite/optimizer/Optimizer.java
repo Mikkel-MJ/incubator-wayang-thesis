@@ -278,12 +278,12 @@ public class Optimizer {
     }
 
     public WayangPlan convert(RelNode relNode, Collection<Record> collector, AliasFinder aliasFinder) {
-
-        LocalCallbackSink<Record> sink = LocalCallbackSink.createCollectingSink(collector, Record.class);
-
+        //LocalCallbackSink<Record> sink = LocalCallbackSink.createCollectingSink(collector, Record.class);
+        LocalCallbackSink<Record> sink = LocalCallbackSink.createStdoutSink(Record.class);
         Operator op = new WayangRelConverter().convert(relNode, aliasFinder);
 
         op.connectTo(0, sink, 0);
+
         return new WayangPlan(sink);
     }
 
