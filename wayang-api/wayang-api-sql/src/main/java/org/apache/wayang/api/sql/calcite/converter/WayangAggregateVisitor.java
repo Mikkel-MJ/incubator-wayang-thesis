@@ -61,6 +61,8 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                 .map(agg -> agg.getArgList().get(0))
                 .collect(Collectors.toList());
 
+        System.out.println("REDUCE INDEXES: " + columnIndexes);
+
         final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
 
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
@@ -97,6 +99,8 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
             final List<String> reductionFunctions = wayangRelNode.getNamedAggCalls().stream()
                     .map(agg -> agg.left.getAggregation().getName()).collect(Collectors.toList());
 
+            System.out.println("REDUCTION FUNCTIONS: " + reductionFunctions);
+
             final List<String> reductionStatements = new ArrayList<>();
 
             assert reductionFunctions.size() == aliasedFields.length
@@ -115,11 +119,13 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                         reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");
                 }
             }
+            System.out.println("REDUCTION STATEMENTS: " + reductionStatements);
 
             reduceDescriptor.withSqlImplementation(
                     reductionStatements.stream().collect(Collectors.joining(",")));
 
             aggregateOperator = new GlobalReduceOperator<Record>(reduceDescriptor);
+            System.out.println("REDUCTION AGG: " + reduceDescriptor);
         }
 
         mapOperator.connectTo(0, aggregateOperator, 0);

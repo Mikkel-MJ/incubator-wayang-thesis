@@ -127,6 +127,11 @@ public class SqlContext extends WayangContext {
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
 
+        final RuleSet coreRules = RuleSets.ofList(
+            CoreRules.FILTER_INTO_JOIN,
+            CoreRules.JOIN_ASSOCIATE
+        );
+
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
         System.out.println("[RelNode]: " + relNode.explain());

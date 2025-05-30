@@ -22,11 +22,12 @@ import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimate;
 import org.apache.wayang.core.types.DataSetType;
 
 import java.util.Collection;
+import java.io.Serializable;
 
 /**
  * Abstract class for inputs and outputs to operators.
  */
-abstract public class Slot<T> {
+abstract public class Slot<T> implements Serializable {
 
     /**
      * Identifies this slot within its operator.

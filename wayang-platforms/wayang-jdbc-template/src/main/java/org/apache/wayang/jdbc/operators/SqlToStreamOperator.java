@@ -102,7 +102,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
-        final Iterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(), boundaryOperator);
+        final Iterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(), boundaryOperator instanceof JoinOperator);
         final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
         final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
 
@@ -158,31 +158,34 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
 
         /**
-         * Keeps around the boundary {@link Operator} of the SqlQuery.
+         * Flag to know whether wrapping SqlQuery result into Tuple2 is needed.
          */
-        private Operator boundaryOperator;
+        private boolean needsTupleWrapping;
 
         /**
          * Creates a new instance.
          *
          * @param connection the JDBC connection on which to execute a SQL query
          * @param sqlQuery   the SQL query
-         * @param boundaryOperator   the boundary operator
+         * @param needsTupleWrapping   flag indicating wrapping into Tuple2
          */
         public ResultSetIterator(
             final Connection connection,
             final String sqlQuery,
-            final Operator boundaryOperator
+            final boolean needsTupleWrapping
         ) {
             try {
                 // connection.setAutoCommit(false);
                 final Statement st = connection.createStatement();
                 //TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
-                //st.setMaxRows(1000);
+                /*
+                if (boundaryOperator instanceof JoinOperator) {
+                    st.setMaxRows(100_000);
+                }*/
                 // st.setFetchSize(100000000);
                 this.resultSet = st.executeQuery(sqlQuery);
                 System.out.println("[SQL EXECUTE]: " + sqlQuery);
-                this.boundaryOperator = boundaryOperator;
+                this.needsTupleWrapping = needsTupleWrapping;
             } catch (final SQLException e) {
                 this.close();
                 throw new WayangException("Could not execute SQL. with query string: " + sqlQuery, e);
@@ -204,7 +207,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                     for (int i = 0; i < recordWidth; i++) {
                         values[i] = this.resultSet.getObject(i + 1);
                     }
-                    if (this.boundaryOperator instanceof JoinOperator) {
+                    if (this.needsTupleWrapping) {
                         this.next = (Output) new Tuple2<Record, Record>(new Record(values), new Record());
                     } else {
                         this.next = (Output) new Record(values);

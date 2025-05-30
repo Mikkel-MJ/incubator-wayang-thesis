@@ -1,55 +1,66 @@
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.wayang.api.sql.calcite.converter.aggregatehelpers;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.apache.calcite.rel.core.AggregateCall;
-
-import org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteAggSerializable;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-public class GetResult extends CalciteAggSerializable
-        implements FunctionDescriptor.SerializableFunction<Record, Record> {
-    private final HashSet<Integer> groupingfields;
+public class GetResult implements FunctionDescriptor.SerializableFunction<Record, Record> {
+        private final List<SqlKind> aggregateKindList;
+        private final Set<Integer> groupingfields;
 
-    public GetResult(final List<AggregateCall> aggregateCalls, final HashSet<Integer> groupingfields) {
-        super(aggregateCalls.toArray(AggregateCall[]::new));
-        this.groupingfields = groupingfields;
-    }
-
-    @Override
-    public Record apply(final Record record) {
-        final List<AggregateCall> aggregateCalls = Arrays.asList(super.serializables);
-
-        final int l = record.size();
-        final int outputRecordSize = aggregateCalls.size() + groupingfields.size();
-
-        final Object[] resValues = new Object[outputRecordSize];
-
-        final Integer[] groupingFieldsArray = groupingfields.toArray(Integer[]::new);
-        
-        for (int i = 0; i < groupingfields.size(); i++) {
-            resValues[i] = record.getField(groupingFieldsArray[i]);
+        public GetResult(final List<AggregateCall> aggregateCalls, final Set<Integer> groupingfields) {
+                this.aggregateKindList = aggregateCalls.stream()
+                                .map(call -> call.getAggregation().getKind())
+                                .collect(Collectors.toList());
+                this.groupingfields = groupingfields;
         }
 
-        final int offset = groupingfields.size() > 0 ? 1 : 0;
+        @Override
+        public Record apply(final Record record) {
+                final int recordSize = record.size();
+                final int aggregateCallOffset = recordSize - aggregateKindList.size() - 1;
 
-        int startingIndex = l - aggregateCalls.size() - offset;
-        int resValuePos = groupingfields.size();
+                final Object[] fields = groupingfields.stream()
+                                .map(record::getField)
+                                .toArray();
 
-        for (final AggregateCall aggregateCall : aggregateCalls) {
-            final String name = aggregateCall.getAggregation().getName();
-            if (name.equals("AVG")) {
-                resValues[resValuePos] = record.getDouble(startingIndex) / record.getDouble(l - 1);
-            } else {
-                resValues[resValuePos] = record.getField(startingIndex);
-            }
-            resValuePos++;
-            startingIndex++;
+                final Object[] aggregateCallFields = IntStream.range(0, aggregateKindList.size())
+                                .mapToObj(i -> aggregateKindList.get(i).equals(SqlKind.AVG)
+                                                ? record.getDouble(i + aggregateCallOffset)
+                                                                / record.getDouble(recordSize - 1)
+                                                : record.getField(i + aggregateCallOffset))
+                                .toArray();
+
+                final Object[] combinedFields = Stream.concat(Arrays.stream(fields), Arrays.stream(aggregateCallFields))
+                                .toArray();
+
+                return new Record(combinedFields);
         }
-
-        return new Record(resValues);
-    }
 }

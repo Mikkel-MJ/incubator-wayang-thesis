@@ -87,6 +87,9 @@ public class JavaJoinOperator<InputType0, InputType1, KeyType>
         final Function<InputType0, KeyType> keyExtractor0 = javaExecutor.getCompiler().compile(this.keyDescriptor0);
         final Function<InputType1, KeyType> keyExtractor1 = javaExecutor.getCompiler().compile(this.keyDescriptor1);
 
+        System.out.println("[JAVA JOIN key left]: " + keyExtractor0);
+        System.out.println("[JAVA JOIN key right]: " + keyExtractor1);
+
         final CardinalityEstimate cardinalityEstimate0 = operatorContext.getInputCardinality(0);
         final CardinalityEstimate cardinalityEstimate1 = operatorContext.getInputCardinality(1);
 

@@ -32,7 +32,7 @@ if [ ! -d $HADOOP_HOME ]; then
     rm hadoop-${HADOOP_VERSION}.tar.gz
 fi
 
-export SPARK_VERSION=3.5.5
+export SPARK_VERSION=3.5.6
 export SPARK_HOME="${DEPENDENCIES_DIR}/spark"
 
 if [ ! -d $SPARK_HOME ]; then

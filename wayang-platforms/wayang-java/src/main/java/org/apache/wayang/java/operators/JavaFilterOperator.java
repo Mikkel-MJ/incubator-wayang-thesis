@@ -38,6 +38,8 @@ import org.apache.wayang.java.execution.JavaExecutor;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -84,7 +86,21 @@ public class JavaFilterOperator<Type>
 
         final Predicate<Type> filterFunction = javaExecutor.getCompiler().compile(this.predicateDescriptor);
         JavaExecutor.openFunction(this, filterFunction, inputs, operatorContext);
-        ((StreamChannel.Instance) outputs[0]).accept(((JavaChannelInstance) inputs[0]).<Type>provideStream().filter(filterFunction));
+
+        Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream();
+        List<Type> list = inputStream.collect(Collectors.toList());
+
+        System.out.println("[JAVA FILTER]: " + this);
+        System.out.println("[JAVA FILTER function]: " + this.predicateDescriptor);
+        System.out.println("[JAVA FILTER input size]: " + list.size());
+        System.out.println("[JAVA FILTER INPUT]: " + list.get(0));
+
+        List<Type> outList = list.stream().filter(filterFunction).collect(Collectors.toList());
+        System.out.println("[JAVA FILTER output size]: " + outList.size());
+        System.out.println("[JAVA FILTER output]: " + outList.get(0));
+
+        //((StreamChannel.Instance) outputs[0]).accept(((JavaChannelInstance) inputs[0]).<Type>provideStream().filter(filterFunction));
+        ((StreamChannel.Instance) outputs[0]).accept(outList.stream());
 
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }

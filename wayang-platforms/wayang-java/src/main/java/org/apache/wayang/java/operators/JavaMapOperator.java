@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -82,7 +83,21 @@ public class JavaMapOperator<InputType, OutputType>
         final Function<InputType, OutputType> function = javaExecutor.getCompiler().compile(this.functionDescriptor);
         JavaExecutor.openFunction(this, function, inputs, operatorContext);
 
-        output.accept(input.<InputType>provideStream().map(function));
+        Stream<OutputType> outStream = input.<InputType>provideStream().map(function);
+        List<OutputType> list = outStream.collect(Collectors.toList());
+
+        System.out.println("[JAVA MAP]: " + this);
+        System.out.println("[JAVA MAP output size]: " + list.size());
+        System.out.println("[JAVA MAP output]: " + list.get(0));
+
+        if (list.size() < 100) {
+            for (OutputType item : list) {
+                System.out.println(item);
+            }
+        }
+
+        //output.accept(input.<InputType>provideStream().map(function));
+        output.accept(list.stream());
 
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }

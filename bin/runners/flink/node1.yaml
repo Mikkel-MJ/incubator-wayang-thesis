@@ -27,14 +27,14 @@ rest:
   bind-address: 0.0.0.0
   port: '7071'
   client:
-    max-content-length: 2000MiB
-  max-content-length: 2000MiB
+    max-content-length: 20000MiB
+  max-content-length: 20000MiB
   address: node1
 pekko:
   framesize: 2000MiB
 task:
   cancellation:
-    timeout: 120s
+    timeout: 1200s
 parallelism:
   default: '8'
 env:

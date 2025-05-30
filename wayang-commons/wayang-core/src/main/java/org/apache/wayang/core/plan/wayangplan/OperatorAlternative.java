@@ -31,13 +31,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.io.Serializable;
 
 /**
  * This operator encapsulates operators that are alternative to each other.
  * <p>Alternatives and their interfaces (i.e., {@link OutputSlot}s and {@link InputSlot}s) are matched via their
  * input/output indices.</p>
  */
-public class OperatorAlternative extends OperatorBase implements CompositeOperator {
+public class OperatorAlternative extends OperatorBase implements CompositeOperator, Serializable {
 
     /**
      * All alternatives for this operator. Note that we deliberately do not use a {@link SlotMapping} at this point
@@ -200,7 +201,7 @@ public class OperatorAlternative extends OperatorBase implements CompositeOperat
     /**
      * Represents an alternative subplan for the enclosing {@link OperatorAlternative}.
      */
-    public class Alternative implements OperatorContainer {
+    public class Alternative implements OperatorContainer, Serializable {
 
         /**
          * Maps the slots of the enclosing {@link OperatorAlternative} with this instance.

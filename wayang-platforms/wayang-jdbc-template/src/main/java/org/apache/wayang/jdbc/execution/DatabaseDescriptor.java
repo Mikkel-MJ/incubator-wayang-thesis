@@ -22,11 +22,12 @@ import org.apache.wayang.core.api.exception.WayangException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.io.Serializable;
 
 /**
  * This class describes a database.
  */
-public class DatabaseDescriptor {
+public class DatabaseDescriptor implements Serializable {
 
     private final String jdbcUrl, user, password, jdbcDriverClassName;
 

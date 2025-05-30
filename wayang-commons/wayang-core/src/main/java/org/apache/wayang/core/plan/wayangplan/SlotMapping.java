@@ -30,12 +30,13 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.io.Serializable;
 
 /**
  * This mapping can be used to encapsulate subplans by connecting slots (usually <b>against</b> the data flow direction,
  * i.e., outer output slot to inner output slot, inner input slot to outer input slot).
  */
-public class SlotMapping {
+public class SlotMapping implements Serializable {
 
     private final Logger logger = LogManager.getLogger(this.getClass());
 

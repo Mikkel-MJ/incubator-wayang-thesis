@@ -31,4 +31,9 @@ public class KeyExtractor<T> implements FunctionDescriptor.SerializableFunction<
     public T apply(final Record record) {
         return (T) record.getField(index);
     }
+
+    @Override
+    public String toString() {
+        return "KeyExtractor[index: " + this.index + ", rowTypes: " + Arrays.toString(rowTypes) + "]";
+    }
 }

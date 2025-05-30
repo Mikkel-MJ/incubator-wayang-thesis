@@ -108,9 +108,11 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         rightVisitor.visit(wayangRelNode.getRight(), wayangRelNode.getId(), null);
 
         // TODO: prolly breaks on bushy joins
-        final String joiningTableName = leftVisitor.getName() instanceof String
-                ? leftVisitor.getName()
-                : rightVisitor.getName();
+        final String joiningTableName = rightVisitor.getName() instanceof String
+                ? rightVisitor.getName()
+                : leftVisitor.getName();
+
+        System.out.println("JOINING TABLE NAME: " + joiningTableName);
 
         // remove calcite unique integer identifiers in table.column0 type of names
         final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
@@ -238,6 +240,16 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         if (wayangRelNode.getInputs().size() != 2)
             throw new UnsupportedOperationException("Join had an unexpected amount of inputs, found: "
                     + wayangRelNode.getInputs().size() + ", expected: 2");
+
+        System.out.println("===================JOIN=================");
+        System.out.println("Left: " + leftKeyIndex);
+        System.out.println("Right: " + rightKeyIndex);
+        System.out.println("Left: " + wayangRelNode.getLeft());
+        System.out.println("Right: " + wayangRelNode.getRight());
+        System.out.println(wayangRelNode.getLeft().getRowType().toString());
+        System.out.println(wayangRelNode.getRight().getRowType().toString());
+        System.out.println(wayangRelNode.getRowType().toString());
+        System.out.println("===================JOIN=================");
 
         final TransformationDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(leftKeyIndex)

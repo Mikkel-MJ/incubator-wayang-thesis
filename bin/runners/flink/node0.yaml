@@ -27,8 +27,8 @@ rest:
   bind-address: 0.0.0.0
   port: '7071'
   client:
-    max-content-length: 2000MiB
-  max-content-length: 2000MiB
+    max-content-length: 20000MiB
+  max-content-length: 20000MiB
   address: node0
 pekko:
   framesize: 2000MiB

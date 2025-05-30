@@ -35,10 +35,18 @@ import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
 import org.apache.wayang.flink.channels.DataSetChannel;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 import org.apache.wayang.flink.operators.FlinkExecutionOperator;
+import org.apache.flink.util.SplittableIterator;
+import org.apache.wayang.flink.operators.CollectionSplittableIterator;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 import org.apache.wayang.core.platform.Platform;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.wayang.jdbc.execution.DatabaseDescriptor;
 
 import org.apache.flink.api.java.DataSet;
 
@@ -93,25 +101,25 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
 
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
+        /*
         Iterator<Output> resultSetIterator = new SqlToStreamOperator.ResultSetIterator<Output>(connection, input.getSqlQuery(), boundaryOperator);
         Iterable<Output> resultSetIterable = () -> resultSetIterator;
-        //final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
-        final Stream<Output> resultSetStream = StreamSupport.stream(resultSetIterable.spliterator(), false);
-
-        // Convert the ResultSet to a Flink DataSet.
-        final Collection<Output> collected = resultSetStream.collect(Collectors.toList());
-        System.out.println("SqlToFlink size: " + collected.size());
-        System.out.println("FEE parallelism: " + flinkExecutor.fee.getParallelism());
-
+        List<Output> resultList = StreamSupport.stream(resultSetIterable.spliterator(), false).collect(Collectors.toList());
 
         final DataSet<Output> resultSetDataSet = flinkExecutor.fee.fromCollection(
-            collected
-        ).setParallelism(flinkExecutor.fee.getParallelism());
+            resultList
+        ).setParallelism(flinkExecutor.fee.getParallelism());*/
 
         /*
-        final DataSet<Record> resultSetDataSet = flinkExecutor.fee.fromParallelCollection(resultSetSpliterator, Record.class)
+        final DataSet<Output> resultSetDataSet = flinkExecutor.fee.fromParallelCollection(iterator, type)
+            .setParallelism(flinkExecutor.fee.getParallelism());*/
+        TypeInformation<Record> typeInfo = TypeExtractor.getForClass(Record.class);
+        DatabaseDescriptor descriptor = producerPlatform.createDatabaseDescriptor(flinkExecutor.getConfiguration());
+
+        DataSet<Output> resultSetDataSet = flinkExecutor.fee
+            .createInput(new SqlResultInputFormat(descriptor, input.getSqlQuery(), boundaryOperator instanceof JoinOperator), typeInfo)
             .setParallelism(flinkExecutor.fee.getParallelism());
-        */
+
         output.accept(resultSetDataSet, flinkExecutor);
 
         // TODO: Add load profile estimators

@@ -111,32 +111,37 @@ public class AggregateFunction
             final BiFunction<Long, Long, Object> longMap,
             final BiFunction<Integer, Integer, Object> integerMap,
             final BiFunction<Double, Double, Object> doubleMap) {
+        // Lets fucking disallow nulls
+        //
+        //
+        if (a == null && b == null) {
+            return null;
+        }
+
+        if (a == null) {
+            return b;
+        }
+
+        if (b == null) {
+            return a;
+        }
+
         // support operations between null and any
         // class
-        if ((a == null || b == null) || (a.getClass() == b.getClass())) {
-            // objects can be null in this if statement due to
-            // condition above
-            final Optional<Object> aWrapped = Optional.ofNullable(a);
-            final Optional<Object> bWrapped = Optional.ofNullable(b);
-
-            // force .getClass() to be safe so
-            // we can pass null objects to
-            // .apply methods.
-            switch (aWrapped.orElse(bWrapped.orElse("")).getClass().getSimpleName()) {
-                case "String":
-                    return stringMap.apply((String) a, (String) b);
-                case "Long":
-                    return longMap.apply((Long) a, (Long) b);
-                case "Integer":
-                    return integerMap.apply((Integer) a, (Integer) b);
-                case "Double":
-                    return doubleMap.apply((Double) a, (Double) b);
-                default:
-                    throw new IllegalStateException("Unsupported operation between: " + aWrapped.getClass().toString()
-                            + " and: " + bWrapped.getClass().toString());
-            }
+        // objects can be null in this if statement due to
+        // condition above
+        switch (a.getClass().getSimpleName()) {
+            case "String":
+                return stringMap.apply((String) a, (String) b);
+            case "Long":
+                return longMap.apply((Long) a, (Long) b);
+            case "Integer":
+                return integerMap.apply((Integer) a, (Integer) b);
+            case "Double":
+                return doubleMap.apply((Double) a, (Double) b);
+            default:
+                throw new IllegalStateException("Unsupported operation between: " + a.getClass().toString()
+                        + " and: " + b.getClass().toString());
         }
-        throw new IllegalStateException("Unsupported operation between: " + a.getClass().getSimpleName() + " and: "
-                + b.getClass().getSimpleName());
     }
 }

@@ -23,11 +23,12 @@ import org.apache.wayang.core.types.BasicDataUnitType;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.io.Serializable;
 
 /**
  * This is a specific {@link BasicDataUnitType} for {@link Record}s. In particular, it adds schema information.
  */
-public class RecordType extends BasicDataUnitType<Record> {
+public class RecordType extends BasicDataUnitType<Record> implements Serializable {
 
     /**
      * Names of fields in the described {@link Record}s in order of appearance.

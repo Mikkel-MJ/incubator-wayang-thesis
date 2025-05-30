@@ -45,12 +45,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.io.Serializable;
 import java.util.function.Supplier;
 
 /**
  * Helper class for the implementation of the {@link Operator} interface.
  */
-public abstract class OperatorBase implements Operator {
+public abstract class OperatorBase implements Operator, Serializable {
 
     public static final List<Tuple<Class<?>, Supplier<?>>> STANDARD_OPERATOR_ARGS = Arrays.asList(
             new Tuple<>(DataSetType.class, DataSetType::none),

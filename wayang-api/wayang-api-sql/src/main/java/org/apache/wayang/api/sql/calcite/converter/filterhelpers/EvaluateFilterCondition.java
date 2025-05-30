@@ -190,7 +190,7 @@ public class EvaluateFilterCondition extends RexVisitorImpl<Boolean> implements 
     private boolean isEqualTo(final Optional<?> o, final RexLiteral rexLiteral) {
         try {
             if(o.isEmpty() && rexLiteral.isNull()) return true;
-            if(o.isPresent()) return ((Comparable) o.get()).compareTo(rexLiteral.getValueAs(o.get().getClass())) == 0;
+            if(o.isPresent()) return o.get().equals(rexLiteral.getValueAs(o.get().getClass()));
             return false;
         } catch (final Exception e) {
             throw new IllegalStateException("Predicate not supported yet, something went wrong when computing an isEqualTo predicate, object: " + o + " rexLiteral: " + rexLiteral + " rexLiteral kind: " + rexLiteral.getKind() + " rexLiteral type: " + rexLiteral.getType() + "\n" + e.getMessage());

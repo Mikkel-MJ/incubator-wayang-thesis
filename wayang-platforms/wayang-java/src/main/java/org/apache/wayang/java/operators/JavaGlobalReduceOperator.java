@@ -84,10 +84,10 @@ public class JavaGlobalReduceOperator<Type>
         final BinaryOperator<Type> reduceFunction = javaExecutor.getCompiler().compile(this.reduceDescriptor);
         JavaExecutor.openFunction(this, reduceFunction, inputs, operatorContext);
 
-        Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream();
-        System.out.println("[Reduction Input]: " + inputStream.collect(Collectors.toList()));
         final Optional<Type> reduction = ((JavaChannelInstance) inputs[0]).<Type>provideStream().reduce(reduceFunction);
-        System.out.println("[Reduction Result]: " + (reduction.isPresent() ? Collections.singleton(reduction.get()) : Collections.emptyList()));
+
+        System.out.println("[JAVA REDUCE]: " + reduction.isPresent());
+        System.out.println("[JAVA REDUCE]: " + reduction.get());
 
         ((CollectionChannel.Instance) outputs[0]).accept(reduction.isPresent() ?
                 Collections.singleton(reduction.get()) :

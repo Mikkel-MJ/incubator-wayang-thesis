@@ -21,12 +21,13 @@ package org.apache.wayang.core.types;
 import org.apache.wayang.core.util.ReflectionUtils;
 
 import java.util.Objects;
+import java.io.Serializable;
 
 /**
  * A data set is an abstraction of the Wayang programming model. Although never directly materialized, a data set
  * keeps track of type and structure of data units being passed between operators.
  */
-public class DataSetType<T> {
+public class DataSetType<T> implements Serializable {
 
     /**
      * Stands for the absence of an actual instance.

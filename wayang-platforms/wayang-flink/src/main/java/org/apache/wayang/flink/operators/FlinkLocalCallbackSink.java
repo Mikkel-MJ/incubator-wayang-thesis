@@ -36,6 +36,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Implementation of the {@link LocalCallbackSink} operator for the Flink platform.

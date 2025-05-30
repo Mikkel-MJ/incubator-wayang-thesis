@@ -21,11 +21,12 @@ package org.apache.wayang.core.types;
 import org.apache.wayang.core.util.ReflectionUtils;
 
 import java.util.Objects;
+import java.io.Serializable;
 
 /**
  * A grouped data unit type describes just the structure of data units within a grouped dataset.
  */
-public class DataUnitGroupType<T> extends DataUnitType<Iterable<T>> {
+public class DataUnitGroupType<T> extends DataUnitType<Iterable<T>> implements Serializable {
 
     private final DataUnitType<T> baseType;
 

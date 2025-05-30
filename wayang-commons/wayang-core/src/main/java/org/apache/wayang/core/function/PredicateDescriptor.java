@@ -132,6 +132,6 @@ public class PredicateDescriptor<Input> extends FunctionDescriptor {
 
     @Override
     public String toString() {
-        return String.format("%s[%s]", this.getClass().getSimpleName(), this.javaImplementation);
+        return String.format("%s[%s]|[%s]", this.getClass().getSimpleName(), this.javaImplementation, this.sqlImplementation);
     }
 }

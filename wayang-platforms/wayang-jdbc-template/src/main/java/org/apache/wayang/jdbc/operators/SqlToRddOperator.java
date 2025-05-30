@@ -90,7 +90,7 @@ public class SqlToRddOperator extends UnaryToUnaryOperator<Record, Record> imple
         System.out.println("[Boundary]: " + boundaryOperator);
         System.out.println("[Spark Parallelism]: " + executor.getNumDefaultPartitions());
 
-        Iterator<Record> resultSetIterator = new SqlToStreamOperator.ResultSetIterator<Record>(connection, input.getSqlQuery(), boundaryOperator);
+        Iterator<Record> resultSetIterator = new SqlToStreamOperator.ResultSetIterator<Record>(connection, input.getSqlQuery(), boundaryOperator instanceof JoinOperator);
         Iterable<Record> resultSetIterable = () -> resultSetIterator;
 
         // Convert the ResultSet to a JavaRDD.

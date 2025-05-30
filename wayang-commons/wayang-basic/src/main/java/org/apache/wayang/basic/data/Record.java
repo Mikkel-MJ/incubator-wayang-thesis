@@ -127,4 +127,7 @@ public class Record implements Serializable, Copyable<Record> {
         return this.values.length;
     }
 
+    public Object[] getFields() {
+        return this.values;
+    }
 }

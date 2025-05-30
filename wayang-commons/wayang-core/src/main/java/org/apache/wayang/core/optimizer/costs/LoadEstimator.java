@@ -29,7 +29,7 @@ import java.util.Arrays;
  * Describes the resource utilization of something executable within an {@link EstimationContext}, such as an
  * {@link ExecutionOperator} or a {@link FunctionDescriptor}.
  */
-public abstract class LoadEstimator {
+public abstract class LoadEstimator implements Serializable {
 
     public static final int UNSPECIFIED_NUM_SLOTS = -1;
 
