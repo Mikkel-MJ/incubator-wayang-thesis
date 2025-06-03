@@ -104,9 +104,9 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
-        final Iterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(), boundaryOperator instanceof JoinOperator);
+        final ResultSetIterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(), boundaryOperator instanceof JoinOperator);
         final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
-        final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false);
+        final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false).onClose(resultSetIterator::close);
 
         output.accept(resultSetStream);
 
@@ -189,7 +189,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                 //TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
                 /*
                 if (boundaryOperator instanceof JoinOperator) {
-                    st.setMaxRows(100_000);
+                    this.statement.setMaxRows(1_000_000);
                 }*/
                 // st.setFetchSize(100000000);
                 this.resultSet = this.statement.executeQuery(sqlQuery);
@@ -242,17 +242,9 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         @Override
         public void close() {
-            if (this.resultSet != null) {
-                try {
-                    DbUtils.closeQuietly(this.connection);
-                    DbUtils.closeQuietly(this.resultSet);
-                    DbUtils.closeQuietly(this.statement);
-                } catch (final Throwable t) {
-                    LogManager.getLogger(this.getClass()).error("Could not close result set.", t);
-                } finally {
-                    this.resultSet = null;
-                }
-            }
+            DbUtils.closeQuietly(this.connection);
+            DbUtils.closeQuietly(this.resultSet);
+            DbUtils.closeQuietly(this.statement);
         }
     }
 

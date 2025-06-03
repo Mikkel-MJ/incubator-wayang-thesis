@@ -38,7 +38,7 @@ public class Record implements Serializable, Copyable<Record> {
 
     @Override
     public Record copy() {
-        return new Record(this.values.clone());
+        return new Record(this.values.copy());
     }
 
     @Override
@@ -76,7 +76,7 @@ public class Record implements Serializable, Copyable<Record> {
     public double getDouble(int index) {
         Object field = this.values[index];
         return ReflectionUtils.toDouble(field);
-       }
+    }
 
     /**
      * Retrieve a field as a {@code long}. It must be castable as such.

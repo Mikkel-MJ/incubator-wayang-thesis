@@ -76,12 +76,7 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
 
         System.out.println("Getting flink parallelism: " + flinkExecutor.fee.getParallelism());
 
-        output.accept(dataSetInput
-                //.setParallelism(flinkExecutor.getNumDefaultPartitions())
-                //.setParallelism(flinkExecutor.fee.getParallelism())
-                //.setParallelism(1)
-                .collect()
-        );
+        output.accept(dataSetInput.collect());
 
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }
