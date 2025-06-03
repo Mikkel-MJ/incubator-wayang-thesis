@@ -42,6 +42,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.data.Tuple2;
 
+import org.apache.commons.dbutils.DbUtils;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -108,6 +110,8 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         output.accept(resultSetStream);
 
+        input.dispose();
+
         final ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
         queryLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 String.format("wayang.%s.sqltostream.load.query", this.jdbcPlatform.getPlatformId()),
@@ -149,7 +153,11 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         /**
          * Keeps around the {@link ResultSet} of the SQL query.
          */
-        public ResultSet resultSet;
+        private ResultSet resultSet;
+
+        private Statement statement;
+
+        private Connection connection;
 
         /**
          * The next {@link Record} to be delivered via {@link #next()}.
@@ -176,15 +184,15 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         ) {
             try {
                 // connection.setAutoCommit(false);
-                final Statement st = connection.createStatement();
+                this.connection = connection;
+                this.statement = connection.createStatement();
                 //TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
                 /*
                 if (boundaryOperator instanceof JoinOperator) {
                     st.setMaxRows(100_000);
                 }*/
                 // st.setFetchSize(100000000);
-                this.resultSet = st.executeQuery(sqlQuery);
-                System.out.println("[SQL EXECUTE]: " + sqlQuery);
+                this.resultSet = this.statement.executeQuery(sqlQuery);
                 this.needsTupleWrapping = needsTupleWrapping;
             } catch (final SQLException e) {
                 this.close();
@@ -236,7 +244,9 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         public void close() {
             if (this.resultSet != null) {
                 try {
-                    this.resultSet.close();
+                    DbUtils.closeQuietly(this.connection);
+                    DbUtils.closeQuietly(this.resultSet);
+                    DbUtils.closeQuietly(this.statement);
                 } catch (final Throwable t) {
                     LogManager.getLogger(this.getClass()).error("Could not close result set.", t);
                 } finally {

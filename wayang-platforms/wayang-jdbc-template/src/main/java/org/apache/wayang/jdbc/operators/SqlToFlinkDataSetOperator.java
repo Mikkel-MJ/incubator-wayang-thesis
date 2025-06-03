@@ -50,7 +50,6 @@ import org.apache.wayang.jdbc.execution.DatabaseDescriptor;
 
 import org.apache.flink.api.java.DataSet;
 
-import java.sql.Connection;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -95,24 +94,9 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
         final DataSetChannel.Instance output = (DataSetChannel.Instance) outputs[0];
 
         JdbcPlatformTemplate producerPlatform = (JdbcPlatformTemplate) input.getChannel().getProducer().getPlatform();
-        final Connection connection = producerPlatform
-                .createDatabaseDescriptor(flinkExecutor.getConfiguration())
-                .createJdbcConnection();
 
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
-        /*
-        Iterator<Output> resultSetIterator = new SqlToStreamOperator.ResultSetIterator<Output>(connection, input.getSqlQuery(), boundaryOperator);
-        Iterable<Output> resultSetIterable = () -> resultSetIterator;
-        List<Output> resultList = StreamSupport.stream(resultSetIterable.spliterator(), false).collect(Collectors.toList());
-
-        final DataSet<Output> resultSetDataSet = flinkExecutor.fee.fromCollection(
-            resultList
-        ).setParallelism(flinkExecutor.fee.getParallelism());*/
-
-        /*
-        final DataSet<Output> resultSetDataSet = flinkExecutor.fee.fromParallelCollection(iterator, type)
-            .setParallelism(flinkExecutor.fee.getParallelism());*/
         TypeInformation<Record> typeInfo = TypeExtractor.getForClass(Record.class);
         DatabaseDescriptor descriptor = producerPlatform.createDatabaseDescriptor(flinkExecutor.getConfiguration());
 
@@ -122,19 +106,21 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
 
         output.accept(resultSetDataSet, flinkExecutor);
 
+        input.dispose();
+
         // TODO: Add load profile estimators
         ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
         queryLineageNode.addPredecessor(input.getLineage());
         ExecutionLineageNode outputLineageNode = new ExecutionLineageNode(operatorContext);
         output.getLineage().addPredecessor(outputLineageNode);
 
-        return queryLineageNode.collectAndMark();
-        //return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
+        //return queryLineageNode.collectAndMark();
+        return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }
 
     @Override
     public boolean containsAction() {
-        return false;
+        return true;
     }
 
     @Override

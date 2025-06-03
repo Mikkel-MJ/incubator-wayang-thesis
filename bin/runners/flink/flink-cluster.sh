@@ -16,7 +16,7 @@ printenv
 echo "Printing Hostname"
 echo $HOSTNAME
 
-export FLINK_VERSION=1.20.0
+export FLINK_VERSION=1.20.1
 export FLINK_HOME=/opt/flink
 export PATH="$PATH:${FLINK_HOME}/bin"
 export FLINK_PROPERTIES="rest.port: 8081

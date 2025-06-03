@@ -130,6 +130,8 @@ public class FlinkExecutor extends PushExecutorTemplate {
         // Collect any cardinality updates.
         this.registerMeasuredCardinalities(producedChannelInstances);
 
+        ExecutionOperator operator = task.getOperator();
+
         // Warn if requested eager execution did not take place.
         if (isRequestEagerExecution){
             if(partialExecution == null) {
@@ -137,13 +139,17 @@ public class FlinkExecutor extends PushExecutorTemplate {
                 System.out.println(task + " was not executed eagerly as requested");
             }else {
                 try {
+                    System.out.println(task + " about to be executed");
+                    if (!operator.isSink()) {
+                        this.fee.execute();
+                    }
                     System.out.println(task + " executed");
-                    this.fee.execute();
                 } catch (Exception e) {
                     throw new WayangException(e);
                 }
             }
         }
+
         return new Tuple<>(Arrays.asList(outputChannelInstances), partialExecution);
     }
 

@@ -5,8 +5,24 @@ taskmanager:
   memory:
     process:
       size: 40g
+    heap:
+      size: 32g
+    framework:
+      off-heap:
+        size: 1g
+    task:
+      off-heap:
+        size: 1g
+    managed:
+      fraction: 0.1
+    network:
+      fraction: '0.3'
+    jvm-overhead:
+      max: 4g
+  cpu:
+    cores: 8
   bind-host: 0.0.0.0
-  numberOfTaskSlots: '8'
+  numberOfTaskSlots: 2
 classloader:
   check-leaked-classloader: 'false'
   resolve-order: parent-first
@@ -31,12 +47,13 @@ rest:
   max-content-length: 20000MiB
   address: node1
 pekko:
-  framesize: 2000MiB
-task:
-  cancellation:
-    timeout: 1200s
+  framesize: '2097152000'
+  lookup:
+    timeout: 100s
+  ask:
+    timeout: 100s
 parallelism:
-  default: '8'
+  default: 4
 env:
   java:
     opts:
