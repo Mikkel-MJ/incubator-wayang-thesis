@@ -187,9 +187,9 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                 this.connection = connection;
                 this.statement = connection.createStatement();
                 //TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
+                this.statement.setMaxRows(1_000_000);
                 /*
                 if (boundaryOperator instanceof JoinOperator) {
-                    this.statement.setMaxRows(1_000_000);
                 }*/
                 // st.setFetchSize(100000000);
                 this.resultSet = this.statement.executeQuery(sqlQuery);

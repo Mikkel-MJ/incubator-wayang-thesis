@@ -38,7 +38,7 @@ public class Record implements Serializable, Copyable<Record> {
 
     @Override
     public Record copy() {
-        return new Record(this.values.copy());
+        return new Record(this.values.clone());
     }
 
     @Override

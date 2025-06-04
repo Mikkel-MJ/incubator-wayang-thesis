@@ -261,6 +261,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 ),
                 Record.class, SqlField.class, leftFieldName)
                 .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName);
+        System.out.println("left sql: " + Optional.ofNullable(leftTableName).orElse("") + ", " + leftFieldName);
 
         final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(rightKeyIndex)
@@ -272,6 +273,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 ),
                 Record.class, SqlField.class, rightFieldName)
                 .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName);
+        System.out.println("right sql: " + Optional.ofNullable(rightTableName).orElse("") + ", " + rightFieldName);
 
         final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
                 leftProjectionDescriptor,

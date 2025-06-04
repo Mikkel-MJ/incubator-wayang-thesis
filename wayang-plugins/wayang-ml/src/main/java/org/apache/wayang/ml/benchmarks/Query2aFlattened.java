@@ -52,6 +52,10 @@ import org.apache.wayang.apps.tpch.queries.Query1Wayang;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
+import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MultiConditionJoinKeyExtractor;
+import org.apache.wayang.core.function.TransformationDescriptor;
+import org.apache.wayang.core.util.ExplainUtils;
 
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.postgres.operators.PostgresTableSource;
@@ -69,7 +73,7 @@ import java.util.Collection;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
-public class Query2a {
+public class Query2aFlattened {
 
     /**
      * 0: platforms
@@ -114,7 +118,6 @@ public class Query2a {
         TableSource keyword = new PostgresTableSource("keyword");
         TableSource movieCompanies = new PostgresTableSource("movie_companies");
         TableSource movieKeyword = new PostgresTableSource("movie_keyword");
-        TableSource movieKeywordTwo = new PostgresTableSource("movie_keyword");
         TableSource title = new PostgresTableSource("title");
 
         MapOperator<String, Record> parser = new MapOperator<>(
@@ -141,68 +144,93 @@ public class Query2a {
 
         keyword.connectTo(0, kFilter, 0);
 
-        JoinOperator<Record, Record, Integer> cnmcJoin = new JoinOperator<>(
-            (cn) -> cn.getInt(0),
-            (mc) -> mc.getInt(2),
-            Record.class,
+        TransformationDescriptor<Record, Integer> leftKeyDescriptor = new TransformationDescriptor<>(
+            (mc) -> mc.getInt(1),
             Record.class,
             Integer.class
-        );
+        ).withSqlImplementation("movie_companies AS movie_companies", "movie_id");
 
-        cnFilter.connectTo(0, cnmcJoin, 0);
-        movieCompanies.connectTo(0, cnmcJoin, 1);
-
-        JoinOperator<Tuple2<Record, Record>, Record, Integer> mctJoin = new JoinOperator<>(
-            (mc) -> mc.getField1().getInt(1),
-            (t) -> t.getInt(0),
-            ReflectionUtils.specify(Tuple2.class),
-            Record.class,
-            Integer.class
-        );
-
-        cnmcJoin.connectTo(0, mctJoin, 0);
-        title.connectTo(0, mctJoin, 1);
-
-        JoinOperator<Tuple2<Tuple2<Record, Record>, Record>, Record, Integer> tmkJoin = new JoinOperator<>(
-            (t) -> t.getField1().getInt(0),
+        TransformationDescriptor<Record, Integer> rightKeyDescriptor = new TransformationDescriptor<>(
             (mk) -> mk.getInt(1),
-            ReflectionUtils.specify(Tuple2.class),
             Record.class,
             Integer.class
+        ).withSqlImplementation("movie_keyword AS movie_keyword", "movie_id");
+
+        JoinOperator<Record, Record, Integer> mcmkJoin = new JoinOperator<Record, Record, Integer>(
+            leftKeyDescriptor,
+            rightKeyDescriptor
         );
 
-        mctJoin.connectTo(0, tmkJoin, 0);
-        movieKeyword.connectTo(0, tmkJoin, 1);
+        movieCompanies.connectTo(0, mcmkJoin, 0);
+        movieKeyword.connectTo(0, mcmkJoin, 1);
 
-        JoinOperator<Tuple2<Tuple2<Tuple2<Record, Record>, Record>, Record>, Record, Integer> mkkJoin = new JoinOperator<>(
-            (mk) -> mk.getField1().getInt(2),
+        MapOperator<Tuple2<Record, Record>, Record> mcmkFlatten = new MapOperator<Tuple2<Record, Record>, Record>(
+                new JoinFlattenResult(),
+                ReflectionUtils.specify(Tuple2.class),
+                Record.class);
+
+        mcmkJoin.connectTo(0, mcmkFlatten, 0);
+
+        JoinOperator<Record, Record, Integer> mcmkkJoin = new JoinOperator<>(
+            (mcmk) -> mcmk.getInt(7),
             (k) -> k.getInt(0),
-            ReflectionUtils.specify(Tuple2.class),
+            Record.class,
             Record.class,
             Integer.class
         );
 
-        tmkJoin.connectTo(0, mkkJoin, 0);
-        kFilter.connectTo(0, mkkJoin, 1);
+        mcmkFlatten.connectTo(0, mcmkkJoin, 0);
+        kFilter.connectTo(0, mcmkkJoin, 1);
 
-        JoinOperator<Tuple2<Tuple2<Tuple2<Tuple2<Record, Record>, Record>, Record>, Record>, Record, Integer> mcmkJoin = new JoinOperator<>(
-            (mc) -> mc.getField0().getField0().getField0().getField1().getInt(1),
-            (mk) -> mk.getInt(1),
-            ReflectionUtils.specify(Tuple2.class),
+        MapOperator<Tuple2<Record, Record>, Record> mcmkkFlatten = new MapOperator<Tuple2<Record, Record>, Record>(
+                new JoinFlattenResult(),
+                ReflectionUtils.specify(Tuple2.class),
+                Record.class);
+
+        mcmkkJoin.connectTo(0, mcmkkFlatten, 0);
+
+        JoinOperator<Record, Record, Integer> mcmkkcnJoin = new JoinOperator<>(
+            (mcmkk) -> mcmkk.getInt(5),
+            (cn) -> cn.getInt(0),
+            Record.class,
             Record.class,
             Integer.class
         );
 
-        mkkJoin.connectTo(0, mcmkJoin, 0);
-        movieKeywordTwo.connectTo(0, mcmkJoin, 1);
+        mcmkkFlatten.connectTo(0, mcmkkcnJoin, 0);
+        cnFilter.connectTo(0, mcmkkcnJoin, 1);
 
-        MapOperator<Tuple2<Tuple2<Tuple2<Tuple2<Tuple2<Record, Record>, Record>, Record>, Record>, Record>, String> flatten = new MapOperator<>(
-            (tup) -> tup.getField0().getField0().getField0().getField1().getString(1),
-            ReflectionUtils.specify(Tuple2.class),
-            String.class
+        MapOperator<Tuple2<Record, Record>, Record> mcmkkcnFlatten = new MapOperator<Tuple2<Record, Record>, Record>(
+                new JoinFlattenResult(),
+                ReflectionUtils.specify(Tuple2.class),
+                Record.class);
+
+        mcmkkcnJoin.connectTo(0, mcmkkcnFlatten, 0);
+
+        JoinOperator<Record, Record, Integer> mcmkkcntJoin = new JoinOperator<>(
+            (mcmkkcn) -> mcmkkcn.getInt(11),
+            (t) -> t.getInt(0),
+            Record.class,
+            Record.class,
+            Integer.class
         );
 
-        mcmkJoin.connectTo(0, flatten, 0);
+        mcmkkcnFlatten.connectTo(0, mcmkkcntJoin, 0);
+        title.connectTo(0, mcmkkcntJoin, 1);
+
+        MapOperator<Tuple2<Record, Record>, Record> mcmkkcntFlatten = new MapOperator<Tuple2<Record, Record>, Record>(
+                new JoinFlattenResult(),
+                ReflectionUtils.specify(Tuple2.class),
+                Record.class);
+
+        mcmkkcntJoin.connectTo(0, mcmkkcntFlatten, 0);
+
+        MapOperator<Record, String> flatten = new MapOperator<Record, String>(
+                (t) -> t.getString(19),
+                Record.class,
+                String.class);
+
+        mcmkkcntFlatten.connectTo(0, flatten, 0);
 
         ReduceByOperator<String, String> aggregation = new ReduceByOperator<>(
             (tup) -> tup,
@@ -219,12 +247,14 @@ public class Query2a {
 
         WayangPlan plan = new WayangPlan(sink);
 
+        ExplainUtils.parsePlan(plan, false);
+
         WayangContext context = new WayangContext(config);
         plugins.stream().forEach(plug -> context.register(plug));
 
         String[] jars = ArrayUtils.addAll(
-            ReflectionUtils.getAllJars(Query2a.class),
-            ReflectionUtils.getLibs(Query2a.class)
+            ReflectionUtils.getAllJars(Query2aFlattened.class),
+            ReflectionUtils.getLibs(Query2aFlattened.class)
         );
 
         context.execute(plan, jars);

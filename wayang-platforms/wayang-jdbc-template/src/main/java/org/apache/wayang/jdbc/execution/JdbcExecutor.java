@@ -376,7 +376,8 @@ public class JdbcExecutor extends ExecutorTemplate {
 
             matcher.find();
 
-            final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0]) ? matcher.group(4)
+            final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0])
+                    ? matcher.group(4)
                     : matcher.group(3);
             unionSet.add(nonUsedTable.split("\\.")[0]);
         }
