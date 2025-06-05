@@ -372,14 +372,22 @@ public class JdbcExecutor extends ExecutorTemplate {
             final String regex = "JOIN\\s+(?<joiningTable>\\w+)(?:\\s+AS\\s+(?<alias>\\w+))?\\s+ON\\s+(?<left>\\w+\\.\\w+)\\s*=\\s*(?<right>\\w+\\.\\w+)";
             final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
 
-            final Matcher matcher = pattern.matcher(joins.stream().findFirst().orElse(""));
+            final String joinClause = joins.stream().findFirst().orElse("");
+            final Matcher matcher = pattern.matcher(joinClause);
 
-            matcher.find();
+            if (matcher.find()) {
+                final String joiningTable = matcher.group("joiningTable");
+                final String left = matcher.group("left");
+                final String right = matcher.group("right");
 
-            final String nonUsedTable = matcher.group(1).equals(matcher.group(3).split("\\.")[0])
-                    ? matcher.group(4)
-                    : matcher.group(3);
-            unionSet.add(nonUsedTable.split("\\.")[0]);
+                if (joiningTable != null && left != null && right != null) {
+                    String leftTable = left.split("\\.")[0];
+                    String rightTable = right.split("\\.")[0];
+
+                    final String nonUsedTable = joiningTable.equals(leftTable) ? right : left;
+                    unionSet.add(nonUsedTable.split("\\.")[0]);
+                }
+            }
         }
 
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));

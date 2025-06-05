@@ -56,6 +56,7 @@ import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MultiConditionJoinKeyExtractor;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.util.ExplainUtils;
+import org.apache.calcite.runtime.SqlFunctions;
 
 import org.apache.wayang.basic.operators.*;
 import org.apache.wayang.postgres.operators.PostgresTableSource;
@@ -79,8 +80,8 @@ public class Query2aFlattened {
      * 0: platforms
      * 1: Data directory
      */
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
@@ -148,13 +149,13 @@ public class Query2aFlattened {
             (mc) -> mc.getInt(1),
             Record.class,
             Integer.class
-        ).withSqlImplementation("movie_companies AS movie_companies", "movie_id");
+        ).withSqlImplementation("movie_keyword AS movie_keyword", "movie_id");
 
         TransformationDescriptor<Record, Integer> rightKeyDescriptor = new TransformationDescriptor<>(
             (mk) -> mk.getInt(1),
             Record.class,
             Integer.class
-        ).withSqlImplementation("movie_keyword AS movie_keyword", "movie_id");
+        ).withSqlImplementation("movie_companies", "movie_id");
 
         JoinOperator<Record, Record, Integer> mcmkJoin = new JoinOperator<Record, Record, Integer>(
             leftKeyDescriptor,
@@ -232,10 +233,16 @@ public class Query2aFlattened {
 
         mcmkkcntFlatten.connectTo(0, flatten, 0);
 
+        /*
         ReduceByOperator<String, String> aggregation = new ReduceByOperator<>(
             (tup) -> tup,
             (t1, t2) -> t1.compareTo(t2) < 0 ? t1 : t2,
             String.class,
+            String.class
+        );*/
+
+        GlobalReduceOperator<String> aggregation = new GlobalReduceOperator<>(
+            (t1, t2) -> SqlFunctions.least(t1, t2),
             String.class
         );
 
