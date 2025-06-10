@@ -80,7 +80,7 @@ public class FlinkExecutor extends PushExecutorTemplate {
         this.numDefaultPartitions = (int) this.getConfiguration().getLongProperty("wayang.flink.parallelism");
         this.fee.setParallelism(this.numDefaultPartitions);
         this.flinkContextReference.noteObtainedReference();
-        this.fee.getConfig().enableForceKryo();
+        this.fee.getConfig().disableForceKryo();
         //this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteRexSerializable.class, DefaultSerializers.ClassSerializer.class);
         //this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.calcite.rel.externalize.RelJson.class, DefaultSerializers.ClassSerializer.class);
     }

@@ -80,8 +80,8 @@ public class Query2aFlattened {
      * 0: platforms
      * 1: Data directory
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));

@@ -56,6 +56,11 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
     }
 
     @Override
+    public boolean isSink() {
+        return true;
+    }
+
+    @Override
     public Tuple<Collection<ExecutionLineageNode>, Collection<ChannelInstance>> evaluate(ChannelInstance[] inputs, ChannelInstance[] outputs, FlinkExecutor flinkExecutor, OptimizationContext.OperatorContext operatorContext) throws Exception {
 
         assert inputs.length == this.getNumInputs();
@@ -68,9 +73,10 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
         TypeInformation<Type> type = dataSetInput.getType();
 
         System.out.println("Got type: " + type.getTypeClass());
+        /*
         if (type.getTypeClass().getName().contains("scala.Tuple")) {
             flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(type.getTypeClass(), ScalaTupleSerializer.class);
-        }
+        }*/
 
         //flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(dataSetInput.getType().getClass(), Serializer.class);
 
@@ -78,7 +84,7 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
 
         output.accept(dataSetInput.collect());
 
-        return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
+        return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);
     }
 
     @Override

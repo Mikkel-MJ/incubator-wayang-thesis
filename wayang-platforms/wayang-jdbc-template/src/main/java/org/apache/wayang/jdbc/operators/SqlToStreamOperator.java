@@ -185,13 +185,16 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
             try {
                 // connection.setAutoCommit(false);
                 this.connection = connection;
-                this.statement = connection.createStatement();
+                this.statement = connection.createStatement(
+                        java.sql.ResultSet.TYPE_FORWARD_ONLY,
+                            java.sql.ResultSet.CONCUR_READ_ONLY);
+
                 //TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
-                //this.statement.setMaxRows(10_000);
+                //this.statement.setMaxRows(1_000_000);
                 /*
                 if (boundaryOperator instanceof JoinOperator) {
                 }*/
-                // st.setFetchSize(100000000);
+                this.statement.setFetchSize(1);
                 System.out.println("[SQLToStream]: " + sqlQuery);
                 this.resultSet = this.statement.executeQuery(sqlQuery);
                 this.needsTupleWrapping = needsTupleWrapping;

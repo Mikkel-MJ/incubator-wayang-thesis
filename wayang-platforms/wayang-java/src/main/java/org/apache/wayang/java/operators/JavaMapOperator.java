@@ -88,7 +88,9 @@ public class JavaMapOperator<InputType, OutputType>
 
         System.out.println("[JAVA MAP]: " + this);
         System.out.println("[JAVA MAP output size]: " + list.size());
-        System.out.println("[JAVA MAP output]: " + list.get(0));
+        if (list.size() > 0) {
+            System.out.println("[JAVA MAP output]: " + list.get(0));
+        }
 
         if (list.size() < 100) {
             for (OutputType item : list) {

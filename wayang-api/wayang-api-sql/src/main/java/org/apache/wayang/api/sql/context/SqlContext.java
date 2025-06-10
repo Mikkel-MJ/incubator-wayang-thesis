@@ -128,6 +128,8 @@ public class SqlContext extends WayangContext {
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
 
         final RuleSet coreRules = RuleSets.ofList(
+            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+            CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.FILTER_INTO_JOIN,
             CoreRules.JOIN_ASSOCIATE
         );
@@ -137,11 +139,9 @@ public class SqlContext extends WayangContext {
         System.out.println("[RelNode]: " + relNode.explain());
 
         final RuleSet wayangRules = RuleSets.ofList(
+            CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
+            CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.FILTER_INTO_JOIN,
-            //CoreRules.FILTER_MERGE,
-            //CoreRules.FILTER_AGGREGATE_TRANSPOSE,
-            //CoreRules.JOIN_COMMUTE,
-            //CoreRules.JOIN_COMMUTE_OUTER,
             CoreRules.JOIN_ASSOCIATE,
             //CoreRules.JOIN_TO_MULTI_JOIN,  // Treats joins together
             //CoreRules.PROJECT_TO_LOGICAL_PROJECT_AND_WINDOW,
