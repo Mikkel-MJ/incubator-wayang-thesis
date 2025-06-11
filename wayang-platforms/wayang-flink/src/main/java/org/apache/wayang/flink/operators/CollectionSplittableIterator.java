@@ -34,20 +34,26 @@ public class CollectionSplittableIterator<T> extends SplittableIterator<T> imple
         this.numSplits = numSplits;
     }
 
-    @Override
+     @Override
     public Iterator<T>[] split(int numSplits) {
-        // Split the collection into chunks
-        int chunkSize = (int) Math.ceil((double) numElements() / this.numSplits);
+        int numElements = this.collection.size();
+
         @SuppressWarnings("unchecked")
-        Iterator<T>[] splits = new Iterator[this.numSplits];
+        Iterator<T>[] splits = new Iterator[numSplits];
 
-        System.out.println("Splitting into "  + this.numSplits + " splits");
+        int chunkSize = (int) Math.ceil((double) numElements / numSplits);
 
-        for (int i = 0; i < this.numSplits; i++) {
+        for (int i = 0; i < numSplits; i++) {
             int fromIndex = i * chunkSize;
-            int toIndex = Math.min(fromIndex + chunkSize, numElements());
-            System.out.println("Splitting from "  + fromIndex + " to " + toIndex);
-            splits[i] = new CollectionSplittableIterator<>(this.collection.subList(fromIndex, toIndex), 1);
+            int toIndex = Math.min(fromIndex + chunkSize, numElements);
+
+            if (fromIndex >= toIndex) {
+                // Return an empty iterator if there's no data in this split
+                splits[i] = new CollectionSplittableIterator<>(List.of(), 1);
+            } else {
+                List<T> sublist = this.collection.subList(fromIndex, toIndex);
+                splits[i] = new CollectionSplittableIterator<>(sublist, 1);
+            }
         }
 
         return splits;
@@ -55,17 +61,19 @@ public class CollectionSplittableIterator<T> extends SplittableIterator<T> imple
 
     @Override
     public boolean hasNext() {
-        return this.head < this.collection.size() - 1;
+        return this.head < this.collection.size();
         //return iterator.hasNext();
     }
 
     @Override
     public T next() {
         //return iterator.next();
+        /*
         T next = this.collection.get(this.head);
         this.head++;
 
-        return next;
+        return next;*/
+        return this.collection.get(this.head++);
     }
 
     @Override

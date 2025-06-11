@@ -46,6 +46,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.Collections;
+import java.util.function.Supplier;
+import java.util.Iterator;
 
 /**
  * This is execution operator implements the {@link CollectionSource}.
@@ -85,7 +87,7 @@ public class FlinkCollectionSource<Type> extends CollectionSource<Type> implemen
             collection = ((CollectionChannel.Instance)inputs[0]).provideCollection();
         }
 
-        SplittableIterator<Type> iterator = new CollectionSplittableIterator<Type>(new ArrayList(collection), flinkExecutor.fee.getParallelism());
+        //SplittableIterator<Type> iterator = new CollectionSplittableIterator<Type>(new ArrayList(collection), flinkExecutor.fee.getParallelism() * flinkExecutor.fee.getParallelism());
         if (collection.iterator().hasNext()) {
             Type firstValue = collection.iterator().next();
 
@@ -114,11 +116,21 @@ public class FlinkCollectionSource<Type> extends CollectionSource<Type> implemen
             //flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(firstValue.getClass(), new KryoSerializer(firstValue.getClass(), flinkExecutor.fee.getConfig()));
 
             final DataSet<Type> datasetOutput = flinkExecutor.fee.fromCollection(
-                collection.parallelStream().collect(Collectors.toList())
+                collection.stream().collect(Collectors.toList())
             ).setParallelism(flinkExecutor.fee.getParallelism());
 
             /*
             final DataSet<Type> datasetOutput = flinkExecutor.fee.fromParallelCollection(iterator, type)
+                .setParallelism(flinkExecutor.fee.getParallelism());*/
+
+            /*
+            Supplier<Iterator<Type>> iteratorSupplier = new BatchedIteratorInputFormat.SerializableIteratorSupplier<>(collection);
+
+            BatchedIteratorInputFormat<Type> inputFormat =
+                new BatchedIteratorInputFormat<>(iteratorSupplier, 100_000);
+
+            DataSet<Type> datasetOutput = flinkExecutor.fee
+                .createInput(inputFormat, type)
                 .setParallelism(flinkExecutor.fee.getParallelism());*/
 
             ((DataSetChannel.Instance) outputs[0]).accept(datasetOutput, flinkExecutor);

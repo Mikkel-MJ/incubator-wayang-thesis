@@ -190,7 +190,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                             java.sql.ResultSet.CONCUR_READ_ONLY);
 
                 //TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
-                //this.statement.setMaxRows(1_000_000);
+                //this.statement.setMaxRows(100_000);
                 /*
                 if (boundaryOperator instanceof JoinOperator) {
                 }*/
