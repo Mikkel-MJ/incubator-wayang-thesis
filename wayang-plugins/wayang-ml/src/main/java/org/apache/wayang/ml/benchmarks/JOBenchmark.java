@@ -94,7 +94,7 @@ public class JOBenchmark {
             config.setProperty("spark.driver.maxResultSize", "16g");
             config.setProperty("spark.dynamicAllocation.enabled", "true");
             config.setProperty("wayang.flink.mode.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "4");
+            config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "7071");
             config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
@@ -169,11 +169,10 @@ public class JOBenchmark {
                 ReflectionUtils.getLibs(JOBenchmark.class)
             );
 
-            /*
             jars = ArrayUtils.addAll(
                 jars,
                 ReflectionUtils.getAllJars(org.apache.calcite.runtime.SqlFunctions.class)
-            );*/
+            );
 
             try {
                 WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
