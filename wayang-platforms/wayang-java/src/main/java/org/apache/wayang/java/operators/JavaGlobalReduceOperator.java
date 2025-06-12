@@ -86,9 +86,6 @@ public class JavaGlobalReduceOperator<Type>
 
         final Optional<Type> reduction = ((JavaChannelInstance) inputs[0]).<Type>provideStream().reduce(reduceFunction);
 
-        System.out.println("[JAVA REDUCE]: " + reduction.isPresent());
-        System.out.println("[JAVA REDUCE]: " + reduction.get());
-
         ((CollectionChannel.Instance) outputs[0]).accept(reduction.isPresent() ?
                 Collections.singleton(reduction.get()) :
                 Collections.emptyList());

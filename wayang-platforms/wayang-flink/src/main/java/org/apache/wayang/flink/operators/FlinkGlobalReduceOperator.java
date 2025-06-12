@@ -86,7 +86,6 @@ public class FlinkGlobalReduceOperator<Type>
 
         final ReduceFunction<Type> reduceFunction = flinkExecutor.getCompiler().compile(this.reduceDescriptor);
 
-
         DataSet<Type> datasetOutput = null;
         try {
             datasetOutput = dataSetInput.reduce(reduceFunction)

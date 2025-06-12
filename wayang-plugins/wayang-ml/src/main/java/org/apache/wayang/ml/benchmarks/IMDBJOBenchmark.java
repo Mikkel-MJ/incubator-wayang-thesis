@@ -146,9 +146,11 @@ public class IMDBJOBenchmark {
         });*/
 
         final Collection<Operator> sources = plan.collectReachableTopLevelSources();
+        boolean isSet = false;
 
-        sources.stream().forEach(op -> {
-            if (op instanceof TableSource) {
+        for (Operator op : sources) {
+        //sources.stream().forEach(op -> {
+            if (op instanceof TableSource && !isSet) {
                 String tableName = ((TableSource) op).getTableName();
                 String filePath = dataPath + tableName + ".csv";
                 TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
@@ -230,6 +232,7 @@ public class IMDBJOBenchmark {
                         OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
                         break;
                     case "company_name":
                         parser = new MapOperator<>(
@@ -242,6 +245,7 @@ public class IMDBJOBenchmark {
                         OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
                         break;
                     case "info_type":
                         parser = new MapOperator<>(
@@ -254,6 +258,7 @@ public class IMDBJOBenchmark {
                         OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
                         break;
                     /*
                     case "movie_info":
@@ -319,11 +324,12 @@ public class IMDBJOBenchmark {
                         OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
                         break;
                     default:
                         break;
                 }
             }
-        });
+        }
     }
 }

@@ -35,11 +35,16 @@ echo "Running JOBenchmark"
 #        sleep 5s
 #    done
 
-    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,postgres file://$data_path/ $timings_path $test_path/2a.sql
+    #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,postgres file://$data_path/ $timings_path $test_path/2a.sql
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark flink,postgres file://$data_path/ $timings_path $test_path/2a.sql
 
-    #for query in "$test_path"/*.sql; do
-    #        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres $data_path/ $timings_path $query bvae $model_path $data_path
-    #done
+    for query in "$test_path"/*.sql; do
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path $query
+
+        # Lord forgive me - for Flink has sinned
+        sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
+        sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
+        sleep 5s
+    done
 
 

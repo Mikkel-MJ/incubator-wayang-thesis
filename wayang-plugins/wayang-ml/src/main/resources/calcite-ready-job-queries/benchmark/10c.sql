@@ -1,4 +1,4 @@
-SELECT MIN(chn.name) AS character,
+SELECT MIN(chn.name) AS cha,
        MIN(t.title) AS movie_with_american_producer
 FROM postgres.char_name AS chn,
      postgres.cast_info AS ci,
