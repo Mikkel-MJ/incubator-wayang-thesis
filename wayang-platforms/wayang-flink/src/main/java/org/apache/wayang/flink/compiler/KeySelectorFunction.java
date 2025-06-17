@@ -44,8 +44,8 @@ public class KeySelectorFunction<T, K> implements KeySelector<T, K>, ResultTypeQ
     }
 
     public K getKey(T object){
-            return this.impl.apply(object);
-        }
+        return this.impl.apply(object);
+    }
 
     @Override
     public TypeInformation getProducedType() {

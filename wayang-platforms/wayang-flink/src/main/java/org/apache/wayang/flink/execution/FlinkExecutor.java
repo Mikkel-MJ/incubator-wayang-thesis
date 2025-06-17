@@ -136,14 +136,11 @@ public class FlinkExecutor extends PushExecutorTemplate {
         if (isRequestEagerExecution){
             if(partialExecution == null) {
                 this.logger.info("{} was not executed eagerly as requested.", task);
-                System.out.println(task + " was not executed eagerly as requested");
             }else {
                 try {
-                    System.out.println(task + " about to be executed");
                     if (!operator.isSink()) {
                         this.fee.execute();
                     }
-                    System.out.println(task + " executed");
                 } catch (Exception e) {
                     throw new WayangException(e);
                 }

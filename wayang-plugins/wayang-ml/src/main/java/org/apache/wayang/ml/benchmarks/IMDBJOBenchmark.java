@@ -48,7 +48,6 @@ public class IMDBJOBenchmark {
 
         // need to chop off the last ';' otherwise sqlContext cant parse it
         final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
-        System.out.println("[Query]: " + query);
 
         WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
 
@@ -119,7 +118,6 @@ public class IMDBJOBenchmark {
                                                                                                   // the last
             // ';' otherwise sqlContext
             // cant parse it
-            System.out.println("Read query: " + query);
 
             final Collection<Record> result = sqlContext.executeSql(
                     query);

@@ -136,8 +136,6 @@ public class SqlContext extends WayangContext {
 
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
-        System.out.println("[RelNode]: " + relNode.explain());
-
         final RuleSet wayangRules = RuleSets.ofList(
             CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES,
             CoreRules.JOIN_CONDITION_PUSH,
@@ -159,8 +157,6 @@ public class SqlContext extends WayangContext {
                 wayangRules);
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
-
-        System.out.println("[WayangRel]: " + wayangRel.explain());
 
         visitor.visit(wayangRel, 0, null);
 

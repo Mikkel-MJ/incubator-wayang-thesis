@@ -90,14 +90,7 @@ public class JavaFilterOperator<Type>
         Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream();
         List<Type> list = inputStream.collect(Collectors.toList());
 
-        System.out.println("[JAVA FILTER]: " + this);
-        System.out.println("[JAVA FILTER function]: " + this.predicateDescriptor);
-        System.out.println("[JAVA FILTER input size]: " + list.size());
-        System.out.println("[JAVA FILTER INPUT]: " + list.get(0));
-
         List<Type> outList = list.stream().filter(filterFunction).collect(Collectors.toList());
-        System.out.println("[JAVA FILTER output size]: " + outList.size());
-        System.out.println("[JAVA FILTER output]: " + outList.get(0));
 
         //((StreamChannel.Instance) outputs[0]).accept(((JavaChannelInstance) inputs[0]).<Type>provideStream().filter(filterFunction));
         ((StreamChannel.Instance) outputs[0]).accept(outList.stream());

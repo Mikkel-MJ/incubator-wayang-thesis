@@ -42,8 +42,6 @@ public class OrtTensorDecoder {
     public TreeNode decode(Tuple<ArrayList<long[][]>,ArrayList<long[][]>> mlOutput){
         long[][] platformChoices = mlOutput.field0.get(0);
         long[][] indexedTree = mlOutput.field1.get(0);
-        System.out.println("Index tree: " + Arrays.deepToString(indexedTree));
-        System.out.println("Index tree size: " + indexedTree.length);
         long[] flatIndexTree = Arrays.stream(indexedTree).reduce(Longs::concat).orElseThrow();
 
         /*
@@ -69,16 +67,12 @@ public class OrtTensorDecoder {
             .toArray(long[][]::new);
         */
 
-        System.out.println("Platform choices:" + Arrays.deepToString(platformChoices));
-        System.out.println("Platform choices dim: " + platformChoices.length);
-
         //System.out.println("Flat index tree: " + Arrays.toString(flatIndexTree));
         //System.out.println("Flat index tree length: " + flatIndexTree.length);
 
         for (int j = 0; j < flatIndexTree.length; j+=3) {
             final long curID = flatIndexTree[j];
 
-            System.out.println("Values: " + Arrays.toString(platformChoices[(int) curID]));
             //System.out.println("Looking at ID " + curID);
 
             // Skip over roots that have been visited before
@@ -124,7 +118,6 @@ public class OrtTensorDecoder {
 
             if (flatIndexTree.length > j+1) {
                 long lID = flatIndexTree[j+1];
-                System.out.println("Root " + curID + ", left " + lID);
                 TreeNode left;
 
                 /*
@@ -150,8 +143,6 @@ public class OrtTensorDecoder {
                 if (flatIndexTree.length > j+2) {
                     long rID = flatIndexTree[j+2];
                     TreeNode right;
-
-                    System.out.println("Root " + curID + ", right " + rID);
 
                     /*
                     long[] rValues = Arrays.stream(values)
@@ -180,8 +171,6 @@ public class OrtTensorDecoder {
             nodeToIDMap.put(curID, curTreeNode);
         }
 
-        System.out.println("No of nodes in map: " + this.nodeToIDMap.size());
-        System.out.println("Decoded tree" + this.nodeToIDMap.get(1L).toStringEncoding());
         return this.nodeToIDMap.get(1L);
     }
 }

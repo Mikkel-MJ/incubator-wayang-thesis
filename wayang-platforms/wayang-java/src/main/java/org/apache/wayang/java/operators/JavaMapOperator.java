@@ -86,18 +86,6 @@ public class JavaMapOperator<InputType, OutputType>
         Stream<OutputType> outStream = input.<InputType>provideStream().map(function);
         List<OutputType> list = outStream.collect(Collectors.toList());
 
-        System.out.println("[JAVA MAP]: " + this);
-        System.out.println("[JAVA MAP output size]: " + list.size());
-        if (list.size() > 0) {
-            System.out.println("[JAVA MAP output]: " + list.get(0));
-        }
-
-        if (list.size() < 100) {
-            for (OutputType item : list) {
-                System.out.println(item);
-            }
-        }
-
         //output.accept(input.<InputType>provideStream().map(function));
         output.accept(list.stream());
 

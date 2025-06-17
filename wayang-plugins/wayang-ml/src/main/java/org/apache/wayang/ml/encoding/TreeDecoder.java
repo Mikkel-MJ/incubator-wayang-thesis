@@ -104,9 +104,6 @@ public class TreeDecoder {
             );
             Set<Platform> platforms = operator.get().getTargetPlatforms();
 
-            System.out.println("Operator: " + operator);
-            System.out.println("Platform: " + platform);
-
             //if (platforms.size() == 0 || platforms.contains(platform)) {
                 operator.get().addTargetPlatform(platform);
             //}

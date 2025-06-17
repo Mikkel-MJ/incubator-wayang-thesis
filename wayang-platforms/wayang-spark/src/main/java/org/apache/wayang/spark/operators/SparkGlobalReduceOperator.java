@@ -87,12 +87,16 @@ public class SparkGlobalReduceOperator<Type>
                 sparkExecutor.getCompiler().compile(this.reduceDescriptor, this, operatorContext, inputs);
 
         final JavaRDD<Type> inputRdd = input.provideRdd();
-        final Type reduction = inputRdd.reduce(reduceFunction);
-        List<Type> outputList = reduction != null ?
-            Collections.singletonList(reduction) :
-            Collections.emptyList();
 
-        System.out.println("[SPARK Reduction size]: " + outputList.size());
+        List<Type> outputList = Collections.emptyList();
+
+        if (!inputRdd.isEmpty()) {
+            final Type reduction = inputRdd.reduce(reduceFunction);
+
+            outputList = reduction != null ?
+                Collections.singletonList(reduction) :
+                Collections.emptyList();
+        }
 
         output.accept(outputList);
 

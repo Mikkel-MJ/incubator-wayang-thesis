@@ -38,8 +38,11 @@ echo "Running JOBenchmark"
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,postgres file://$data_path/ $timings_path $test_path/2a.sql
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark flink,postgres file://$data_path/ $timings_path $test_path/2a.sql
 
+    #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
     for query in "$test_path"/*.sql; do
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path $query
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/1/ $query bvae /work/lsbo-paper/data/models/imdb/training/bvae-1.onnx $data_path/experience/
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/5/ $query bvae /work/lsbo-paper/data/models/imdb/training/bvae-5.onnx $data_path/experience/
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/10/ $query bvae /work/lsbo-paper/data/models/imdb/training/bvae-10.onnx $data_path/experience/
 
         # Lord forgive me - for Flink has sinned
         sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh

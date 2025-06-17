@@ -123,23 +123,33 @@ public class LSBORunner {
         config.setProperty("spark.app.name", "JOB Query");
         config.setProperty("spark.rpc.message.maxSize", "2047");
         config.setProperty("spark.executor.memory", "32g");
+        config.setProperty("spark.executor.cores", "6");
+        config.setProperty("spark.executor.instances", "1");
+        config.setProperty("spark.default.parallelism", "8");
+        config.setProperty("spark.driver.maxResultSize", "16g");
+        config.setProperty("spark.dynamicAllocation.enabled", "true");
         config.setProperty("wayang.flink.mode.run", "distribution");
-        config.setProperty("wayang.flink.parallelism", "8");
+        config.setProperty("wayang.flink.parallelism", "1");
         config.setProperty("wayang.flink.master", "flink-cluster");
         config.setProperty("wayang.flink.port", "7071");
         config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
-        config.setProperty("spark.driver.maxResultSize", "8G");
         config.setProperty("wayang.ml.experience.enabled", "false");
         config.setProperty(
             "wayang.core.optimizer.pruning.strategies",
             "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy,org.apache.wayang.core.optimizer.enumeration.LatentOperatorPruningStrategy"
         );
-        config.setProperty("wayang.core.optimizer.pruning.topk", "100");
+        config.setProperty("wayang.core.optimizer.pruning.topk", "1000");
 
         String[] jars = ArrayUtils.addAll(
             ReflectionUtils.getAllJars(LSBORunner.class),
+            ReflectionUtils.getLibs(LSBORunner.class)
+        );
+
+        jars = ArrayUtils.addAll(
+            jars,
             ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
         );
+
 
         /*
         HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);

@@ -72,9 +72,7 @@ public class OrtTensorEncoder {
      * @return
      */
     public long[][] treeConvIndexes(TreeNode root){
-        //System.out.println("Pre preorder: " + root);
         TreeNode indexTree = preorderIndexes(root, 1);
-        //System.out.println("preorderIndexes: " + indexTree);
 
         ArrayList<long[]> acc = new ArrayList<>(); //in place of a generator
         treeConvIndexesStep(indexTree,acc); //mutates acc
@@ -123,7 +121,6 @@ public class OrtTensorEncoder {
      * @param idx needs to default to one.
      */
     public TreeNode preorderIndexes(TreeNode root, long idx){ //this method is very scary - Mads, early 2024 | - True, Juri, late 2024
-        //System.out.println("PreorderIndexes: " + root);
         if (root == null) {
             return null;
         }
@@ -228,7 +225,6 @@ public class OrtTensorEncoder {
         //testo.preorderIndexes(node,1);
 
         ArrayList<TreeNode> testArr = new ArrayList<>();
-        System.out.println("Plan size: " + node.size());
         testArr.add(node);
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> t = testo.prepareTrees(testArr);
 

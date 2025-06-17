@@ -254,7 +254,6 @@ public class OrtMLModel {
         try (Result r = session.run(this.inputMap, this.requestedOutputs)) {
             Float[] result = unwrapFunc.apply(r, "output");
 
-            System.out.println("[ML FLOAT RESULT]: " + result[0]);
             return Math.round(result[0]);
         } catch (OrtException e) {
             e.printStackTrace();
@@ -300,7 +299,6 @@ public class OrtMLModel {
 
         long[][] encoderIndexes = input.field1.get(0);
 
-        //System.out.println("Encoder indexes: " + Arrays.deepToString(encoderIndexes));
         long maxIndex = Arrays.stream(encoderIndexes)
                         .flatMapToLong(Arrays::stream)
                         .max()
@@ -373,8 +371,6 @@ public class OrtMLModel {
 
             Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, input.field1);
             end = Instant.now();
-            //System.out.println("Decoder Input: " + decoderInput.field0.get(0)[0].length);
-            //System.out.println("Decoder Input: " + Arrays.deepToString(decoderInput.field1.get(0)));
             execTime = Duration.between(start, end).toMillis();
 
             Logging.writeToFile(
@@ -385,7 +381,6 @@ public class OrtMLModel {
             start = Instant.now();
             TreeNode decoded = decoder.decode(decoderInput);
 
-            //System.out.println("Decoder Output: " + decoded);
             decoded.softmax();
             end = Instant.now();
 

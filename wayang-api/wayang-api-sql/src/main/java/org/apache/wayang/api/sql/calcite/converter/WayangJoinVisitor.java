@@ -112,12 +112,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 ? rightVisitor.getName()
                 : leftVisitor.getName();
 
-        System.out.println("JOINING TABLE NAME: " + joiningTableName);
-
         // remove calcite unique integer identifiers in table.column0 type of names
         final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
-
-        System.out.println("[catalog]: " + catalog);
 
         final String cleanedLeftFieldName = CalciteSources
                 .findSqlName(leftTableName + "." + leftFieldName, catalog).split("\\.")[1];
@@ -151,13 +147,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String rightTableAlias = leftKeyIndex < rightKeyIndex
             ? rightOrigin.getOriginTable().getQualifiedName().get(1)
             : leftOrigin.getOriginTable().getQualifiedName().get(1);
-
-        System.out.println("[alias catalog]: " + aliasFinder.catalog);
-        System.out.println("[LEFT KEY]: " + leftKeyIndex);
-        System.out.println("[RIGHT KEY]: " + rightKeyIndex);
-        System.out.println("[LEFT]: " + leftTableName + " AS " + leftTableAlias);
-        System.out.println("[RIGHT]: " + rightTableName + " AS " + rightTableAlias);
-        System.out.println("[RelNode]: " + wayangRelNode.getRowType().getFieldList());
 
         // if join is joining the LHS of a join condition "JOIN left ON left = right"
         // then we pick the first case, otherwise the 2nd "JOIN right ON left = right"
@@ -241,16 +230,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
             throw new UnsupportedOperationException("Join had an unexpected amount of inputs, found: "
                     + wayangRelNode.getInputs().size() + ", expected: 2");
 
-        System.out.println("===================JOIN=================");
-        System.out.println("Left: " + leftKeyIndex);
-        System.out.println("Right: " + rightKeyIndex);
-        System.out.println("Left: " + wayangRelNode.getLeft());
-        System.out.println("Right: " + wayangRelNode.getRight());
-        System.out.println(wayangRelNode.getLeft().getRowType().toString());
-        System.out.println(wayangRelNode.getRight().getRowType().toString());
-        System.out.println(wayangRelNode.getRowType().toString());
-        System.out.println("===================JOIN=================");
-
         final TransformationDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(leftKeyIndex)
                 .withRowType(
@@ -261,7 +240,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 ),
                 Record.class, SqlField.class, leftFieldName)
                 .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName);
-        System.out.println("left sql: " + Optional.ofNullable(leftTableName).orElse("") + ", " + leftFieldName);
 
         final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
                 new KeyExtractor<>(rightKeyIndex)
@@ -273,7 +251,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 ),
                 Record.class, SqlField.class, rightFieldName)
                 .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName);
-        System.out.println("right sql: " + Optional.ofNullable(rightTableName).orElse("") + ", " + rightFieldName);
 
         final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
                 leftProjectionDescriptor,
