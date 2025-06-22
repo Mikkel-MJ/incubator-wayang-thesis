@@ -103,7 +103,7 @@ public class JOBenchmark {
                 "wayang.core.optimizer.pruning.strategies",
                 "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy,org.apache.wayang.core.optimizer.enumeration.LatentOperatorPruningStrategy"
             );
-            config.setProperty("wayang.core.optimizer.pruning.topk", "1000");
+            config.setProperty("wayang.core.optimizer.pruning.topk", "10000");
 
             final String calciteModel = "{\n" +
                     "    \"version\": \"1.0\",\n" +
