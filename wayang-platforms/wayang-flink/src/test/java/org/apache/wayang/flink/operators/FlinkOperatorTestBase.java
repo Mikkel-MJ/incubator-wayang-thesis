@@ -34,7 +34,6 @@ import org.apache.wayang.flink.execution.FlinkExecutor;
 import org.apache.wayang.flink.platform.FlinkPlatform;
 import org.apache.wayang.flink.test.ChannelFactory;
 import org.apache.wayang.java.channels.CollectionChannel;
-import org.apache.wayang.flink.operators.FlinkExecutionOperator;
 
 import java.util.Collection;
 
@@ -57,25 +56,37 @@ public class FlinkOperatorTestBase {
             this.flinkExecutor = (FlinkExecutor) FlinkPlatform.getInstance().getExecutorFactory().create(this.mockJob());
     }
 
+    public ExecutionEnvironment getEnv() {
+        return this.flinkExecutor.fee;
+    }
+
+    protected OptimizationContext.OperatorContext createOperatorContext(final Operator operator) {
+        final OptimizationContext optimizationContext = new DefaultOptimizationContext(mockJob());
+        return optimizationContext.addOneTimeOperator(operator);
+    }
+
+
+    protected void evaluate(final FlinkExecutionOperator operator,
+                            final ChannelInstance[] inputs,
+                            final ChannelInstance[] outputs) throws Exception {
+        operator.evaluate(inputs, outputs, this.flinkExecutor, this.createOperatorContext(operator));
+    }
+
+
+    protected CollectionChannel.Instance createCollectionChannelInstance() {
+        return ChannelFactory.createCollectionChannelInstance(this.configuration);
+    }
+
+    protected CollectionChannel.Instance createCollectionChannelInstance(final Collection<?> collection) {
+        return ChannelFactory.createCollectionChannelInstance(collection, this.configuration);
+    }
+
     Job mockJob() {
         final Job job = mock(Job.class);
         when(job.getConfiguration()).thenReturn(this.configuration);
         when(job.getCrossPlatformExecutor()).thenReturn(new CrossPlatformExecutor(job, new FullInstrumentationStrategy()));
         return job;
     }
-
-    protected OptimizationContext.OperatorContext createOperatorContext(Operator operator) {
-        OptimizationContext optimizationContext = new DefaultOptimizationContext(mockJob());
-        return optimizationContext.addOneTimeOperator(operator);
-    }
-
-
-    protected void evaluate(FlinkExecutionOperator operator,
-                            ChannelInstance[] inputs,
-                            ChannelInstance[] outputs) throws Exception {
-        operator.evaluate(inputs, outputs, this.flinkExecutor, this.createOperatorContext(operator));
-    }
-
 
     DataStreamChannel.Instance createDataStreamChannelInstance() {
         return ChannelFactory.createDataStreamChannelInstance(this.configuration);
@@ -85,20 +96,8 @@ public class FlinkOperatorTestBase {
         return ChannelFactory.createDataSetChannelInstance(this.configuration);
     }
 
-    DataSetChannel.Instance createDataSetChannelInstance(Collection<?> collection) {
+    DataSetChannel.Instance createDataSetChannelInstance(final Collection<?> collection) {
         return ChannelFactory.createDataSetChannelInstance(collection, this.flinkExecutor, this.configuration);
-    }
-
-    protected CollectionChannel.Instance createCollectionChannelInstance() {
-        return ChannelFactory.createCollectionChannelInstance(this.configuration);
-    }
-
-    protected CollectionChannel.Instance createCollectionChannelInstance(Collection<?> collection) {
-        return ChannelFactory.createCollectionChannelInstance(collection, this.configuration);
-    }
-
-    public ExecutionEnvironment getEnv() {
-        return this.flinkExecutor.fee;
     }
 
 }

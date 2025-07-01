@@ -28,6 +28,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.core.optimizer.OptimizationContext.OperatorContext;
 import org.apache.wayang.core.optimizer.costs.LoadProfileEstimators;
+import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 import org.apache.wayang.core.platform.ChannelDescriptor;
 import org.apache.wayang.core.platform.ChannelInstance;
 import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
@@ -50,12 +51,18 @@ public class FlinkDataStreamTextFileSource extends TextFileSource implements Fli
 
     @Override
     public List<ChannelDescriptor> getSupportedInputChannels(final int index) {
-        throw new UnsupportedOperationException("Unimplemented method 'getSupportedInputChannels'");
+        throw new UnsupportedOperationException(String.format("%s does not have input channels.", this));
+
     }
 
     @Override
+    public Collection<String> getLoadProfileEstimatorConfigurationKeys() {
+        return List.of("wayang.flink.textfilesource.load.prepare", "wayang.flink.textfilesource.load.main");
+    }
+   
+    @Override
     public List<ChannelDescriptor> getSupportedOutputChannels(final int index) {
-        throw new UnsupportedOperationException("Unimplemented method 'getSupportedOutputChannels'");
+        return List.of(DataStreamChannel.DESCRIPTOR, DataStreamChannel.DESCRIPTOR_MANY);
     }
 
     @Override
@@ -85,7 +92,7 @@ public class FlinkDataStreamTextFileSource extends TextFileSource implements Fli
         final ExecutionLineageNode mainLineageNode = new ExecutionLineageNode(operatorContext);
         mainLineageNode.add(LoadProfileEstimators.createFromSpecification(
                 "wayang.flink.textfilesource.load.main", flinkExecutor.getConfiguration()));
-                
+
         output.getLineage().addPredecessor(mainLineageNode);
 
         return prepareLineageNode.collectAndMark();
@@ -94,6 +101,11 @@ public class FlinkDataStreamTextFileSource extends TextFileSource implements Fli
     @Override
     public boolean containsAction() {
         throw new UnsupportedOperationException("Unimplemented method 'containsAction'");
+    }
+
+    @Override
+    protected ExecutionOperator createCopy() {
+        return new FlinkDataStreamTextFileSource(this.getInputUrl());
     }
 
 }

@@ -10,7 +10,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.wayang.core.platform.ChannelInstance;
 import org.apache.wayang.flink.channels.DataStreamChannel;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 class FlinkDataStreamTextFileSourceTest extends FlinkOperatorTestBase {
     @Test

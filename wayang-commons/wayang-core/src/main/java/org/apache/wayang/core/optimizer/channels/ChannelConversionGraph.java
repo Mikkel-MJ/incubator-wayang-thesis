@@ -85,6 +85,8 @@ public class ChannelConversionGraph {
      * @param configuration describes how to configure the new instance
      */
     public ChannelConversionGraph(Configuration configuration) {
+        System.out.println("config: " + configuration);
+        System.out.println("squash: " + configuration.getCostSquasherProvider());
         this.costSquasher = configuration.getCostSquasherProvider().provide();
         configuration.getChannelConversionProvider().provideAll().forEach(this::add);
         String treeSelectionStrategyClassName = configuration.getStringProperty(
