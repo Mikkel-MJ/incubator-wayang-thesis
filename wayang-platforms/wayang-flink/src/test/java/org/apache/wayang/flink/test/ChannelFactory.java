@@ -23,6 +23,7 @@ import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.platform.ChannelDescriptor;
 import org.apache.wayang.core.util.WayangCollections;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.channels.DataStreamChannel;
 import org.apache.wayang.java.channels.CollectionChannel;
 import org.junit.Before;
 import org.apache.wayang.flink.execution.FlinkExecutor;
@@ -41,6 +42,16 @@ public class ChannelFactory {
     @Before
     public void setUp() {
         flinkExecutor = mock(FlinkExecutor.class);
+    }
+
+    public static DataStreamChannel.Instance createDataStreamChannelInstance(ChannelDescriptor dataStreamChannelDescriptor, Configuration configuration){
+        return (DataStreamChannel.Instance) dataStreamChannelDescriptor
+                .createChannel(null,configuration)
+                .createInstance(flinkExecutor,null,-1);
+    }
+
+    public static DataStreamChannel.Instance createDataStreamChannelInstance(Configuration configuration){
+        return createDataStreamChannelInstance(DataStreamChannel.DESCRIPTOR, configuration);
     }
 
     public static DataSetChannel.Instance createDataSetChannelInstance(ChannelDescriptor dataSetChannelDescriptor, Configuration configuration){

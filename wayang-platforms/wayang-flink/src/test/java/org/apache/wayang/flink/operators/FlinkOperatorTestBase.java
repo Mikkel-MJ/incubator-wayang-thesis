@@ -29,6 +29,7 @@ import org.apache.wayang.core.platform.ChannelInstance;
 import org.apache.wayang.core.platform.CrossPlatformExecutor;
 import org.apache.wayang.core.profiling.FullInstrumentationStrategy;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.channels.DataStreamChannel;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 import org.apache.wayang.flink.platform.FlinkPlatform;
 import org.apache.wayang.flink.test.ChannelFactory;
@@ -75,6 +76,10 @@ public class FlinkOperatorTestBase {
         operator.evaluate(inputs, outputs, this.flinkExecutor, this.createOperatorContext(operator));
     }
 
+
+    DataStreamChannel.Instance createDataStreamChannelInstance() {
+        return ChannelFactory.createDataStreamChannelInstance(this.configuration);
+    }
 
     DataSetChannel.Instance createDataSetChannelInstance() {
         return ChannelFactory.createDataSetChannelInstance(this.configuration);
