@@ -12,9 +12,9 @@ import org.apache.wayang.flink.channels.DataStreamChannel;
 
 import org.junit.Test;
 
-class FlinkDataStreamTextFileSourceTest extends FlinkOperatorTestBase {
+public class FlinkDataStreamTextFileSourceTest extends FlinkOperatorTestBase {
     @Test
-    void singleOperatorTest() throws Exception {
+    public void singleOperatorTest() throws Exception {
         final String path = FlinkDataStreamTextFileSourceTest.class.getResource("dataStreamTest.txt").getPath();
 
         final FlinkDataStreamTextFileSource collectionSource = new FlinkDataStreamTextFileSource(path);
