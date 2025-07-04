@@ -194,6 +194,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                 /*
                 if (boundaryOperator instanceof JoinOperator) {
                 }*/
+                System.out.println("[SQL Query]: " + sqlQuery);
                 this.statement.setFetchSize(1);
                 this.resultSet = this.statement.executeQuery(sqlQuery);
                 this.needsTupleWrapping = needsTupleWrapping;

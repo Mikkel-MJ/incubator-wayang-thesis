@@ -19,15 +19,49 @@ timings_path=/work/lsbo-paper/data/JOBenchmark/data/executions
 test_path=/work/lsbo-paper/data/JOBenchmark/queries
 model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
+# Enumeration queries
+#selected_queries=(
+#    19d
+#    30a
+#    30b
+#    30c
+#    31a
+#    31b
+#    31c
+#)
+
+# Heap space queries
 selected_queries=(
-    15a 15b 15c 15d
-    19c 19d
-    20a 20b 20c
-    26a 26b 26c
-    27a 27b 27c
-    29a 29b 29c
-    30a 30b 30c
-    7a 7b 7c
+    #10b
+    12b
+    13a
+    13b
+    13c
+    16a
+    16b
+    16c
+    16d
+    17a
+    17b
+    17c
+    17d
+    17e
+    17f
+    19d
+    20d
+    21a
+    21c
+    22a
+    22c
+    22d
+    25c
+    28b
+    28c
+    31a
+    31b
+    31c
+    32c
+    33c
 )
 
 echo "Running JOBenchmark"
@@ -50,11 +84,12 @@ echo "Running JOBenchmark"
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark flink,postgres file://$data_path/ $timings_path $test_path/2a.sql
 
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
-    #for query in "$test_path"/*.sql; do
-    for query_name in "${selected_queries[@]}"; do
-        query="$test_path/${query_name}.sql"
+    for query in "$test_path"/*.sql; do
+    #for query_name in "${selected_queries[@]}"; do
+    #    query="$test_path/${query_name}.sql"
 
-        timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
+        #timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
+        timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/fresh/ $query bvae /work/lsbo-paper/data/models/imdb/training/retrained/bvae-fresh-1.onnx $data_path/experience/
         if [ $? -eq 124 ]; then
             echo "Query ${query} timed out"
         fi

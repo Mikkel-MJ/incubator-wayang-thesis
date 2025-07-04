@@ -22,10 +22,21 @@ import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.api.exception.WayangException;
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.util.Tuple;
+import org.apache.wayang.core.optimizer.DefaultOptimizationContext;
+import org.apache.wayang.core.optimizer.OptimizationContext;
+import org.apache.wayang.core.optimizer.enumeration.PlanEnumeration;
+import org.apache.wayang.core.optimizer.enumeration.PlanEnumerator;
+import org.apache.wayang.core.optimizer.enumeration.PlanImplementation;
+import org.apache.wayang.core.optimizer.enumeration.StageAssignmentTraversal;
+import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
+import org.apache.wayang.core.plan.executionplan.ExecutionStage;
+import org.apache.wayang.core.plan.executionplan.ExecutionTask;
+import org.apache.wayang.core.optimizer.enumeration.ExecutionTaskFlow;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
@@ -49,6 +60,8 @@ import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.validation.*;
 import org.apache.wayang.core.util.ExplainUtils;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -186,6 +199,84 @@ public class LSBO {
         }
     }
 
+    public static void getCost(
+        WayangPlan plan,
+        Configuration config,
+        List<Plugin> plugins,
+        String... udfJars
+    ) {
+        try {
+            Socket socket = setupSocket();
+            config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
+
+            WayangContext context = new WayangContext(config);
+            plugins.stream().forEach(plug -> context.register(plug));
+            Job samplingJob = context.createJob("sampling", plan, "");
+            //ExplainUtils.parsePlan(plan, false);
+            samplingJob.estimateKeyFigures();
+            //ExecutionPlan exPlan = samplingJob.buildInitialExecutionPlan();
+            OneHotMappings.setOptimizationContext(samplingJob.getOptimizationContext());
+            OneHotMappings.encodeIds = true;
+            TreeNode wayangNode = TreeEncoder.encode(plan);
+
+            // Wait for a sampled plan
+            ProcessReceiver<String> r = new ProcessReceiver<>(socket);
+            List<String> lsboSamples = new ArrayList<>();
+            r.getIterable().iterator().forEachRemaining(lsboSamples::add);
+            List<WayangPlan> decodedPlans = LSBO.decodePlans(lsboSamples, wayangNode);
+            WayangPlan sampledPlan = decodedPlans.get(0);
+
+            TreeNode encoded = TreeEncoder.encode(sampledPlan);
+            long execTime = Long.MAX_VALUE;
+
+            try {
+                ExecutionPlan executionPlan = samplingJob.buildInitialExecutionPlan();
+                TreeNode exNode = TreeEncoder.encode(executionPlan, true);
+                PlanImplementation planImpl = samplingJob.getPlanImplementation();
+
+                String encodedInput = wayangNode.toStringEncoding() + ":" + exNode.toStringEncoding() + ":" + (int) planImpl.getSquashedCostEstimate();
+
+                ArrayList<String> latency = new ArrayList<>();
+                latency.add(encodedInput);
+
+                ProcessFeeder<String, String> latencyFeed = new ProcessFeeder<>(
+                    socket,
+                    ByteString.copyFromUtf8("lambda x: x"),
+                    latency
+                );
+
+                latencyFeed.send();
+
+                System.gc();
+            } catch (WayangException e) {
+                e.printStackTrace();
+                System.out.println(e);
+
+                // Send longest possible time back, only execution failed
+                String encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + Long.MAX_VALUE;
+                //System.out.println(encodedInput);
+
+                ArrayList<String> latency = new ArrayList<>();
+                latency.add(encodedInput);
+
+                System.out.println("Wayang sending: " + encodedInput);
+
+                ProcessFeeder<String, String> latencyFeed = new ProcessFeeder<>(
+                    socket,
+                    ByteString.copyFromUtf8("lambda x: x"),
+                    latency
+                );
+
+                latencyFeed.send();
+            }
+
+        } catch(IOException e) {
+            e.printStackTrace();
+            System.out.println(e);
+        }
+    }
+
+
     public static List<WayangPlan> decodePlans(List<String> plans, TreeNode encoded) {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input = OrtTensorEncoder.encode(encoded);
         ArrayList<WayangPlan> resultPlans = new ArrayList<>();
@@ -254,6 +345,7 @@ public class LSBO {
                 // Now set the platforms on the wayangPlan
                 encoded = encoded.withPlatformChoicesFrom(decoded);
                 WayangPlan decodedPlan = TreeDecoder.decode(encoded);
+                System.out.flush();
 
                 resultPlans.add(decodedPlan);
             } catch (Exception e) {
@@ -264,7 +356,7 @@ public class LSBO {
         return resultPlans;
     }
 
-    private static Socket setupSocket() throws IOException {
+    public static Socket setupSocket() throws IOException {
         Socket socket;
         ServerSocket serverSocket;
 
@@ -282,5 +374,35 @@ public class LSBO {
         serverSocket.setSoTimeout(0);
 
         return socket;
+    }
+
+    public static List<Tuple2<ExecutionPlan, Double>> sampleCandidatePlans(
+        WayangPlan plan,
+        WayangContext context,
+        int amount,
+        String... udfJars
+    ) {
+        final Job job = context.createJob("LSBO sample", plan, udfJars);
+        job.prepareWayangPlan();
+        job.estimateKeyFigures();
+
+        final Collection<PlanImplementation> executionPlans = job.enumeratePlanImplementations();
+        OneHotMappings.setOptimizationContext(job.getOptimizationContext());
+        OneHotMappings.encodeIds = true;
+
+        final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
+        (producerTask, channel, consumerTask) -> false;
+
+        return executionPlans.stream()
+        .limit(amount)
+        .map(cand -> {
+            final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(cand);
+            final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, stageSplittingCriterion);
+
+            return new Tuple2<>(executionPlan, cand.getSquashedCostEstimate());
+        })
+        .filter(tup -> tup.getField0().isSane())
+        .sorted((o1, o2)-> o1.getField1().compareTo(o2.getField1()))
+        .collect(Collectors.toList());
     }
 }

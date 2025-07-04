@@ -136,6 +136,7 @@
         <version>3.0.0-RC5</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/dev.zio/zio-schema -->
     <dependency>
         <groupId>dev.zio</groupId>
         <artifactId>zio-schema_2.12</artifactId>

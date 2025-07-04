@@ -32,6 +32,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -77,6 +78,7 @@ import java.util.Iterator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import java.util.Properties;
 
 public class Optimizer {
@@ -89,6 +91,12 @@ public class Optimizer {
     private static RelOptSchema relOptSchema;
     private static Schema schema;
     private static RelDataTypeFactory relDataTypeFactory;
+
+    /**
+     * Rule {@link JoinCommuteRule} takes too long when joins number grows. We disable this rule if query has joins
+     * count bigger than this value.
+     */
+    public static final int MAX_JOINS_TO_COMMUTE = 3;
 
     public VolcanoPlanner getPlanner(){
         return this.volcanoPlanner;
@@ -152,7 +160,6 @@ public class Optimizer {
         // Set up the trait def (mandatory in VolcanoPlanner)
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.setNoneConventionHasInfiniteCost(true);
-        planner.setTopDownOpt(true);
 
         // Add some core rules
         //planner.addRule(CoreRules.FILTER_INTO_JOIN);
@@ -264,6 +271,17 @@ public class Optimizer {
 
     // TODO: create a basic ruleset
     public RelNode optimize(RelNode node, RelTraitSet requiredTraitSet, RuleSet rules) {
+        int joinsCnt = RelOptUtil.countJoins(node);
+
+        if (joinsCnt > MAX_JOINS_TO_COMMUTE) {
+
+            rules = RuleSets.ofList(
+                StreamSupport.stream(rules.spliterator(), false)
+                .filter(rule -> rule != CoreRules.JOIN_ASSOCIATE)
+                .collect(Collectors.toList())
+            );
+        }
+
         Program program = Programs.of(RuleSets.ofList(rules));
 
         return program.run(

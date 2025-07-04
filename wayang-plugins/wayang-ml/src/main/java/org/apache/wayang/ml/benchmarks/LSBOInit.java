@@ -18,13 +18,16 @@
 
 package org.apache.wayang.ml.benchmarks;
 
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.util.Tuple;
+import org.apache.wayang.core.optimizer.enumeration.PlanImplementation;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
@@ -77,15 +80,7 @@ import scala.collection.Seq;
 import scala.collection.JavaConversions;
 import com.google.protobuf.ByteString;
 
-/**
- * TODO:
- *  - Move this to a class so that LSBO is a utility function
- *  -- Takes wayang plan as input
- *  -- Encodes it and sends it to python
- *  -- Receives set of encoded strings from latent space
- *  -- Executes each of those on the original plan
- */
-public class LSBORunner {
+public class LSBOInit {
 
     public static String psqlUser = "postgres";
     public static String psqlPassword = "postgres";
@@ -150,51 +145,19 @@ public class LSBORunner {
             ReflectionUtils.getAllJars(org.apache.calcite.rel.externalize.RelJson.class)
         );
 
-
-        /*
-        HashMap<String, WayangPlan> plans = TPCH.createPlans(args[1]);
-        WayangPlan plan = plans.get("query" + args[2]);*/
-
         try {
-            //WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
             WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
-
-            //Set sink to be on Java
-            /*
-            ((LinkedList<Operator>) plan.getSinks())
-                .get(0)
-                .addTargetPlatform(Java.platform());*/
-
-            LSBO.process(plan, config, plugins, jars);
+            WayangContext context = new WayangContext(config);
+            LSBO.getCost(plan, config, plugins, jars);
         } catch(Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
-
     }
 
     private static WayangPlan getJOBPlan(List<Plugin> plugins, String dataPath, Configuration config, String queryPath, String[] jars) {
         try {
             WayangPlan plan = IMDBJOBenchmark.getWayangPlan(queryPath, config, plugins.toArray(Plugin[]::new), jars);
             IMDBJOBenchmark.setSources(plan, dataPath);
-
-            return plan;
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            return null;
-        }
-    }
-
-    private static WayangPlan getTPCHPlan(String platforms, String dataPath, int query) {
-        try {
-            Class<? extends GeneratableJob> job = Jobs.getJob(query);
-
-            Constructor<?> cnstr = job.getDeclaredConstructors()[0];
-            GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
-            String[] jobArgs = {platforms, dataPath};
-            DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
-            PlanBuilder builder = quanta.getPlanBuilder();
-            WayangPlan plan = builder.build();
 
             return plan;
         } catch (Exception e) {

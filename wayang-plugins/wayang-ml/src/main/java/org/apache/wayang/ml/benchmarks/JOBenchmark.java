@@ -101,7 +101,7 @@ public class JOBenchmark {
             config.setProperty("wayang.ml.experience.enabled", "false");
             config.setProperty(
                 "wayang.core.optimizer.pruning.strategies",
-                "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy,org.apache.wayang.core.optimizer.enumeration.LatentOperatorPruningStrategy"
+                "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
             );
             config.setProperty("wayang.core.optimizer.pruning.topk", "10000");
 

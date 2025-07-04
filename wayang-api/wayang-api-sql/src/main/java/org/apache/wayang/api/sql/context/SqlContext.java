@@ -18,9 +18,13 @@
 package org.apache.wayang.api.sql.context;
 
 import org.apache.calcite.*;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.util.Optionality;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -35,6 +39,7 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.rules.*;
+import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -135,8 +140,76 @@ public class SqlContext extends WayangContext {
 
         final RuleSet wayangRules = RuleSets.ofList(
             CoreRules.FILTER_INTO_JOIN,
-            CoreRules.JOIN_ASSOCIATE,
             CoreRules.JOIN_COMMUTE,
+            CoreRules.JOIN_ASSOCIATE,
+            FilterMergeRule.Config.DEFAULT
+                        .withOperandFor(LogicalFilter.class).toRule(),
+
+            JoinPushThroughJoinRule.Config.LEFT
+                .withOperandFor(LogicalJoin.class).toRule(),
+
+            JoinPushThroughJoinRule.Config.RIGHT
+                .withOperandFor(LogicalJoin.class).toRule(),
+
+            JoinPushExpressionsRule.Config.DEFAULT
+                .withOperandFor(LogicalJoin.class).toRule(),
+
+            FilterJoinRule.JoinConditionPushRule.JoinConditionPushRuleConfig.DEFAULT
+                .withOperandSupplier(b -> b.operand(LogicalJoin.class)
+                    .anyInputs()).toRule(),
+
+            FilterProjectTransposeRule.Config.DEFAULT
+                .withOperandFor(LogicalFilter.class, f -> true, LogicalProject.class, p -> true).toRule(),
+
+            ProjectFilterTransposeRule.Config.DEFAULT
+                .withOperandFor(LogicalProject.class, LogicalFilter.class).toRule(),
+
+            ProjectMergeRule.Config.DEFAULT
+                .withOperandFor(LogicalProject.class).toRule(),
+
+            ProjectRemoveRule.Config.DEFAULT
+                .withOperandSupplier(b ->
+                    b.operand(LogicalProject.class)
+                        .predicate(ProjectRemoveRule::isTrivial)
+                        .anyInputs()).toRule(),
+
+            AggregateMergeRule.Config.DEFAULT
+                .withOperandSupplier(b0 ->
+                    b0.operand(LogicalAggregate.class)
+                        .oneInput(b1 ->
+                            b1.operand(LogicalAggregate.class)
+                                .predicate(Aggregate::isSimple)
+                                .anyInputs())).toRule(),
+
+            // Rule is applicable to aggregates without ordering, otherwise application of this rule
+            // leads to invalid projections (i.e. LISTAGG).
+            AggregateExpandDistinctAggregatesRule.Config.JOIN
+                .withOperandSupplier(op -> op.operand(LogicalAggregate.class)
+                    .predicate(agg -> agg.getAggCallList().stream().noneMatch(call ->
+                            call.getAggregation().requiresGroupOrder() != Optionality.FORBIDDEN))
+                    .anyInputs())
+                .toRule(),
+
+            SortRemoveRule.Config.DEFAULT
+                .withOperandSupplier(b ->
+                    b.operand(LogicalSort.class)
+                        .anyInputs()).toRule(),
+
+            CoreRules.UNION_MERGE,
+            CoreRules.MINUS_MERGE,
+            CoreRules.INTERSECT_MERGE,
+            CoreRules.UNION_REMOVE,
+            CoreRules.AGGREGATE_REMOVE,
+
+            PruneEmptyRules.CORRELATE_LEFT_INSTANCE,
+            PruneEmptyRules.CORRELATE_RIGHT_INSTANCE,
+
+            ((RelRule<?>)PruneEmptyRules.SORT_FETCH_ZERO_INSTANCE).config
+                .withOperandSupplier(b ->
+                    b.operand(LogicalSort.class).anyInputs())
+                .toRule(),
+
+            //CoreRules.MULTI_JOIN_OPTIMIZE,*/
             WayangRules.WAYANG_TABLESCAN_RULE,
             WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
             WayangRules.WAYANG_PROJECT_RULE,

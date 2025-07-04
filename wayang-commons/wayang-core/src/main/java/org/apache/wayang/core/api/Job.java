@@ -439,16 +439,7 @@ public class Job extends OneTimeExecutable {
     }
 
 
-    /**
-     * Determine a good/the best execution plan from a given {@link WayangPlan}.
-     */
-    private ExecutionPlan createInitialExecutionPlan() {
-        this.logger.info("Enumerating execution plans...");
-
-        this.optimizationRound.start("Create Initial Execution Plan");
-
-        // Enumerate all possible plan.
-        Instant start = Instant.now();
+    public Collection<PlanImplementation> enumeratePlanImplementations() {
         final PlanEnumerator planEnumerator = this.createPlanEnumerator();
 
         final TimeMeasurement enumerateMeasurment = this.optimizationRound.start("Create Initial Execution Plan", "Enumerate");
@@ -463,6 +454,20 @@ public class Job extends OneTimeExecutable {
             this.logger.debug("Plan with operators: {}", planImplementation.getOperators());
         }
 
+        return executionPlans;
+    }
+
+    /**
+     * Determine a good/the best execution plan from a given {@link WayangPlan}.
+     */
+    private ExecutionPlan createInitialExecutionPlan() {
+        this.logger.info("Enumerating execution plans...");
+
+        this.optimizationRound.start("Create Initial Execution Plan");
+
+        // Enumerate all possible plan.
+        Instant start = Instant.now();
+        Collection<PlanImplementation> executionPlans = this.enumeratePlanImplementations();
 
         // Pick an execution plan.
         // Make sure that an execution plan can be created.

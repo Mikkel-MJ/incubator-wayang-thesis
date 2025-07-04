@@ -15,12 +15,15 @@
 
 package org.apache.wayang.ml.training;
 
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.ml.encoding.OneHotMappings;
 import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
+import org.apache.wayang.core.plan.executionplan.ExecutionStage;
+import org.apache.wayang.core.optimizer.enumeration.ExecutionTaskFlow;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
@@ -45,6 +48,8 @@ import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.core.optimizer.enumeration.PlanImplementation;
+import org.apache.wayang.core.optimizer.enumeration.StageAssignmentTraversal;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -59,14 +64,14 @@ import java.util.Comparator;
 import java.util.stream.Collectors;
 import scala.collection.JavaConversions;
 
-public class Training {
+public class TrainingCandidates {
 
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
-        trainIMDB(args[0], args[1], args[2], args[3], true);
+        trainIMDB(args[0], args[1], args[2], args[3], true, Integer.valueOf(args[4]));
     }
 
     /*
@@ -76,13 +81,15 @@ public class Training {
      * 3: encode to file path (string)
      * 4: job index for the job to run (int)
      * 5: overwrite skipConversions (boolean)
+     * 6: index of candidate to write (int)
      **/
     public static void trainIMDB(
         String platforms,
         String dataPath,
         String encodePath,
         String query,
-        boolean skipConversions
+        boolean skipConversions,
+        int candidateIndex
     ) {
         System.out.println("Running job query: " + query);
         try {
@@ -152,24 +159,28 @@ public class Training {
                 IMDBJOBenchmark.setSources(plan, dataPath);
 
                 Job wayangJob = wayangContext.createJob("", plan, jars);
-                ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
+                wayangJob.prepareWayangPlan();
+                wayangJob.estimateKeyFigures();
+                final Collection<PlanImplementation> executionPlans = wayangJob.enumeratePlanImplementations();
+                OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+                OneHotMappings.encodeIds = false;
+
+                final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
+                (producerTask, channel, consumerTask) -> false;
+                ExecutionPlan exPlan = executionPlans.stream()
+                    .sorted((o1, o2)-> ((Double)o1.getSquashedCostEstimate()).compareTo(o2.getSquashedCostEstimate()))
+                    .skip(candidateIndex)
+                    .limit(1)
+                    .map(cand -> {
+                        final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(cand);
+                        final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, stageSplittingCriterion);
+
+                        return executionPlan;
+                    })
+                    .findFirst()
+                    .get();
 
                 HashMap<Operator, Collection<ExecutionTask>> tree = new HashMap<>();
-                Set<ExecutionTask> tasks = exPlan.collectAllTasks();
-
-                Collection<ExecutionTask> roots = tasks.stream()
-                    .filter(task -> task.getOperator().isSource())
-                    .collect(Collectors.toList());
-
-                for (ExecutionTask task : roots) {
-                    ExecutionOperator operator = task.getOperator();
-
-                    if (operator instanceof TextFileSource) {
-                        if (operator.getPlatform().getName() == "PostgreSQL") {
-                            return;
-                        }
-                    }
-                }
 
                 OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
                 TreeNode wayangNode = TreeEncoder.encode(plan);
