@@ -25,54 +25,58 @@ import org.apache.wayang.core.optimizer.channels.DefaultChannelConversion;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.flink.operators.FlinkCollectionSink;
 import org.apache.wayang.flink.operators.FlinkCollectionSource;
+import org.apache.wayang.flink.operators.FlinkDataStreamCollectionSink;
 import org.apache.wayang.flink.operators.FlinkObjectFileSink;
 import org.apache.wayang.flink.operators.FlinkObjectFileSource;
 import org.apache.wayang.flink.operators.FlinkTsvFileSink;
 import org.apache.wayang.flink.platform.FlinkPlatform;
 import org.apache.wayang.java.channels.CollectionChannel;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * {@link ChannelConversion}s used by the {@link FlinkPlatform}.
  */
-public class ChannelConversions {
+public final class ChannelConversions {
+    private ChannelConversions() {
+    }
 
-        public static final ChannelConversion COLLECTION_TO_DATASET = new DefaultChannelConversion(
-                CollectionChannel.DESCRIPTOR,
-                DataSetChannel.DESCRIPTOR,
-                () -> new FlinkCollectionSource<>(DataSetType.createDefault(Void.class))
-        );
+    public static final ChannelConversion DATASTREAM_TO_COLLECTION = new DefaultChannelConversion(
+            DataStreamChannel.DESCRIPTOR,
+            CollectionChannel.DESCRIPTOR,
+            () -> new FlinkDataStreamCollectionSink<>(DataSetType.createDefault(Void.class)));
 
-        public static final ChannelConversion DATASET_TO_COLLECTION = new DefaultChannelConversion(
-                DataSetChannel.DESCRIPTOR,
-                CollectionChannel.DESCRIPTOR,
-                () -> new FlinkCollectionSink<>(DataSetType.createDefault(Void.class))
-        );
+    public static final ChannelConversion COLLECTION_TO_DATASET = new DefaultChannelConversion(
+            CollectionChannel.DESCRIPTOR,
+            DataSetChannel.DESCRIPTOR,
+            () -> new FlinkCollectionSource<>(DataSetType.createDefault(Void.class)));
 
-        public static final ChannelConversion OBJECT_FILE_TO_DATASET = new DefaultChannelConversion(
-                FileChannel.HDFS_OBJECT_FILE_DESCRIPTOR,
-                DataSetChannel.DESCRIPTOR,
-                () -> new FlinkObjectFileSource<>(DataSetType.createDefault(Void.class))
-        );
+    public static final ChannelConversion DATASET_TO_COLLECTION = new DefaultChannelConversion(
+            DataSetChannel.DESCRIPTOR,
+            CollectionChannel.DESCRIPTOR,
+            () -> new FlinkCollectionSink<>(DataSetType.createDefault(Void.class)));
 
-        public static final ChannelConversion DATASET_TO_OBJECT_FILE = new DefaultChannelConversion(
-                DataSetChannel.DESCRIPTOR,
-                FileChannel.HDFS_OBJECT_FILE_DESCRIPTOR,
-                () -> new FlinkObjectFileSink<>(DataSetType.createDefault(Void.class))
-        );
-        public static final ChannelConversion DATASET_TO_HDFS_TSV = new DefaultChannelConversion(
-                DataSetChannel.DESCRIPTOR,
-                FileChannel.HDFS_TSV_DESCRIPTOR,
-                () -> new FlinkTsvFileSink<>(DataSetType.createDefaultUnchecked(Tuple2.class))
-        );
+    public static final ChannelConversion OBJECT_FILE_TO_DATASET = new DefaultChannelConversion(
+            FileChannel.HDFS_OBJECT_FILE_DESCRIPTOR,
+            DataSetChannel.DESCRIPTOR,
+            () -> new FlinkObjectFileSource<>(DataSetType.createDefault(Void.class)));
 
-        public static Collection<ChannelConversion> ALL = Arrays.asList(
+    public static final ChannelConversion DATASET_TO_OBJECT_FILE = new DefaultChannelConversion(
+            DataSetChannel.DESCRIPTOR,
+            FileChannel.HDFS_OBJECT_FILE_DESCRIPTOR,
+            () -> new FlinkObjectFileSink<>(DataSetType.createDefault(Void.class)));
+
+    public static final ChannelConversion DATASET_TO_HDFS_TSV = new DefaultChannelConversion(
+            DataSetChannel.DESCRIPTOR,
+            FileChannel.HDFS_TSV_DESCRIPTOR,
+            () -> new FlinkTsvFileSink<>(DataSetType.createDefaultUnchecked(Tuple2.class)));
+
+    public static final Collection<ChannelConversion> ALL = List.of(
+            DATASTREAM_TO_COLLECTION,
             COLLECTION_TO_DATASET,
             DATASET_TO_COLLECTION,
             OBJECT_FILE_TO_DATASET,
             DATASET_TO_OBJECT_FILE,
-            DATASET_TO_HDFS_TSV
-        );
+            DATASET_TO_HDFS_TSV);
 }
