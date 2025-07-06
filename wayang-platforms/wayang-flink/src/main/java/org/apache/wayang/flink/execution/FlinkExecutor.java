@@ -57,11 +57,6 @@ public class FlinkExecutor extends PushExecutorTemplate {
     public ExecutionEnvironment fee;
 
     /**
-     * Compiler to create flink UDFs.
-     */
-    public FunctionCompiler compiler = new FunctionCompiler();
-
-    /**
      * Reference to the {@link ExecutionEnvironment} that provides the FlinkContextReference.
      */
     private FlinkPlatform platform;
@@ -168,15 +163,6 @@ public class FlinkExecutor extends PushExecutorTemplate {
     private static ChannelInstance[] toArray(List<ChannelInstance> channelInstances) {
         final ChannelInstance[] array = new ChannelInstance[channelInstances.size()];
         return channelInstances.toArray(array);
-    }
-
-    /**
-     * Provide a {@link FunctionCompiler}.
-     *
-     * @return the {@link FunctionCompiler}
-     */
-    public FunctionCompiler getCompiler() {
-        return this.compiler;
     }
 
     public int getNumDefaultPartitions(){

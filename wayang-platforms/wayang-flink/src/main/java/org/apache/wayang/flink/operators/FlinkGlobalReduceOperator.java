@@ -33,6 +33,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
 import java.util.Arrays;
@@ -84,7 +85,7 @@ public class FlinkGlobalReduceOperator<Type>
         final DataSet<Type> dataSetInput = input.provideDataSet();
 
 
-        final ReduceFunction<Type> reduceFunction = flinkExecutor.getCompiler().compile(this.reduceDescriptor);
+        final ReduceFunction<Type> reduceFunction = FunctionCompiler.compile(this.reduceDescriptor);
 
         DataSet<Type> datasetOutput = null;
         try {

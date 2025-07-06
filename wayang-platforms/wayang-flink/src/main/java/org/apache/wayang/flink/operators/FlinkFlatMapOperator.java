@@ -35,6 +35,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutionContext;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
@@ -96,7 +97,7 @@ public class FlinkFlatMapOperator<InputType, OutputType>
 
             FlinkExecutionContext fex = new FlinkExecutionContext(this, inputs, 0);
 
-            RichFlatMapFunction<InputType, OutputType> richFunction = flinkExecutor.compiler
+            RichFlatMapFunction<InputType, OutputType> richFunction = FunctionCompiler
                     .compile(
                             (FunctionDescriptor.ExtendedSerializableFunction)
                                     this.functionDescriptor.getJavaImplementation(),
@@ -113,7 +114,7 @@ public class FlinkFlatMapOperator<InputType, OutputType>
         }else {
 
             final FlatMapFunction<InputType, OutputType> flatMapFunction =
-                    flinkExecutor.getCompiler().compile((FunctionDescriptor.SerializableFunction<InputType, Iterable<OutputType>>)this.functionDescriptor.getJavaImplementation());
+                    FunctionCompiler.compile((FunctionDescriptor.SerializableFunction<InputType, Iterable<OutputType>>)this.functionDescriptor.getJavaImplementation());
 
             dataSetOutput = dataSetInput.flatMap(flatMapFunction)
                 .setParallelism(flinkExecutor.fee.getParallelism())

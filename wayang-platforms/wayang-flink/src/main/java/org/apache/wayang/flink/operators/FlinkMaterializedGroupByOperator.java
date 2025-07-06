@@ -34,6 +34,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
 import java.util.ArrayList;
@@ -78,7 +79,7 @@ public class FlinkMaterializedGroupByOperator<Type, KeyType>
 
         final DataSet<Type> dataSetInput = input.provideDataSet();
         final KeySelector<Type, KeyType> keyExtractor =
-                flinkExecutor.getCompiler().compileKeySelector(this.getKeyDescriptor());
+                FunctionCompiler.compileKeySelector(this.getKeyDescriptor());
 
 
         final DataSet<Iterable<Type>> dataSetOutput =

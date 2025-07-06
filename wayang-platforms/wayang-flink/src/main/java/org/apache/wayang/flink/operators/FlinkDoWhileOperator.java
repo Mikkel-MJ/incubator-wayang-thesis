@@ -34,6 +34,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.compiler.criterion.DummyFilter;
 import org.apache.wayang.flink.compiler.criterion.DummyMap;
 import org.apache.wayang.flink.compiler.criterion.WayangAggregator;
@@ -92,7 +93,7 @@ public class FlinkDoWhileOperator<InputType, ConvergenceType>
                 DataSet<InputType> input_initial = ((DataSetChannel.Instance) inputs[INITIAL_INPUT_INDEX]).provideDataSet();
                 DataSetChannel.Instance output_iteration = ((DataSetChannel.Instance) outputs[ITERATION_OUTPUT_INDEX]);
 
-                final ConvergenceCriterion wayangConvergeCriterion = flinkExecutor.getCompiler().compile(this.criterionDescriptor);
+                final ConvergenceCriterion wayangConvergeCriterion = FunctionCompiler.compile(this.criterionDescriptor);
 
 
                 this.iterativeDataSet = input_initial

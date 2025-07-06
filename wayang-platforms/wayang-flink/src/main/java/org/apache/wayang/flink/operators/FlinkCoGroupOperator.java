@@ -102,10 +102,10 @@ public class FlinkCoGroupOperator<InputType0, InputType1, TypeKey>
         final DataSet<InputType0> datasetInput0 = input0.provideDataSet();
         final DataSet<InputType1> datasetInput1 = input1.provideDataSet();
 
-        FunctionCompiler compiler = flinkExecutor.getCompiler();
+        
 
-        KeySelector<InputType0, TypeKey> function0 = compiler.compileKeySelector(this.keyDescriptor0);
-        KeySelector<InputType1, TypeKey> function1 = compiler.compileKeySelector(this.keyDescriptor1);
+        KeySelector<InputType0, TypeKey> function0 = FunctionCompiler.compileKeySelector(this.keyDescriptor0);
+        KeySelector<InputType1, TypeKey> function1 = FunctionCompiler.compileKeySelector(this.keyDescriptor1);
 
 
         final DataSet<Tuple2<Iterable<InputType0>, Iterable<InputType1>>> datasetOutput = datasetInput0.coGroup(datasetInput1)

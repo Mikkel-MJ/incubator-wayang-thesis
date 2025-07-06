@@ -34,6 +34,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutionContext;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
@@ -98,7 +99,7 @@ public class FlinkMapPartitionsOperator<InputType, OutputType>
             FlinkExecutionContext fex = new FlinkExecutionContext(this, inputs, 0);
 
             final RichMapPartitionFunction<InputType, OutputType> richFunction =
-                    flinkExecutor.compiler.compile(
+                    FunctionCompiler.compile(
                             this.getFunctionDescriptor(),
                             fex
                     );
@@ -113,7 +114,7 @@ public class FlinkMapPartitionsOperator<InputType, OutputType>
 
         }else{
             final MapPartitionFunction<InputType, OutputType> mapFunction =
-                    flinkExecutor.compiler.compile(this.getFunctionDescriptor());
+                    FunctionCompiler.compile(this.getFunctionDescriptor());
 
             dataSetOutput = dataSetInput.mapPartition(mapFunction)
                 .returns(class_output)

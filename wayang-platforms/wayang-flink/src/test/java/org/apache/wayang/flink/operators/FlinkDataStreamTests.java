@@ -7,10 +7,12 @@ import java.util.Iterator;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-
+import org.apache.wayang.basic.data.Tuple2;
+import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.platform.ChannelInstance;
 import org.apache.wayang.core.types.DataSetType;
+import org.apache.wayang.core.types.DataUnitType;
 import org.apache.wayang.flink.channels.DataStreamChannel;
 import org.apache.wayang.java.channels.CollectionChannel;
 
@@ -48,17 +50,18 @@ public class FlinkDataStreamTests extends FlinkOperatorTestBase {
         final DataStreamChannel.Instance sourceOutput = this.createDataStreamChannelInstance();
 
         // Set up the ChannelInstances.
-        final ChannelInstance[] sourceInputs  = new ChannelInstance[] {};
+        final ChannelInstance[] sourceInputs = new ChannelInstance[] {};
         final ChannelInstance[] sourceOutputs = new ChannelInstance[] { sourceOutput };
 
         // Execute.
         this.evaluate(collectionSource, sourceInputs, sourceOutputs);
 
-        final FlinkDataStreamCollectionSink<String> collectionSink = new FlinkDataStreamCollectionSink<>(DataSetType.createDefault(String.class));
+        final FlinkDataStreamCollectionSink<String> collectionSink = new FlinkDataStreamCollectionSink<>(
+                DataSetType.createDefault(String.class));
         final CollectionChannel.Instance sinkOutput = this.createCollectionChannelInstance();
 
         // Set up the ChannelInstances.
-        final ChannelInstance[] sinkInputs  = new ChannelInstance[] { sourceOutput };
+        final ChannelInstance[] sinkInputs = new ChannelInstance[] { sourceOutput };
         final ChannelInstance[] sinkOutputs = new ChannelInstance[] { sinkOutput };
 
         // Execute.
@@ -68,20 +71,21 @@ public class FlinkDataStreamTests extends FlinkOperatorTestBase {
     }
 
     @Test
-    public void mapperTest() throws Exception {
+    public void mapTest() throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         // Set up channels
-        final DataStreamChannel.Instance input  = this.createDataStreamChannelInstance();
-        input.accept(env.fromData(1,2,3,4));
+        final DataStreamChannel.Instance input = this.createDataStreamChannelInstance();
+        input.accept(env.fromData(1, 2, 3, 4));
         final DataStreamChannel.Instance output = this.createDataStreamChannelInstance();
 
         // Set up the ChannelInstances.
-        final ChannelInstance[] inputs  = new ChannelInstance[] { input  };
+        final ChannelInstance[] inputs = new ChannelInstance[] { input };
         final ChannelInstance[] outputs = new ChannelInstance[] { output };
 
         // Set up MapOperator
         final SerializableFunction<Integer, Integer> add = i -> i + 5;
-        final FlinkDataStreamMapOperator<Integer, Integer> map = new FlinkDataStreamMapOperator<Integer, Integer>(add, Integer.class, Integer.class);
+        final FlinkDataStreamMapOperator<Integer, Integer> map = new FlinkDataStreamMapOperator<Integer, Integer>(add,
+                Integer.class, Integer.class);
 
         // Execute.
         this.evaluate(map, inputs, outputs);
@@ -93,5 +97,48 @@ public class FlinkDataStreamTests extends FlinkOperatorTestBase {
         ints.forEachRemaining(collection::add);
 
         assertTrue(collection.stream().allMatch(i -> i > 5));
+    }
+
+    @Test
+    public void joinTest() throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        // Set up channels
+        final DataStreamChannel.Instance input1 = this.createDataStreamChannelInstance();
+        input1.accept(env.fromData(1, 2, 3, 4));
+        final DataStreamChannel.Instance input2 = this.createDataStreamChannelInstance();
+        input1.accept(env.fromData(1, 2, 3, 4));
+
+        final DataStreamChannel.Instance output = this.createDataStreamChannelInstance();
+
+        // Set up the ChannelInstances.
+        final ChannelInstance[] inputs = new ChannelInstance[] { input1, input2 };
+        final ChannelInstance[] outputs = new ChannelInstance[] { output };
+
+        // Set up JoinOperator
+        final ProjectionDescriptor<Integer, Integer> left = new ProjectionDescriptor<>(
+                DataUnitType.createBasicUnchecked(Tuple2.class),
+                DataUnitType.createBasic(Integer.class),
+                "field0");
+        final ProjectionDescriptor<Integer, Integer> right = new ProjectionDescriptor<>(
+                DataUnitType.createBasicUnchecked(Tuple2.class),
+                DataUnitType.createBasic(Integer.class),
+                "field1");
+        final FlinkDataStreamJoinOperator<Integer, Integer, Integer> join = new FlinkDataStreamJoinOperator<>(
+                DataSetType.createDefaultUnchecked(Integer.class),
+                DataSetType.createDefaultUnchecked(Integer.class),
+                left, right);
+
+        // Execute.
+        this.evaluate(join, inputs, outputs);
+
+        final DataStream<Integer> stream = output.<Integer>provideDataStream();
+        final Iterator<Integer> ints = stream.executeAndCollect();
+
+        final ArrayList<Integer> collection = new ArrayList<>();
+        ints.forEachRemaining(collection::add);
+
+        System.out.println("coll: " + collection);
+
+        assertTrue(collection.size() > 0);
     }
 }

@@ -33,6 +33,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
 import java.util.Arrays;
@@ -73,7 +74,7 @@ public class FlinkFilterOperator<Type> extends FilterOperator<Type> implements F
         assert inputs.length == this.getNumInputs();
         assert outputs.length == this.getNumOutputs();
 
-        final FilterFunction<Type> filterFunction = flinkExecutor.getCompiler().compile(this.predicateDescriptor.getJavaImplementation());
+        final FilterFunction<Type> filterFunction = FunctionCompiler.compile(this.predicateDescriptor.getJavaImplementation());
 
         final DataSet<Type> inputDataset = ((DataSetChannel.Instance) inputs[0]).provideDataSet();
         final DataSet<Type> outputDataSet = inputDataset.filter(filterFunction)

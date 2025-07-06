@@ -34,6 +34,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutionContext;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
@@ -45,13 +46,14 @@ import java.util.Optional;
 /**
  * Flink implementation of the {@link MapOperator}.
  */
-public class FlinkMapOperator<InputType, OutputType> extends MapOperator<InputType, OutputType> implements FlinkExecutionOperator {
+public class FlinkMapOperator<InputType, OutputType> extends MapOperator<InputType, OutputType>
+        implements FlinkExecutionOperator {
     /**
      * Creates a new instance.
      */
     public FlinkMapOperator(DataSetType<InputType> inputType,
-                           DataSetType<OutputType> outputType,
-                           TransformationDescriptor<InputType, OutputType> functionDescriptor) {
+            DataSetType<OutputType> outputType,
+            TransformationDescriptor<InputType, OutputType> functionDescriptor) {
         super(functionDescriptor, inputType, outputType);
     }
 
@@ -72,22 +74,21 @@ public class FlinkMapOperator<InputType, OutputType> extends MapOperator<InputTy
             OptimizationContext.OperatorContext operatorContext) {
         assert inputs.length == this.getNumInputs();
         assert outputs.length == this.getNumOutputs();
-        final DataSetChannel.Instance input  = (DataSetChannel.Instance) inputs[0];
+        final DataSetChannel.Instance input = (DataSetChannel.Instance) inputs[0];
         final DataSetChannel.Instance output = (DataSetChannel.Instance) outputs[0];
 
-        final DataSet<InputType>  dataSetInput  = input.provideDataSet();
+        final DataSet<InputType> dataSetInput = input.provideDataSet();
 
         final DataSet<OutputType> dataSetOutput;
-        if( this.getNumBroadcastInputs() > 0 ) {
+        if (this.getNumBroadcastInputs() > 0) {
             Tuple<String, DataSet> names = searchBroadcast(inputs);
 
             FlinkExecutionContext fex = new FlinkExecutionContext(this, inputs, 0);
 
-            RichMapFunction<InputType, OutputType> richFunction = flinkExecutor.compiler
+            RichMapFunction<InputType, OutputType> richFunction = FunctionCompiler
                     .compile(
                             this.functionDescriptor,
-                            fex
-                    );
+                            fex);
 
             fex.setRichFunction(richFunction);
 
@@ -98,11 +99,11 @@ public class FlinkMapOperator<InputType, OutputType> extends MapOperator<InputTy
                     .name(this.getName())
                     .withBroadcastSet(names.field1, names.field0);
 
-        }else {
-            final MapFunction<InputType, OutputType> mapper = flinkExecutor.getCompiler().compile(this.functionDescriptor);
+        } else {
+            final MapFunction<InputType, OutputType> mapper = FunctionCompiler.compile(this.functionDescriptor);
             dataSetOutput = dataSetInput.map(mapper)
-                .setParallelism(flinkExecutor.fee.getParallelism())
-                .returns(this.getOutputType().getDataUnitType().getTypeClass()).name(this.getName());
+                    .setParallelism(flinkExecutor.fee.getParallelism())
+                    .returns(this.getOutputType().getDataUnitType().getTypeClass()).name(this.getName());
         }
         output.accept(dataSetOutput, flinkExecutor);
 
@@ -110,9 +111,9 @@ public class FlinkMapOperator<InputType, OutputType> extends MapOperator<InputTy
     }
 
     private Tuple<String, DataSet> searchBroadcast(ChannelInstance[] inputs) {
-        for(int i = 0; i < this.inputSlots.length; i++){
-            if( this.inputSlots[i].isBroadcast() ){
-                DataSetChannel.Instance dataSetChannel = (DataSetChannel.Instance)inputs[inputSlots[i].getIndex()];
+        for (int i = 0; i < this.inputSlots.length; i++) {
+            if (this.inputSlots[i].isBroadcast()) {
+                DataSetChannel.Instance dataSetChannel = (DataSetChannel.Instance) inputs[inputSlots[i].getIndex()];
                 return new Tuple<>(inputSlots[i].getName(), dataSetChannel.provideDataSet());
             }
         }
@@ -129,7 +130,6 @@ public class FlinkMapOperator<InputType, OutputType> extends MapOperator<InputTy
         return new FlinkMapOperator<>(this.getInputType(), this.getOutputType(), this.getFunctionDescriptor());
     }
 
-
     @Override
     public String getLoadProfileEstimatorConfigurationKey() {
         return "wayang.flink.map.load";
@@ -137,8 +137,8 @@ public class FlinkMapOperator<InputType, OutputType> extends MapOperator<InputTy
 
     @Override
     public Optional<LoadProfileEstimator> createLoadProfileEstimator(Configuration configuration) {
-        final Optional<LoadProfileEstimator> optEstimator =
-                FlinkExecutionOperator.super.createLoadProfileEstimator(configuration);
+        final Optional<LoadProfileEstimator> optEstimator = FlinkExecutionOperator.super.createLoadProfileEstimator(
+                configuration);
         LoadProfileEstimators.nestUdfEstimator(optEstimator, this.functionDescriptor, configuration);
         return optEstimator;
     }

@@ -87,10 +87,8 @@ public class FlinkJoinOperator<InputType0, InputType1, KeyType>
         final DataSet<InputType0> dataSetInput0 = input0.provideDataSet();
         final DataSet<InputType1> dataSetInput1 = input1.provideDataSet();
 
-        FunctionCompiler compiler = flinkExecutor.getCompiler();
-
-        KeySelector<InputType0, KeyType> fun0 = compiler.compileKeySelector(this.keyDescriptor0);
-        KeySelector<InputType1, KeyType> fun1 = compiler.compileKeySelector(this.keyDescriptor1);
+        KeySelector<InputType0, KeyType> fun0 = FunctionCompiler.compileKeySelector(this.keyDescriptor0);
+        KeySelector<InputType1, KeyType> fun1 = FunctionCompiler.compileKeySelector(this.keyDescriptor1);
 
         DataSet<Tuple2<InputType0, InputType1>> dataSetOutput =
             dataSetInput0.join(dataSetInput1)

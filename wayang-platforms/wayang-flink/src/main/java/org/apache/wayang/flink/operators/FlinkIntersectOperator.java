@@ -32,6 +32,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
 import java.util.Arrays;
@@ -86,7 +87,7 @@ public class FlinkIntersectOperator<Type> extends IntersectOperator<Type> implem
                 type_class
         );
 
-        KeySelector<Type, Type> keySelector = flinkExecutor.compiler.compileKeySelector(descriptor);
+        KeySelector<Type, Type> keySelector = FunctionCompiler.compileKeySelector(descriptor);
 
         final DataSet<Type> dataSetOutput = dataSetInput0.join(dataSetInput1)
                 .where(

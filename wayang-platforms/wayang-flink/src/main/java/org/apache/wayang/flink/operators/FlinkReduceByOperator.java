@@ -88,11 +88,11 @@ public class FlinkReduceByOperator<InputType, KeyType>
 
         final DataSet<InputType> dataSetInput = input.provideDataSet();
 
-        FunctionCompiler compiler = flinkExecutor.getCompiler();
+        
 
-        KeySelector<InputType, KeyType> keySelector = compiler.compileKeySelector(this.keyDescriptor);
+        KeySelector<InputType, KeyType> keySelector = FunctionCompiler.compileKeySelector(this.keyDescriptor);
 
-        ReduceFunction<InputType> reduceFunction = compiler.compile(this.reduceDescriptor);
+        ReduceFunction<InputType> reduceFunction = FunctionCompiler.compile(this.reduceDescriptor);
 
 
         DataSet<InputType> dataSetOutput =

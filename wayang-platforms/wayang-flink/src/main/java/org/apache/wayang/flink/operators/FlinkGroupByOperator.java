@@ -35,6 +35,7 @@ import org.apache.wayang.core.platform.lineage.ExecutionLineageNode;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.flink.channels.DataSetChannel;
+import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 
 import java.util.ArrayList;
@@ -81,7 +82,7 @@ public class FlinkGroupByOperator<InputType, KeyType> extends GroupByOperator<In
         final DataSetChannel.Instance output = (DataSetChannel.Instance) outputs[0];
 
 
-        final KeySelector<InputType, KeyType> keySelector = flinkExecutor.compiler.compileKeySelector(this.getKeyDescriptor());
+        final KeySelector<InputType, KeyType> keySelector = FunctionCompiler.compileKeySelector(this.getKeyDescriptor());
 
         final DataSet<InputType> dataSetInput  = input.provideDataSet();
 
