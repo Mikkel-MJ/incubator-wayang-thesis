@@ -6,16 +6,19 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.platform.ChannelInstance;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.flink.channels.DataStreamChannel;
 import org.apache.wayang.java.channels.CollectionChannel;
+
 import org.junit.Test;
 
 public class FlinkDataStreamTests extends FlinkOperatorTestBase {
     @Test
-    public void singleOperatorTest() throws Exception {
+    public void textFileSourceTest() throws Exception {
         final String path = FlinkDataStreamTests.class.getResource("dataStreamTest.txt").getPath();
 
         final FlinkDataStreamTextFileSource collectionSource = new FlinkDataStreamTextFileSource(path);
@@ -45,7 +48,7 @@ public class FlinkDataStreamTests extends FlinkOperatorTestBase {
         final DataStreamChannel.Instance sourceOutput = this.createDataStreamChannelInstance();
 
         // Set up the ChannelInstances.
-        final ChannelInstance[] sourceInputs = new ChannelInstance[] {};
+        final ChannelInstance[] sourceInputs  = new ChannelInstance[] {};
         final ChannelInstance[] sourceOutputs = new ChannelInstance[] { sourceOutput };
 
         // Execute.
@@ -55,12 +58,40 @@ public class FlinkDataStreamTests extends FlinkOperatorTestBase {
         final CollectionChannel.Instance sinkOutput = this.createCollectionChannelInstance();
 
         // Set up the ChannelInstances.
-        final ChannelInstance[] sinkInputs = new ChannelInstance[] { sourceOutput };
+        final ChannelInstance[] sinkInputs  = new ChannelInstance[] { sourceOutput };
         final ChannelInstance[] sinkOutputs = new ChannelInstance[] { sinkOutput };
 
         // Execute.
         this.evaluate(collectionSink, sinkInputs, sinkOutputs);
 
         assertTrue(sinkOutput.provideCollection().size() > 0);
+    }
+
+    @Test
+    public void mapperTest() throws Exception {
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        // Set up channels
+        final DataStreamChannel.Instance input  = this.createDataStreamChannelInstance();
+        input.accept(env.fromData(1,2,3,4));
+        final DataStreamChannel.Instance output = this.createDataStreamChannelInstance();
+
+        // Set up the ChannelInstances.
+        final ChannelInstance[] inputs  = new ChannelInstance[] { input  };
+        final ChannelInstance[] outputs = new ChannelInstance[] { output };
+
+        // Set up MapOperator
+        final SerializableFunction<Integer, Integer> add = i -> i + 5;
+        final FlinkDataStreamMapOperator<Integer, Integer> map = new FlinkDataStreamMapOperator<Integer, Integer>(add, Integer.class, Integer.class);
+
+        // Execute.
+        this.evaluate(map, inputs, outputs);
+
+        final DataStream<Integer> stream = output.<Integer>provideDataStream();
+        final Iterator<Integer> ints = stream.executeAndCollect();
+
+        final ArrayList<Integer> collection = new ArrayList<>();
+        ints.forEachRemaining(collection::add);
+
+        assertTrue(collection.stream().allMatch(i -> i > 5));
     }
 }
