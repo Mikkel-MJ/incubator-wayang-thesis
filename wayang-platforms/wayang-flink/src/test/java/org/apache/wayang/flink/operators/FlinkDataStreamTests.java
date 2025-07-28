@@ -1,5 +1,6 @@
 package org.apache.wayang.flink.operators;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -7,6 +8,7 @@ import java.util.Iterator;
 
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
@@ -104,9 +106,9 @@ public class FlinkDataStreamTests extends FlinkOperatorTestBase {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         // Set up channels
         final DataStreamChannel.Instance input1 = this.createDataStreamChannelInstance();
-        input1.accept(env.fromData(1, 2, 3, 4));
+        input1.accept(env.fromData(new Tuple2<>(1, "b"), new Tuple2<>(1, "c"), new Tuple2<>(2, "d"), new Tuple2<>(3, "e")));
         final DataStreamChannel.Instance input2 = this.createDataStreamChannelInstance();
-        input1.accept(env.fromData(1, 2, 3, 4));
+        input2.accept(env.fromData(new Tuple2<>("x", 1), new Tuple2<>("y", 1), new Tuple2<>("z", 2), new Tuple2<>("w", 4)));
 
         final DataStreamChannel.Instance output = this.createDataStreamChannelInstance();
 
@@ -115,30 +117,31 @@ public class FlinkDataStreamTests extends FlinkOperatorTestBase {
         final ChannelInstance[] outputs = new ChannelInstance[] { output };
 
         // Set up JoinOperator
-        final ProjectionDescriptor<Integer, Integer> left = new ProjectionDescriptor<>(
+        final ProjectionDescriptor<Tuple2<Integer, String>, Integer> left = new ProjectionDescriptor<>(
                 DataUnitType.createBasicUnchecked(Tuple2.class),
                 DataUnitType.createBasic(Integer.class),
                 "field0");
-        final ProjectionDescriptor<Integer, Integer> right = new ProjectionDescriptor<>(
+        final ProjectionDescriptor<Tuple2<String, Integer>, Integer> right = new ProjectionDescriptor<>(
                 DataUnitType.createBasicUnchecked(Tuple2.class),
                 DataUnitType.createBasic(Integer.class),
                 "field1");
-        final FlinkDataStreamJoinOperator<Integer, Integer, Integer> join = new FlinkDataStreamJoinOperator<>(
-                DataSetType.createDefaultUnchecked(Integer.class),
-                DataSetType.createDefaultUnchecked(Integer.class),
-                left, right);
+        final FlinkDataStreamJoinOperator<Tuple2<Integer, String>, Tuple2<String, Integer>, Integer> join = new FlinkDataStreamJoinOperator<>(left, right);
 
         // Execute.
         this.evaluate(join, inputs, outputs);
 
-        final DataStream<Integer> stream = output.<Integer>provideDataStream();
-        final Iterator<Integer> ints = stream.executeAndCollect();
+        final DataStream<Tuple2<?,?>> stream = output.<Tuple2<?,?>>provideDataStream();
+        final Iterator<Tuple2<?,?>> ints = stream.executeAndCollect();
 
-        final ArrayList<Integer> collection = new ArrayList<>();
+        final ArrayList<Tuple2<?,?>> collection = new ArrayList<>();
         ints.forEachRemaining(collection::add);
 
-        System.out.println("coll: " + collection);
-
-        assertTrue(collection.size() > 0);
+        System.out.println("got result: " + collection);
+        assertEquals(5, collection.size());
+        assertTrue(collection.stream().anyMatch(res -> res.equals(new Tuple2<>(new Tuple2<>(1, "b"), new Tuple2<>("x", 1)))));
+        assertTrue(collection.stream().anyMatch(res -> res.equals(new Tuple2<>(new Tuple2<>(1, "b"), new Tuple2<>("y", 1)))));
+        assertTrue(collection.stream().anyMatch(res -> res.equals(new Tuple2<>(new Tuple2<>(1, "c"), new Tuple2<>("x", 1)))));
+        assertTrue(collection.stream().anyMatch(res -> res.equals(new Tuple2<>(new Tuple2<>(1, "c"), new Tuple2<>("y", 1)))));
+        assertTrue(collection.stream().anyMatch(res -> res.equals(new Tuple2<>(new Tuple2<>(2, "d"), new Tuple2<>("z", 2)))));
     }
 }
