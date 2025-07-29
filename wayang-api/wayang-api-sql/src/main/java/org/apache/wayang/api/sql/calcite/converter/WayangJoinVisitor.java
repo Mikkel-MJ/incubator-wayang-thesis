@@ -64,7 +64,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
         final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), super.aliasFinder);
 
-        final RexNode condition = ((Join) wayangRelNode).getCondition();
+        final RexNode condition = wayangRelNode.getCondition();
 
         if (!condition.isA(SqlKind.EQUALS)) {
             throw new UnsupportedOperationException(

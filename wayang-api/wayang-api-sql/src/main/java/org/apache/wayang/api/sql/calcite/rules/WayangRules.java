@@ -21,43 +21,27 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.logical.LogicalSort;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexChecker;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.util.Litmus;
+import org.apache.calcite.tools.RuleSet;
+import org.apache.calcite.tools.RuleSets;
+
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
-import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-//TODO: split into multiple classes
 public class WayangRules {
 
     private WayangRules() {
@@ -70,6 +54,14 @@ public class WayangRules {
     public static final RelOptRule WAYANG_TABLESCAN_ENUMERABLE_RULE = new WayangTableScanRule(
             WayangTableScanRule.ENUMERABLE_CONFIG);
     public static final RelOptRule WAYANG_AGGREGATE_RULE = new WayangAggregateRule(WayangAggregateRule.DEFAULT_CONFIG);
+
+    public static final RuleSet ALL = RuleSets.ofList(
+            WAYANG_JOIN_RULE,
+            WAYANG_PROJECT_RULE,
+            WAYANG_FILTER_RULE,
+            WAYANG_TABLESCAN_RULE,
+            WAYANG_TABLESCAN_ENUMERABLE_RULE,
+            WAYANG_AGGREGATE_RULE);
 
     /**
      * Rule that tries to take a multi conditional join and splits it into multiple
@@ -119,8 +111,8 @@ public class WayangRules {
             final LogicalFilter filter = (LogicalFilter) rel;
 
             return new WayangFilter(
-                    rel.getCluster(),
-                    rel.getTraitSet().replace(WayangConvention.INSTANCE),
+                    filter.getCluster(),
+                    filter.getTraitSet().replace(WayangConvention.INSTANCE),
                     convert(filter.getInput(), filter.getInput().getTraitSet().replace(WayangConvention.INSTANCE)),
                     filter.getCondition());
         }
@@ -163,16 +155,10 @@ public class WayangRules {
 
     private static class WayangJoinRule extends ConverterRule {
 
-         public static final Config DEFAULT_CONFIG = (Config) Config.INSTANCE
-                                .withConversion(LogicalJoin.class, Convention.NONE,
-                                                WayangConvention.INSTANCE, "WayangJoinRule")
-                                .withRuleFactory(WayangJoinRule::new)
-                                .withOperandSupplier(b0 -> b0.operand(LogicalJoin.class)
-                                        .predicate(join -> !(join.getCondition() instanceof RexLiteral))
-                                        .predicate(join -> !join.getCondition().isA(SqlKind.LITERAL))
-                                        .predicate(join -> !join.getCondition().isA(SqlKind.AND))
-                                        .anyInputs()
-                                );
+        public static final Config DEFAULT_CONFIG = Config.INSTANCE
+                .withConversion(LogicalJoin.class, Convention.NONE,
+                        WayangConvention.INSTANCE, "WayangJoinRule")
+                .withRuleFactory(WayangJoinRule::new);
 
         protected WayangJoinRule(final Config config) {
             super(config);
@@ -185,71 +171,18 @@ public class WayangRules {
             if (join.getCondition().isA(SqlKind.AND)) {
                 return join;
             }
-                /*
-                throw new UnsupportedOperationException(
-                        "Multiconditional joins are currently not supported for Wayang conversions.");*/
-            final List<RelNode> newInputs = new ArrayList<>();
 
-            for (RelNode input : join.getInputs()) {
-                if (!(input.getConvention() instanceof WayangConvention)) {
-                    input = convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE));
-                }
-                newInputs.add(input);
-            }
+            assert join.getInputs().size() == 2 : "joins should have two inputs.";
 
-            final WayangJoin newJoin = new WayangJoin(
+            return new WayangJoin(
                     join.getCluster(),
                     join.getTraitSet().replace(WayangConvention.INSTANCE),
-                    newInputs.get(0),
-                    newInputs.get(1),
+                    convert(join.getLeft(), join.getLeft().getTraitSet().replace(WayangConvention.INSTANCE)),
+                    convert(join.getRight(), join.getRight().getTraitSet().replace(WayangConvention.INSTANCE)),
                     join.getCondition(),
                     join.getVariablesSet(),
                     join.getJoinType());
-
-            // this should be safe as no multiconditional joins should be available at this
-            // time
-            /*
-            final List<RexInputRef> oldRefs = ((RexCall) join.getCondition()).operands.stream()
-                    .map(RexInputRef.class::cast)
-                    .collect(Collectors.toList());
-            */
-
-            return newJoin;
         }
-    }
-
-    /*
-     * Ensures that the types within the join condition and in the table representation that
-     * calcite has for the for the current join have parity
-     */
-    public static boolean ensureConditionAndInputRefTypeParity(Join join){
-        final RexCall condition = (RexCall) join.getCondition();
-
-        // assuming binary join
-        assert(condition.isA(SqlKind.EQUALS)) : "Condition was not a binary: " + join.getCondition();
-
-        final List<Integer> keys = condition.operands.stream()
-            .map(RexInputRef.class::cast)
-            .map(RexInputRef::getIndex)
-            .collect(Collectors.toList());
-
-        final List<String> fieldTypeNames = keys.stream()
-            .map(key -> join.getRowType().getFieldList().get(key))
-            .map(RelDataTypeField::getType)
-            .map(RelDataType::getFullTypeString)
-            .collect(Collectors.toList());
-
-        final List<String> refTypeNames = condition.getOperands().stream()
-            .map(RexInputRef.class::cast)
-            .map(RexInputRef::getType)
-            .map(RelDataType::getFullTypeString)
-            .collect(Collectors.toList());
-
-        final boolean isParity = fieldTypeNames.equals(refTypeNames);
-
-        if(!isParity) System.err.println("Keys: " + keys + ", fieldTypeNames: " + fieldTypeNames + ", refTypeNames: " + refTypeNames);
-
-        return isParity;
     }
 
     private static class WayangAggregateRule extends ConverterRule {
