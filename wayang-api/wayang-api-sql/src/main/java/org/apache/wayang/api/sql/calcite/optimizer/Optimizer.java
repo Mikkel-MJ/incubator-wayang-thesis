@@ -33,6 +33,7 @@ import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
@@ -96,7 +97,7 @@ public class Optimizer {
      * Rule {@link JoinCommuteRule} takes too long when joins number grows. We disable this rule if query has joins
      * count bigger than this value.
      */
-    public static final int MAX_JOINS_TO_COMMUTE = 3;
+    public static final int MAX_JOINS_TO_COMMUTE = 999;
 
     public VolcanoPlanner getPlanner(){
         return this.volcanoPlanner;

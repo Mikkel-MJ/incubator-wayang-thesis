@@ -19,6 +19,8 @@ package org.apache.wayang.api.sql.context;
 
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -45,6 +47,7 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.spark.Spark;
+import org.apache.calcite.adapter.enumerable.EnumerableRules;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -118,23 +121,47 @@ public class SqlContext extends WayangContext {
 
         final RuleSet conversionRules = WayangRules.ALL;
 
-        final RelNode converted = optimizer.optimize(
-                relNode,
-                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
-                conversionRules);
-
         final RuleSet transformationRules = RuleSets.ofList(
+            CoreRules.FILTER_MERGE,
+            CoreRules.FILTER_AGGREGATE_TRANSPOSE,
+            CoreRules.FILTER_SET_OP_TRANSPOSE,
+            CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.FILTER_INTO_JOIN,
-            CoreRules.JOIN_ASSOCIATE,
-            CoreRules.JOIN_COMMUTE
+            CoreRules.FILTER_CORRELATE,
+            CoreRules.FILTER_PROJECT_TRANSPOSE,
+            CoreRules.JOIN_PUSH_EXPRESSIONS,
+            CoreRules.PROJECT_MERGE,
+            CoreRules.PROJECT_REMOVE,
+            CoreRules.PROJECT_FILTER_TRANSPOSE,
+            CoreRules.JOIN_ASSOCIATE.config.withAllowAlwaysTrueCondition(false).toRule(),
+            CoreRules.JOIN_COMMUTE.config.withAllowAlwaysTrueCondition(false).toRule(),
+            WayangRules.WAYANG_TABLESCAN_RULE,
+            WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
+            WayangRules.WAYANG_AGGREGATE_RULE,
+            WayangRules.WAYANG_PROJECT_RULE,
+            WayangRules.WAYANG_FILTER_RULE,
+            WayangRules.WAYANG_JOIN_RULE
         );
 
-        final RelNode optimized = optimizer.optimize(
-            converted, 
-            converted.getTraitSet(), 
-            transformationRules);
 
-        PrintUtils.print("Optimized WayangRel", optimized);
+        /*
+        final Collection<RelOptRule> rulesList = List.of(
+            WayangRules.WAYANG_TABLESCAN_RULE,
+            WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
+            WayangRules.WAYANG_AGGREGATE_RULE,
+            WayangRules.WAYANG_PROJECT_RULE,
+            WayangRules.WAYANG_FILTER_RULE,
+            WayangRules.WAYANG_JOIN_RULE
+        );*/
+
+        final RelNode optimized = optimizer.optimize(
+                relNode,
+                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
+                transformationRules);
+
+        //final RelNode converted = optimizer.prepare(optimized, rulesList);
+
+        PrintUtils.print("Optimized CalciteRel", optimized);
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
 

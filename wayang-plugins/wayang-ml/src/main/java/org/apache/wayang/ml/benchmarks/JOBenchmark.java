@@ -75,8 +75,8 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         try {
@@ -99,11 +99,12 @@ public class JOBenchmark {
             config.setProperty("wayang.flink.port", "7071");
             config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
             config.setProperty("wayang.ml.experience.enabled", "false");
+            /*
             config.setProperty(
                 "wayang.core.optimizer.pruning.strategies",
                 "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
             );
-            config.setProperty("wayang.core.optimizer.pruning.topk", "10000");
+            config.setProperty("wayang.core.optimizer.pruning.topk", "10000");*/
 
             final String calciteModel = "{\n" +
                     "    \"version\": \"1.0\",\n" +

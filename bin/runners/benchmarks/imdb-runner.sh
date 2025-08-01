@@ -89,7 +89,7 @@ echo "Running JOBenchmark"
     #    query="$test_path/${query_name}.sql"
 
         #timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
-        timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/fresh/ $query bvae /work/lsbo-paper/data/models/imdb/training/retrained/bvae-fresh-1.onnx $data_path/experience/
+        timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
         if [ $? -eq 124 ]; then
             echo "Query ${query} timed out"
         fi

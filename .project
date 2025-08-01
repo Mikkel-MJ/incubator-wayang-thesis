@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>wayang-profiler</name>
+	<name>wayang</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -16,7 +16,7 @@
 	</natures>
 	<filteredResources>
 		<filter>
-			<id>1754057138521</id>
+			<id>1754057138493</id>
 			<name></name>
 			<type>30</type>
 			<matcher>
