@@ -53,7 +53,6 @@ public class WayangJoin extends Join implements WayangRel {
         return new WayangJoin(getCluster(), relTraitSet, left, right, condition, variablesSet, joinType);
     }
 
-    /*
     @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         // Check if the condition is a literal "true"
@@ -71,7 +70,7 @@ public class WayangJoin extends Join implements WayangRel {
 
         // Default cost (inherit from parent class)
         return super.computeSelfCost(planner, mq);
-    } */
+    }
 
     @Override
     public String toString() {

@@ -48,6 +48,11 @@ import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.spark.Spark;
 import org.apache.calcite.adapter.enumerable.EnumerableRules;
+import org.apache.calcite.rel.rules.*;
+import org.apache.calcite.rel.logical.*;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.util.Optionality;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -122,19 +127,13 @@ public class SqlContext extends WayangContext {
         final RuleSet conversionRules = WayangRules.ALL;
 
         final RuleSet transformationRules = RuleSets.ofList(
-            CoreRules.FILTER_MERGE,
-            CoreRules.FILTER_AGGREGATE_TRANSPOSE,
-            CoreRules.FILTER_SET_OP_TRANSPOSE,
-            CoreRules.JOIN_CONDITION_PUSH,
-            CoreRules.FILTER_INTO_JOIN,
-            CoreRules.FILTER_CORRELATE,
-            CoreRules.FILTER_PROJECT_TRANSPOSE,
-            CoreRules.JOIN_PUSH_EXPRESSIONS,
-            CoreRules.PROJECT_MERGE,
-            CoreRules.PROJECT_REMOVE,
-            CoreRules.PROJECT_FILTER_TRANSPOSE,
+            CoreRules.FILTER_INTO_JOIN.config.withSmart(false).toRule(),
+            JoinPushThroughJoinRule.Config.LEFT
+                .withOperandFor(LogicalJoin.class).toRule(),
+            JoinPushThroughJoinRule.Config.RIGHT
+                .withOperandFor(LogicalJoin.class).toRule(),
             CoreRules.JOIN_ASSOCIATE.config.withAllowAlwaysTrueCondition(false).toRule(),
-            CoreRules.JOIN_COMMUTE.config.withAllowAlwaysTrueCondition(false).toRule(),
+            //CoreRules.JOIN_COMMUTE.config.withAllowAlwaysTrueCondition(false).toRule(),
             WayangRules.WAYANG_TABLESCAN_RULE,
             WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
             WayangRules.WAYANG_AGGREGATE_RULE,
@@ -146,6 +145,9 @@ public class SqlContext extends WayangContext {
 
         /*
         final Collection<RelOptRule> rulesList = List.of(
+            CoreRules.FILTER_INTO_JOIN.config.withSmart(true).toRule(),
+            CoreRules.JOIN_ASSOCIATE.config.withAllowAlwaysTrueCondition(false).toRule(),
+            CoreRules.JOIN_COMMUTE.config.withAllowAlwaysTrueCondition(false).toRule(),
             WayangRules.WAYANG_TABLESCAN_RULE,
             WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
             WayangRules.WAYANG_AGGREGATE_RULE,
