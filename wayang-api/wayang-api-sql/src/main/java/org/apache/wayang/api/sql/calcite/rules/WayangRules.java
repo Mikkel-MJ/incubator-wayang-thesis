@@ -168,9 +168,10 @@ public class WayangRules {
         public @Nullable RelNode convert(final RelNode relNode) {
             final LogicalJoin join = (LogicalJoin) relNode;
 
+            /*
             if (join.getCondition().isA(SqlKind.AND)) {
                 return join;
-            }
+            }*/
 
             assert join.getInputs().size() == 2 : "joins should have two inputs.";
 
