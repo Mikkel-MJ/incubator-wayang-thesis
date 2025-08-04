@@ -62,6 +62,9 @@ import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.rel.rules.*;
+import org.apache.calcite.rel.logical.*;
+import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.basic.data.Tuple2;
@@ -161,6 +164,7 @@ public class Optimizer {
         // Set up the trait def (mandatory in VolcanoPlanner)
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.setNoneConventionHasInfiniteCost(true);
+        //planner.setTopDownOpt(true);
 
         // Add some core rules
         //planner.addRule(CoreRules.FILTER_INTO_JOIN);
@@ -283,9 +287,14 @@ public class Optimizer {
             );
         }
 
-        Program program = Programs.of(RuleSets.ofList(rules));
+        //Program program = Programs.of(RuleSets.ofList(rules));
+        Program logicalRules = Programs.heuristicJoinOrder(
+            rules,
+            true,
+            6
+        );
 
-        return program.run(
+        return logicalRules.run(
                 volcanoPlanner,
                 node,
                 requiredTraitSet,

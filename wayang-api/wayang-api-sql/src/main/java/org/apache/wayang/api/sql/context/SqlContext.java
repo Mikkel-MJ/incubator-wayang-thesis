@@ -121,20 +121,18 @@ public class SqlContext extends WayangContext {
 
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
-
         final RelNode relNode = optimizer.convert(validatedSqlNode);
-
-        final RuleSet conversionRules = WayangRules.ALL;
 
         final RuleSet transformationRules = RuleSets.ofList(
             CoreRules.FILTER_INTO_JOIN.config.withSmart(true).toRule(),
+            CoreRules.FILTER_PROJECT_TRANSPOSE,
+            CoreRules.JOIN_CONDITION_PUSH,
             CoreRules.JOIN_ASSOCIATE.config.withAllowAlwaysTrueCondition(false).toRule(),
-            CoreRules.JOIN_COMMUTE_OUTER.config.withAllowAlwaysTrueCondition(false).toRule(),
-            /*
+            CoreRules.JOIN_COMMUTE.config.withAllowAlwaysTrueCondition(false).toRule(),
             JoinPushThroughJoinRule.Config.LEFT
                 .withOperandFor(LogicalJoin.class).toRule(),
             JoinPushThroughJoinRule.Config.RIGHT
-                .withOperandFor(LogicalJoin.class).toRule(),*/
+                .withOperandFor(LogicalJoin.class).toRule(),
             WayangRules.WAYANG_TABLESCAN_RULE,
             WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
             WayangRules.WAYANG_AGGREGATE_RULE,
@@ -143,53 +141,11 @@ public class SqlContext extends WayangContext {
             WayangRules.WAYANG_JOIN_RULE
         );
 
-
-        /*
-        final Collection<RelOptRule> rulesList = List.of(
-            CoreRules.FILTER_INTO_JOIN.config.withSmart(true).toRule(),
-            CoreRules.JOIN_ASSOCIATE.config.withAllowAlwaysTrueCondition(false).toRule(),
-            CoreRules.JOIN_COMMUTE.config.withAllowAlwaysTrueCondition(false).toRule(),
-            WayangRules.WAYANG_TABLESCAN_RULE,
-            WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
-            WayangRules.WAYANG_AGGREGATE_RULE,
-            WayangRules.WAYANG_PROJECT_RULE,
-            WayangRules.WAYANG_FILTER_RULE,
-            WayangRules.WAYANG_JOIN_RULE
-        );*/
-
-        RelNode optimized;
-
-        try {
-            //Optimize without JoinPushThroughJoinRule, possibly saving a lot of time.
-            optimized = optimizer.optimize(
-                relNode,
-                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
-                transformationRules
-            );
-        } catch(Exception e) {
-            //Retry optimization with JoinPushThroughJoinRule.
-            final RuleSet fallbackRules = RuleSets.ofList(
-                CoreRules.FILTER_INTO_JOIN.config.withSmart(true).toRule(),
-                CoreRules.JOIN_ASSOCIATE.config.withAllowAlwaysTrueCondition(false).toRule(),
-                CoreRules.JOIN_COMMUTE.config.withAllowAlwaysTrueCondition(false).toRule(),
-                JoinPushThroughJoinRule.Config.LEFT
-                    .withOperandFor(LogicalJoin.class).toRule(),
-                JoinPushThroughJoinRule.Config.RIGHT
-                    .withOperandFor(LogicalJoin.class).toRule(),
-                WayangRules.WAYANG_TABLESCAN_RULE,
-                WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
-                WayangRules.WAYANG_PROJECT_RULE,
-                WayangRules.WAYANG_FILTER_RULE,
-                WayangRules.WAYANG_JOIN_RULE
-            );
-
-            optimized = optimizer.optimize(
-                relNode,
-                relNode.getTraitSet().plus(WayangConvention.INSTANCE),
-                fallbackRules
-            );
-        }
+        RelNode optimized = optimizer.optimize(
+            relNode,
+            relNode.getTraitSet().plus(WayangConvention.INSTANCE),
+            transformationRules
+        );
 
         //final RelNode converted = optimizer.prepare(optimized, rulesList);
 
