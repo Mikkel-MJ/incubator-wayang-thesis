@@ -206,7 +206,7 @@ public class WayangRules {
                     aggregate.getCluster(),
                     aggregate.getTraitSet().replace(WayangConvention.INSTANCE),
                     aggregate.getHints(),
-                    convert(input),
+                    convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE)),
                     aggregate.getGroupSet(),
                     aggregate.getGroupSets(),
                     aggregate.getAggCallList());
