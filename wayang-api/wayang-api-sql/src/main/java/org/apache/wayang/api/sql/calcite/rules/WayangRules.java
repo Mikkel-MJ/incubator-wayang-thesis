@@ -199,14 +199,12 @@ public class WayangRules {
         @Override
         public @Nullable RelNode convert(final RelNode relNode) {
             final LogicalAggregate aggregate = (LogicalAggregate) relNode;
-            final RelNode input = convert(aggregate.getInput(),
-                    aggregate.getInput().getTraitSet().replace(WayangConvention.INSTANCE));
-
+            
             return new WayangAggregate(
                     aggregate.getCluster(),
                     aggregate.getTraitSet().replace(WayangConvention.INSTANCE),
                     aggregate.getHints(),
-                    convert(input, input.getTraitSet().replace(WayangConvention.INSTANCE)),
+                    convert(aggregate.getInput(), aggregate.getInput().getTraitSet().replace(WayangConvention.INSTANCE)),
                     aggregate.getGroupSet(),
                     aggregate.getGroupSets(),
                     aggregate.getAggCallList());
