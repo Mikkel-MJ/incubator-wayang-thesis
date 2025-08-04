@@ -54,25 +54,6 @@ public class WayangJoin extends Join implements WayangRel {
     }
 
     @Override
-    public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        // Check if the condition is a literal "true"
-        if (condition.isAlwaysTrue()) {
-            RelOptCostFactory costFactory = planner.getCostFactory();
-
-            return costFactory.makeHugeCost();
-        }
-
-        if (condition.isA(SqlKind.AND)) {
-            RelOptCostFactory costFactory = planner.getCostFactory();
-
-            return costFactory.makeHugeCost();
-        }
-
-        // Default cost (inherit from parent class)
-        return super.computeSelfCost(planner, mq);
-    }
-
-    @Override
     public String toString() {
         return "Wayang Join";
     }
