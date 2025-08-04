@@ -29,6 +29,7 @@ import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -168,12 +169,9 @@ public class WayangRules {
         public @Nullable RelNode convert(final RelNode relNode) {
             final LogicalJoin join = (LogicalJoin) relNode;
 
-            /*
-            if (join.getCondition().isA(SqlKind.AND)) {
-                return join;
-            }*/
-
             assert join.getInputs().size() == 2 : "joins should have two inputs.";
+            assert join.getLeft() != null : "left has to be some.";
+            assert join.getRight() != null : "right has to be some.";
 
             return new WayangJoin(
                     join.getCluster(),
@@ -208,7 +206,7 @@ public class WayangRules {
                     aggregate.getCluster(),
                     aggregate.getTraitSet().replace(WayangConvention.INSTANCE),
                     aggregate.getHints(),
-                    input,
+                    convert(input),
                     aggregate.getGroupSet(),
                     aggregate.getGroupSets(),
                     aggregate.getAggCallList());
