@@ -30,8 +30,6 @@ import org.apache.wayang.java.channels.StreamChannel;
 import org.apache.wayang.java.execution.JavaExecutor;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -54,59 +52,6 @@ import org.slf4j.LoggerFactory;
 public class JavaTextFileSource extends TextFileSource implements JavaExecutionOperator {
 
     private static final Logger logger = LoggerFactory.getLogger(JavaTextFileSource.class);
-
-    public JavaTextFileSource(final String inputUrl) {
-        super(inputUrl);
-    }
-
-    /**
-     * Copies an instance (exclusive of broadcasts).
-     *
-     * @param that that should be copied
-     */
-    public JavaTextFileSource(final TextFileSource that) {
-        super(that);
-    }
-
-    @Override
-    public Tuple<Collection<ExecutionLineageNode>, Collection<ChannelInstance>> evaluate(
-            final ChannelInstance[] inputs,
-            final ChannelInstance[] outputs,
-            final JavaExecutor javaExecutor,
-            final OptimizationContext.OperatorContext operatorContext) {
-
-        assert inputs.length == this.getNumInputs();
-        assert outputs.length == this.getNumOutputs();
-
-        final String urlStr = this.getInputUrl().trim();
-        final URL sourceUrl;
-
-        try {
-            sourceUrl = new URL(urlStr);
-        } catch (final Exception e) {
-            throw new WayangException("Could not create URL from string: " + urlStr, e);
-        }
-
-        final String protocol = sourceUrl.getProtocol();
-
-        final Stream<String> lines = (protocol.startsWith("https") || protocol.startsWith("http"))
-                ? this.streamFromURL(sourceUrl)
-                : this.streamFromFs(urlStr);
-
-        ((StreamChannel.Instance) outputs[0]).accept(lines);
-
-        final ExecutionLineageNode prepareLineageNode = new ExecutionLineageNode(operatorContext);
-        prepareLineageNode.add(LoadProfileEstimators.createFromSpecification(
-                "wayang.java.textfilesource.load.prepare", javaExecutor.getConfiguration()));
-
-        final ExecutionLineageNode mainLineageNode = new ExecutionLineageNode(operatorContext);
-        mainLineageNode.add(LoadProfileEstimators.createFromSpecification(
-                "wayang.java.textfilesource.load.main", javaExecutor.getConfiguration()));
-
-        outputs[0].getLineage().addPredecessor(mainLineageNode);
-
-        return prepareLineageNode.collectAndMark();
-    }
 
     /**
      * @return Stream<String> from the provided URL
@@ -145,6 +90,58 @@ public class JavaTextFileSource extends TextFileSource implements JavaExecutionO
         } catch (final Exception e) {
             throw new WayangException(e);
         }
+    }
+
+    public JavaTextFileSource(final String inputUrl) {
+        super(inputUrl);
+    }
+
+    /**
+     * Copies an instance (exclusive of broadcasts).
+     *
+     * @param that that should be copied
+     */
+    public JavaTextFileSource(final TextFileSource that) {
+        super(that);
+    }
+
+    @Override
+    public Tuple<Collection<ExecutionLineageNode>, Collection<ChannelInstance>> evaluate(
+            final ChannelInstance[] inputs,
+            final ChannelInstance[] outputs,
+            final JavaExecutor javaExecutor,
+            final OptimizationContext.OperatorContext operatorContext) {
+        assert inputs.length == this.getNumInputs();
+        assert outputs.length == this.getNumOutputs();
+
+        final String urlStr = this.getInputUrl().trim();
+        final URL sourceUrl;
+
+        try {
+            sourceUrl = new URL(urlStr);
+        } catch (final Exception e) {
+            throw new WayangException("Could not create URL from string: " + urlStr, e);
+        }
+
+        final String protocol = sourceUrl.getProtocol();
+
+        final Stream<String> lines = (protocol.startsWith("https") || protocol.startsWith("http"))
+                ? this.streamFromURL(sourceUrl)
+                : this.streamFromFs(urlStr);
+
+        ((StreamChannel.Instance) outputs[0]).accept(lines);
+
+        final ExecutionLineageNode prepareLineageNode = new ExecutionLineageNode(operatorContext);
+        prepareLineageNode.add(LoadProfileEstimators.createFromSpecification(
+                "wayang.java.textfilesource.load.prepare", javaExecutor.getConfiguration()));
+
+        final ExecutionLineageNode mainLineageNode = new ExecutionLineageNode(operatorContext);
+        mainLineageNode.add(LoadProfileEstimators.createFromSpecification(
+                "wayang.java.textfilesource.load.main", javaExecutor.getConfiguration()));
+
+        outputs[0].getLineage().addPredecessor(mainLineageNode);
+
+        return prepareLineageNode.collectAndMark();
     }
 
     @Override

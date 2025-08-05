@@ -18,7 +18,6 @@
 
 package org.apache.wayang.jdbc.operators;
 
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.plan.wayangplan.Operator;
@@ -35,25 +34,15 @@ import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
 import org.apache.wayang.flink.channels.DataSetChannel;
 import org.apache.wayang.flink.execution.FlinkExecutor;
 import org.apache.wayang.flink.operators.FlinkExecutionOperator;
-import org.apache.flink.util.SplittableIterator;
-import org.apache.wayang.flink.operators.CollectionSplittableIterator;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
-import org.apache.wayang.core.platform.Platform;
 import org.apache.wayang.basic.operators.JoinOperator;
-import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.wayang.jdbc.execution.DatabaseDescriptor;
 
 import org.apache.flink.api.java.DataSet;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-import java.util.stream.Stream;
 
 public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperator<Input, Output> implements FlinkExecutionOperator, JsonSerializable {
 
@@ -68,7 +57,7 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
         this.jdbcPlatform = jdbcPlatform;
     }
 
-    protected SqlToFlinkDataSetOperator(SqlToFlinkDataSetOperator that) {
+    protected SqlToFlinkDataSetOperator(SqlToFlinkDataSetOperator<Input, Output> that) {
         super(that);
         this.jdbcPlatform = that.jdbcPlatform;
     }
@@ -101,7 +90,7 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
         DatabaseDescriptor descriptor = producerPlatform.createDatabaseDescriptor(flinkExecutor.getConfiguration());
 
         DataSet<Output> resultSetDataSet = flinkExecutor.fee
-            .createInput(new SqlResultInputFormat(descriptor, input.getSqlQuery(), boundaryOperator instanceof JoinOperator), typeInfo)
+            .createInput(new SqlResultInputFormat(descriptor, input.getSqlQuery(), boundaryOperator instanceof JoinOperator, flinkExecutor.getConfiguration()), typeInfo)
             .setParallelism(flinkExecutor.fee.getParallelism());
 
         output.accept(resultSetDataSet, flinkExecutor);

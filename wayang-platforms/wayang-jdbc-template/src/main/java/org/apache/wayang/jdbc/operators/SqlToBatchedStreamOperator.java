@@ -27,19 +27,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.commons.dbutils.DbUtils;
-
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.types.RecordType;
-import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.optimizer.costs.LoadProfileEstimators;
@@ -63,7 +60,7 @@ import org.apache.wayang.jdbc.platform.JdbcPlatformTemplate;
  * This {@link Operator} converts {@link SqlQueryChannel}s to
  * {@link StreamChannel}s.
  */
-public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Input, Output>
+public class SqlToBatchedStreamOperator<Input, Output> extends UnaryToUnaryOperator<Input, Output>
         implements JavaExecutionOperator, JsonSerializable {
 
     /**
@@ -100,15 +97,21 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         public ResultSetIterator(
                 final Connection connection,
                 final String sqlQuery,
-                final boolean needsTupleWrapping,
-                final Configuration configuration) {
+                final boolean needsTupleWrapping) {
             try {
+                // connection.setAutoCommit(false);
                 this.connection = connection;
                 this.statement = connection.createStatement(
                         java.sql.ResultSet.TYPE_FORWARD_ONLY,
                         java.sql.ResultSet.CONCUR_READ_ONLY);
-                connection.setAutoCommit(configuration.getOptionalBooleanProperty("wayang.jdbc.platform.autocommit").orElse(false));
-                this.statement.setFetchSize((int) configuration.getOptionalLongProperty("wayang.jdbc.platform.fetchsize").orElse(1000));
+
+                // TODO: REMOVE THIS IS ONLY FOR TESTING!!!!
+                // this.statement.setMaxRows(100_000);
+                /*
+                 * if (boundaryOperator instanceof JoinOperator) {
+                 * }
+                 */
+                this.statement.setFetchSize(1);
                 this.resultSet = this.statement.executeQuery(sqlQuery);
                 this.needsTupleWrapping = needsTupleWrapping;
             } catch (final SQLException e) {
@@ -126,7 +129,6 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         @Override
         public Output next() {
             final Output curNext = this.next;
-            if (!this.hasNext()) throw new NoSuchElementException("Could not find next element in result set. " + resultSet);
             this.moveToNext();
             return curNext;
         }
@@ -166,16 +168,18 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         }
     }
 
-    public static SqlToStreamOperator<Record, Record> fromJson(final WayangJsonObj wayangJsonObj) {
+    @SuppressWarnings("unused")
+    public static SqlToStreamOperator fromJson(final WayangJsonObj wayangJsonObj) {
         final String platformClassName = wayangJsonObj.getString("platform");
         final JdbcPlatformTemplate jdbcPlatform = ReflectionUtils.evaluate(platformClassName + ".getInstance()");
-        return new SqlToStreamOperator<>(
+        return new SqlToStreamOperator(
                 jdbcPlatform,
                 DataSetType.createDefault(Record.class),
                 DataSetType.createDefault(Record.class));
+
     }
 
-    private final transient JdbcPlatformTemplate jdbcPlatform;
+    private final JdbcPlatformTemplate jdbcPlatform;
 
     /**
      * Creates a new instance.
@@ -184,7 +188,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
      * @param dataSetType  type of the {@link Record}s being transformed; see
      *                     {@link RecordType}
      */
-    public SqlToStreamOperator(
+    public SqlToBatchedStreamOperator(
             final JdbcPlatformTemplate jdbcPlatform,
             final DataSetType<Input> inputDataSetType,
             final DataSetType<Output> outputDataSetType) {
@@ -192,7 +196,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         this.jdbcPlatform = jdbcPlatform;
     }
 
-    protected SqlToStreamOperator(final SqlToStreamOperator<Input, Output> that) {
+    protected SqlToBatchedStreamOperator(final SqlToBatchedStreamOperator<Input, Output> that) {
         super(that);
         this.jdbcPlatform = that.jdbcPlatform;
     }
@@ -216,7 +220,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
         final ResultSetIterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(),
-                boundaryOperator instanceof JoinOperator, executor.getConfiguration());
+                boundaryOperator instanceof JoinOperator);
         final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
         final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false)
                 .onClose(resultSetIterator::close);

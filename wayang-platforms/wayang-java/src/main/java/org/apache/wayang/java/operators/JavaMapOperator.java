@@ -39,13 +39,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Java implementation of the {@link org.apache.wayang.basic.operators.MapOperator}.
+ * Java implementation of the
+ * {@link org.apache.wayang.basic.operators.MapOperator}.
  */
 public class JavaMapOperator<InputType, OutputType>
         extends MapOperator<InputType, OutputType>
@@ -54,9 +54,9 @@ public class JavaMapOperator<InputType, OutputType>
     /**
      * Creates a new instance.
      */
-    public JavaMapOperator(DataSetType<InputType> inputType,
-                           DataSetType<OutputType> outputType,
-                           TransformationDescriptor<InputType, OutputType> functionDescriptor) {
+    public JavaMapOperator(final DataSetType<InputType> inputType,
+            final DataSetType<OutputType> outputType,
+            final TransformationDescriptor<InputType, OutputType> functionDescriptor) {
         super(functionDescriptor, inputType, outputType);
     }
 
@@ -65,16 +65,16 @@ public class JavaMapOperator<InputType, OutputType>
      *
      * @param that that should be copied
      */
-    public JavaMapOperator(MapOperator<InputType, OutputType> that) {
+    public JavaMapOperator(final MapOperator<InputType, OutputType> that) {
         super(that);
     }
 
     @Override
     public Tuple<Collection<ExecutionLineageNode>, Collection<ChannelInstance>> evaluate(
-            ChannelInstance[] inputs,
-            ChannelInstance[] outputs,
-            JavaExecutor javaExecutor,
-            OptimizationContext.OperatorContext operatorContext) {
+            final ChannelInstance[] inputs,
+            final ChannelInstance[] outputs,
+            final JavaExecutor javaExecutor,
+            final OptimizationContext.OperatorContext operatorContext) {
         assert inputs.length == this.getNumInputs();
         assert outputs.length == this.getNumOutputs();
         final JavaChannelInstance input = (JavaChannelInstance) inputs[0];
@@ -83,11 +83,9 @@ public class JavaMapOperator<InputType, OutputType>
         final Function<InputType, OutputType> function = javaExecutor.getCompiler().compile(this.functionDescriptor);
         JavaExecutor.openFunction(this, function, inputs, operatorContext);
 
-        Stream<OutputType> outStream = input.<InputType>provideStream().map(function);
-        List<OutputType> list = outStream.collect(Collectors.toList());
+        final Stream<OutputType> outStream = input.<InputType>provideStream().map(function);
 
-        //output.accept(input.<InputType>provideStream().map(function));
-        output.accept(list.stream());
+        output.accept(outStream);
 
         return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }
@@ -97,29 +95,29 @@ public class JavaMapOperator<InputType, OutputType>
         return new JavaMapOperator<>(this.getInputType(), this.getOutputType(), this.getFunctionDescriptor());
     }
 
-
     @Override
     public String getLoadProfileEstimatorConfigurationKey() {
         return "wayang.java.map.load";
     }
 
     @Override
-    public Optional<LoadProfileEstimator> createLoadProfileEstimator(Configuration configuration) {
-        final Optional<LoadProfileEstimator> optEstimator =
-                JavaExecutionOperator.super.createLoadProfileEstimator(configuration);
+    public Optional<LoadProfileEstimator> createLoadProfileEstimator(final Configuration configuration) {
+        final Optional<LoadProfileEstimator> optEstimator = JavaExecutionOperator.super.createLoadProfileEstimator(
+                configuration);
         LoadProfileEstimators.nestUdfEstimator(optEstimator, this.functionDescriptor, configuration);
         return optEstimator;
     }
 
     @Override
-    public List<ChannelDescriptor> getSupportedInputChannels(int index) {
+    public List<ChannelDescriptor> getSupportedInputChannels(final int index) {
         assert index <= this.getNumInputs() || (index == 0 && this.getNumInputs() == 0);
-        if (this.getInput(index).isBroadcast()) return Collections.singletonList(CollectionChannel.DESCRIPTOR);
+        if (this.getInput(index).isBroadcast())
+            return Collections.singletonList(CollectionChannel.DESCRIPTOR);
         return Arrays.asList(CollectionChannel.DESCRIPTOR, StreamChannel.DESCRIPTOR);
     }
 
     @Override
-    public List<ChannelDescriptor> getSupportedOutputChannels(int index) {
+    public List<ChannelDescriptor> getSupportedOutputChannels(final int index) {
         assert index <= this.getNumOutputs() || (index == 0 && this.getNumOutputs() == 0);
         return Collections.singletonList(StreamChannel.DESCRIPTOR);
     }
