@@ -32,11 +32,6 @@ model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
 # Heap space queries
 selected_queries=(
-    #10b
-    12b
-    13a
-    13b
-    13c
     16a
     16b
     16c
@@ -47,20 +42,38 @@ selected_queries=(
     17d
     17e
     17f
+    18c
     19d
-    20d
-    21a
-    21c
-    22a
+    20a
+    20b
+    20c
+    24a
+    24b
+    25c
+    26a
+    26b
+    26c
+    27b
+    30c
+    31a
+    31c
+    8c
+    8d
     22c
     22d
-    25c
+    27a
+    27c
+    28a
     28b
     28c
-    31a
+    29a
+    29b
+    29c
+    30a
+    30b
     31b
-    31c
-    32c
+    33a
+    33b
     33c
 )
 
@@ -84,9 +97,9 @@ echo "Running JOBenchmark"
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark flink,postgres file://$data_path/ $timings_path $test_path/2a.sql
 
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
-    for query in "$test_path"/*.sql; do
-    #for query_name in "${selected_queries[@]}"; do
-    #    query="$test_path/${query_name}.sql"
+    #for query in "$test_path"/*.sql; do
+    for query_name in "${selected_queries[@]}"; do
+        query="$test_path/${query_name}.sql"
 
         #timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
         timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
@@ -102,5 +115,4 @@ echo "Running JOBenchmark"
         sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
         sleep 5s
     done
-
 

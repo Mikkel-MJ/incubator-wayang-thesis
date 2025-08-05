@@ -290,7 +290,7 @@ public class Optimizer {
         //Program program = Programs.of(RuleSets.ofList(rules));
         Program logicalRules = Programs.heuristicJoinOrder(
             rules,
-            true,
+            false,
             6
         );
 
