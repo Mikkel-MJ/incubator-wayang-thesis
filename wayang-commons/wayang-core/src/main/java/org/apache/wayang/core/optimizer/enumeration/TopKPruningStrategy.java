@@ -23,33 +23,34 @@ import org.apache.wayang.core.api.Configuration;
 import java.util.ArrayList;
 
 /**
- * This {@link PlanEnumerationPruningStrategy} retains only the best {@code k} {@link PlanImplementation}s.
+ * This {@link PlanEnumerationPruningStrategy} retains only the best {@code k}
+ * {@link PlanImplementation}s.
  */
 public class TopKPruningStrategy implements PlanEnumerationPruningStrategy {
 
     private int k;
 
     @Override
-    public void configure(Configuration configuration) {
+    public void configure(final Configuration configuration) {
         this.k = (int) configuration.getLongProperty("wayang.core.optimizer.pruning.topk", 5);
     }
 
     @Override
-    public void prune(PlanEnumeration planEnumeration) {
+    public void prune(final PlanEnumeration planEnumeration) {
         // Skip if there is nothing to do...
-        if (planEnumeration.getPlanImplementations().size() <= this.k) return;
+        if (planEnumeration.getPlanImplementations().size() <= this.k)
+            return;
 
-        ArrayList<PlanImplementation> planImplementations = new ArrayList<>(planEnumeration.getPlanImplementations());
-        planImplementations.sort(this::comparePlanImplementations);
+        final ArrayList<PlanImplementation> planImplementations = new ArrayList<>(
+                planEnumeration.getPlanImplementations());
+        planImplementations.sort(TopKPruningStrategy::comparePlanImplementations);
         planEnumeration.getPlanImplementations().retainAll(planImplementations.subList(0, this.k));
     }
 
-
-    private int comparePlanImplementations(PlanImplementation p1,
-                                           PlanImplementation p2) {
+    private static int comparePlanImplementations(final PlanImplementation p1,
+            final PlanImplementation p2) {
         final double t1 = p1.getSquashedCostEstimate(true);
         final double t2 = p2.getSquashedCostEstimate(true);
         return Double.compare(t1, t2);
     }
-
 }
