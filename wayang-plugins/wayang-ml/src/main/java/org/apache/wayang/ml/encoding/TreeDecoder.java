@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.Set;
 
 public class TreeDecoder {
@@ -107,6 +108,15 @@ public class TreeDecoder {
             //if (platforms.size() == 0 || platforms.contains(platform)) {
                 operator.get().addTargetPlatform(platform);
             //}
+            //
+            System.out.println("Set op target platform: " + operator + " - " + platform);
+
+            Collection<Operator> children = Stream.of(operator.get().getAllInputs())
+                .filter(input -> input.getOccupant() != null)
+                .map(input -> input.getOccupant().getOwner())
+                .collect(Collectors.toList());
+
+            System.out.println("Operator: " + operator + " - " + children);
         } else {
             logger.info("Operator couldn't be recovered, potentially conversion operator: {}", node);
 

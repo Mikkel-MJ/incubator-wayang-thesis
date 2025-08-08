@@ -92,7 +92,7 @@ public class SqlToRddOperator extends UnaryToUnaryOperator<Record, Record>
 
         //TODO: verify this is closed correctly or close in finally
         final ResultSetIterator<Record> resultSetIterator = new SqlToStreamOperator.ResultSetIterator<>(connection,
-                input.getSqlQuery(), boundaryOperator instanceof JoinOperator, executor.getConfiguration());
+                input.getSqlQuery(), boundaryOperator instanceof JoinOperator);
         final Iterable<Record> resultSetIterable = () -> resultSetIterator;
 
         // Convert the ResultSet to a JavaRDD.

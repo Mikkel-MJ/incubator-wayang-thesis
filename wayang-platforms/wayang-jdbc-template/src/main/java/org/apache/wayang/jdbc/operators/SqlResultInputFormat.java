@@ -39,17 +39,15 @@ public class SqlResultInputFormat<Output> extends RichInputFormat<Output, Generi
     private final DatabaseDescriptor descriptor;
     private final String sqlQuery;
     private final boolean needsTupleWrapping;
-    private final org.apache.wayang.core.api.Configuration configuration;
 
     private transient Connection connection;
     private transient SqlToStreamOperator.ResultSetIterator<Output> iterator;
 
     public SqlResultInputFormat(final DatabaseDescriptor descriptor, final String sqlQuery,
-            final boolean needsTupleWrapping, final org.apache.wayang.core.api.Configuration configuration) {
+            final boolean needsTupleWrapping) {
         this.descriptor = descriptor;
         this.sqlQuery = sqlQuery;
         this.needsTupleWrapping = needsTupleWrapping;
-        this.configuration = configuration;
     }
 
     @Override
@@ -61,8 +59,7 @@ public class SqlResultInputFormat<Output> extends RichInputFormat<Output, Generi
     public void open(final GenericInputSplit split) throws IOException {
         try {
             this.connection = this.descriptor.createJdbcConnection();
-            this.iterator = new SqlToStreamOperator.ResultSetIterator<>(connection, sqlQuery, this.needsTupleWrapping,
-                    configuration);
+            this.iterator = new SqlToStreamOperator.ResultSetIterator<>(connection, sqlQuery, this.needsTupleWrapping);
         } catch (final Exception e) {
             throw new IOException("Failed to open JDBC connection or execute SQL query.", e);
         }

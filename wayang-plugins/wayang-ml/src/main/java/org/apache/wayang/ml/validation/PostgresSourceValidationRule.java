@@ -44,40 +44,11 @@ public class PostgresSourceValidationRule extends ValidationRule {
             Float max = Arrays.stream(choices[i]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
 
             //Check if Postgres is to be chosen
-            if (choices[i][postgresIndex].equals(max)) {
+            //if (choices[i][postgresIndex].equals(max)) {
+            if (indexOfMax(choices[i]) == postgresIndex) {
                 //Check if Postgres has been chosen in one of the preceeding inputs
-                boolean isAllowed = true;
 
-                Tuple<Optional<Long>, Optional<Long>> inputIndexes = getInputIndexes((long) i, indexes);
-
-                float epsilon = Float.MIN_NORMAL;
-
-                // Check if this has inputs, aka is not a source
-                if (inputIndexes.getField0().isPresent()) {
-                    int leftIndex = inputIndexes.getField0().get().intValue();
-
-                    if (choices.length > leftIndex) {
-                        float maxLeft = Arrays.stream(choices[leftIndex]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
-
-                        if(Math.abs(choices[leftIndex][postgresIndex] - maxLeft) >= epsilon) {
-                            isAllowed = false;
-                        }
-                    }
-                }
-
-                if (inputIndexes.getField1().isPresent()) {
-                    int rightIndex = inputIndexes.getField1().get().intValue();
-
-                    if (choices.length > rightIndex) {
-                        float maxRight = Arrays.stream(choices[rightIndex]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
-                        if(Math.abs(choices[rightIndex][postgresIndex] - maxRight) >= epsilon) {
-                            isAllowed = false;
-                        }
-                    }
-                }
-
-                //One of the inputs is not postgres, so postgres as platform choice is disallowed
-                if (!isAllowed) {
+                if (!isPostgresAllowed(i, indexes, choices)) {
                     for (int j = 0; j < choices[i].length; j++) {
                         if (max.equals(choices[i][j])) {
                             /*
@@ -85,6 +56,7 @@ public class PostgresSourceValidationRule extends ValidationRule {
                              * choices later will take care of the rest
                              */
                             choices[i][j] = 0f;
+                            System.out.println("Nulling psql choice: " + Arrays.toString(choices[i]));
                             break;
                         }
                     }
@@ -115,5 +87,54 @@ public class PostgresSourceValidationRule extends ValidationRule {
         }
 
         return new Tuple<>(Optional.empty(), Optional.empty());
+    }
+
+    private boolean isPostgresAllowed(int index,
+            long[][][] indexes,
+            Float[][] choices
+    ) {
+        //Check if current operator choice is on PostgreSQL
+        if (indexOfMax(choices[index]) == postgresIndex) {
+            //Check for all children recursively
+            Tuple<Optional<Long>, Optional<Long>> inputIndexes = getInputIndexes((long) index, indexes);
+
+            // Recurse left
+            if (inputIndexes.getField0().isPresent()) {
+                int leftIndex = inputIndexes.getField0().get().intValue();
+                if (!isPostgresAllowed(leftIndex, indexes, choices)) {
+                    return false;
+                }
+            }
+
+            // Recurse right
+            if (inputIndexes.getField1().isPresent()) {
+                int rightIndex = inputIndexes.getField1().get().intValue();
+
+                if (!isPostgresAllowed(rightIndex, indexes, choices)) {
+                    return false;
+                }
+            }
+
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static int indexOfMax(Float[] array) {
+        if (array == null || array.length == 0) {
+            throw new IllegalArgumentException("Array must not be null or empty");
+        }
+        int maxIndex = 0;
+        Float maxValue = array[0];
+
+        for (int i = 1; i < array.length; i++) {
+            if (array[i] > maxValue) {
+                maxValue = array[i];
+                maxIndex = i;
+            }
+        }
+        return maxIndex;
     }
 }

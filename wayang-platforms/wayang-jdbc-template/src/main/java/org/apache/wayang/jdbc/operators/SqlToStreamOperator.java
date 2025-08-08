@@ -100,15 +100,14 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         public ResultSetIterator(
                 final Connection connection,
                 final String sqlQuery,
-                final boolean needsTupleWrapping,
-                final Configuration configuration) {
+                final boolean needsTupleWrapping) {
             try {
                 this.connection = connection;
                 this.statement = connection.createStatement(
                         java.sql.ResultSet.TYPE_FORWARD_ONLY,
                         java.sql.ResultSet.CONCUR_READ_ONLY);
-                connection.setAutoCommit(configuration.getOptionalBooleanProperty("wayang.jdbc.platform.autocommit").orElse(false));
-                this.statement.setFetchSize((int) configuration.getOptionalLongProperty("wayang.jdbc.platform.fetchsize").orElse(1000));
+                this.connection.setAutoCommit(true);
+                this.statement.setFetchSize(1);
                 this.resultSet = this.statement.executeQuery(sqlQuery);
                 this.needsTupleWrapping = needsTupleWrapping;
             } catch (final SQLException e) {
@@ -216,7 +215,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
         final ResultSetIterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(),
-                boundaryOperator instanceof JoinOperator, executor.getConfiguration());
+                boundaryOperator instanceof JoinOperator);
         final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
         final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false)
                 .onClose(resultSetIterator::close);

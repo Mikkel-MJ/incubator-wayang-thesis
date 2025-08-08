@@ -25,6 +25,7 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
+import org.apache.wayang.api.JavaPlanBuilder;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.util.ExplainUtils;
@@ -45,6 +46,8 @@ import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.basic.operators.*;
+import org.apache.wayang.core.types.DataSetType;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -61,12 +64,13 @@ import scala.collection.JavaConversions;
 
 public class Training {
 
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
         trainIMDB(args[0], args[1], args[2], args[3], true);
+        //trainPadding(args[0], args[1], args[2], true);
     }
 
     /*
@@ -147,6 +151,7 @@ public class Training {
 
                 System.out.println("Getting plan");
                 WayangPlan plan = IMDBJOBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
+                PrintUtils.print("Determinism test", plan);
                 //wayangContext.setLogLevel(Level.DEBUG);
 
                 IMDBJOBenchmark.setSources(plan, dataPath);
@@ -274,8 +279,94 @@ public class Training {
             config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
             config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
             config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("wayang.core.optimizer.pruning.topk", "100");
+            //config.setProperty("wayang.core.optimizer.pruning.topk", "100");
             plan = builder.build();
+            writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));
+            writer.newLine();
+            writer.flush();
+          } catch(Exception e) {
+              e.printStackTrace();
+          }
+    }
+
+    public static void trainPadding(
+        String platforms,
+        String dataPath,
+        String encodePath,
+        boolean skipConversions
+    ) {
+        try {
+            String[] jobArgs = {platforms, dataPath};
+            FileWriter fw = new FileWriter(encodePath, true);
+            BufferedWriter writer = new BufferedWriter(fw);
+
+            String[] jars = new String[]{
+                ReflectionUtils.getDeclaringJar(Training.class)
+            };
+
+            skipConversions = Boolean.valueOf(skipConversions);
+            /*
+            * TODO:
+            *  - Get DataQuanta's WayangPlan :done:
+            *  - Encode WayangPlan and print/store :done:
+            *  -- We need to run it once before, so that we can get card estimates :done:
+            *  - Call .buildInitialExecutionPlan for the WayangPlan :done:
+            *  - Encode the ExecutionPlan and print/store :done:
+            *  - Make cardinalities configurable
+            */
+
+            Configuration config = new Configuration();
+            config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty("spark.master", "spark://spark-cluster:7077");
+            config.setProperty("spark.app.name", "Padding Query");
+            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("spark.executor.cores", "8");
+            config.setProperty("wayang.flink.mode.run", "distribution");
+            config.setProperty("wayang.flink.parallelism", "8");
+            config.setProperty("wayang.flink.master", "flink-cluster");
+            config.setProperty("wayang.flink.port", "7071");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
+            config.setProperty("spark.executor.memory", "16g");
+            List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(platforms));
+            WayangContext context = new WayangContext(config);
+            plugins.stream().forEach(plug -> context.register(plug));
+
+            TextFileSource customerText = new TextFileSource(dataPath + "customer.tbl", "UTF-8");
+
+            // Initial identity operator
+            MapOperator<String, String> currentOperator = new MapOperator<>(
+                    line -> line,
+                    String.class,
+                    String.class
+            );
+
+            // Connect source to the first operator
+            customerText.connectTo(0, currentOperator, 0);
+
+            // Chain 249 more identity operators
+            for (int i = 1; i < 125; i++) {
+                MapOperator<String, String> nextOperator = new MapOperator<>(
+                        line -> line,
+                        String.class,
+                        String.class
+                );
+                currentOperator.connectTo(0, nextOperator, 0);
+                currentOperator = nextOperator; // advance the chain
+            }
+
+            // Final sink
+            LocalCallbackSink<String> sink = LocalCallbackSink.createStdoutSink(String.class);
+            currentOperator.connectTo(0, sink, 0);
+
+            // Build plan
+            WayangPlan plan = new WayangPlan(sink);
+
+            Job wayangJob = context.createJob("", plan, jars);
+            ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
+            OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+            TreeNode wayangNode = TreeEncoder.encode(plan);
+            TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
+            //System.out.println(exPlan.toExtensiveString());
             writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));
             writer.newLine();
             writer.flush();

@@ -90,7 +90,7 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
         DatabaseDescriptor descriptor = producerPlatform.createDatabaseDescriptor(flinkExecutor.getConfiguration());
 
         DataSet<Output> resultSetDataSet = flinkExecutor.fee
-            .createInput(new SqlResultInputFormat(descriptor, input.getSqlQuery(), boundaryOperator instanceof JoinOperator, flinkExecutor.getConfiguration()), typeInfo)
+            .createInput(new SqlResultInputFormat(descriptor, input.getSqlQuery(), boundaryOperator instanceof JoinOperator), typeInfo)
             .setParallelism(flinkExecutor.fee.getParallelism());
 
         output.accept(resultSetDataSet, flinkExecutor);
