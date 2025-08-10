@@ -200,7 +200,6 @@ public class TreeNode extends BinaryTree<long[]>{
         HashMap<String, Integer> operatorMappings = OneHotMappings.getInstance().getOperatorMapping();
         int platformPosition = -1;
         System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
-                    /*
         platformPosition = ArrayUtils.indexOf(node.encoded, 1);
         String platform = "";
 
