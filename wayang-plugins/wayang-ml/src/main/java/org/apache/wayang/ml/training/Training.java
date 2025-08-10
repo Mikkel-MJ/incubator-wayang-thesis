@@ -151,7 +151,6 @@ public class Training {
 
                 System.out.println("Getting plan");
                 WayangPlan plan = IMDBJOBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
-                PrintUtils.print("Determinism test", plan);
                 //wayangContext.setLogLevel(Level.DEBUG);
 
                 IMDBJOBenchmark.setSources(plan, dataPath);

@@ -345,6 +345,7 @@ public class LSBO {
                 // Now set the platforms on the wayangPlan
                 encoded = encoded.withPlatformChoicesFrom(decoded);
                 WayangPlan decodedPlan = TreeDecoder.decode(encoded);
+                System.out.println("DECODED");
                 System.out.flush();
 
                 resultPlans.add(decodedPlan);

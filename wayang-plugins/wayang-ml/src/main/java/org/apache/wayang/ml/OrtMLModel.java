@@ -278,11 +278,6 @@ public class OrtMLModel {
         long featureDims = input1Dims[1];
         Instant start = Instant.now();
 
-        System.out.println("[ML Input] indexDims: " + indexDims);
-        System.out.println("[ML Input] featureDims: " + featureDims);
-        System.out.println("[ML Input] input1Dims: " + Arrays.toString(input1Dims));
-        System.out.println("[ML Input] input2Dims: " + Arrays.toString(input2Dims));
-
         float[][] inputValueStructure = new float[(int) featureDims][(int) input1Dims[2]];
         //long[][][] inputIndexStructure = new long[1][indexDims][1];
         long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
@@ -369,8 +364,6 @@ public class OrtMLModel {
             int valueDim = resultTensor[0][0].length;
             int indexDim = input.field1.get(0).length;
 
-            System.out.println("[ML RESULT] valueDim: " + valueDim);
-            System.out.println("[ML RESULT] indexDim: " + indexDim);
             // Only handle one tree
             //assert valueDim == indexDim : "Index dim " + indexDim + " != " + valueDim + " valueDim";
 

@@ -78,8 +78,6 @@ public class Encode {
             FileWriter fw = new FileWriter(encodePath, true);
             BufferedWriter writer = new BufferedWriter(fw);
 
-            System.out.println(job);
-
             Constructor<?> cnstr = job.getDeclaredConstructors()[0];
             GeneratableJob createdJob = (GeneratableJob) cnstr.newInstance();
             String[] jobArgs = {platforms, dataPath};
@@ -115,8 +113,6 @@ public class Encode {
         optimizationRound.stop("Create Initial Execution Plan", "Enumerate");
 
         Collection<PlanImplementation> planImplementations = comprehensiveEnumeration.getPlanImplementations();
-
-        System.out.println("Encoding " + planImplementations.size() + " execution plans");
 
         for (PlanImplementation planImplementation : planImplementations) {
             try {

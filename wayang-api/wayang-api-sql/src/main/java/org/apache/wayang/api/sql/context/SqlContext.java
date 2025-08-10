@@ -149,8 +149,6 @@ public class SqlContext extends WayangContext {
 
         //final RelNode converted = optimizer.prepare(optimized, rulesList);
 
-        PrintUtils.print("Optimized CalciteRel", optimized);
-
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
 
         visitor.visit(optimized, 0, null);

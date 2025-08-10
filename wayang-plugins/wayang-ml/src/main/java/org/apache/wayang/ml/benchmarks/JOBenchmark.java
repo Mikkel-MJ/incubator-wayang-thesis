@@ -196,7 +196,6 @@ public class JOBenchmark {
                 writer.flush();
                 writer.close();&*/
 
-                System.out.println(modelType);
                 if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                     System.out.println("Executing query " + args[3]);
                     wayangContext.execute(plan, jars);

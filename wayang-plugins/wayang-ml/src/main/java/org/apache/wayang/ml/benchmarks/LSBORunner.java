@@ -87,8 +87,8 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
@@ -134,11 +134,12 @@ public class LSBORunner {
         config.setProperty("wayang.flink.port", "7071");
         config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
         config.setProperty("wayang.ml.experience.enabled", "false");
+        /*
         config.setProperty(
             "wayang.core.optimizer.pruning.strategies",
             "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
         );
-        config.setProperty("wayang.core.optimizer.pruning.topk", "10000");
+        config.setProperty("wayang.core.optimizer.pruning.topk", "10000");*/
 
         String[] jars = ArrayUtils.addAll(
             ReflectionUtils.getAllJars(LSBORunner.class),

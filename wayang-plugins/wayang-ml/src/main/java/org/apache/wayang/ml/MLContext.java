@@ -153,7 +153,6 @@ public class MLContext extends WayangContext {
                 resultTuple.field1.toString()
             );
 
-            System.out.println("Sanity check: " + platformPlan.isSane());
             this.execute(platformPlan, udfJars);
         } catch (Exception e) {
             e.printStackTrace();

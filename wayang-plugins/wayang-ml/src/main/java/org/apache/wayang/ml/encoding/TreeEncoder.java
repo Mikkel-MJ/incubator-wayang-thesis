@@ -322,7 +322,6 @@ public class TreeEncoder implements Encoder {
             TreeNode next = traverse(producer, visited, ignoreConversions);
 
             if (operator.isConversion() && ignoreConversions) {
-                System.out.println("Ignored conversion: " + operator);
                 return next;
             }
 

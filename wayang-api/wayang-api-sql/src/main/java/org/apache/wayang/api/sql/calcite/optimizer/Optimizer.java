@@ -291,7 +291,7 @@ public class Optimizer {
         Program logicalRules = Programs.heuristicJoinOrder(
             rules,
             false,
-            6
+            0
         );
 
         return logicalRules.run(
