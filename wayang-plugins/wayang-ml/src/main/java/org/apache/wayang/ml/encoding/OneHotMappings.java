@@ -60,7 +60,7 @@ public class OneHotMappings {
           .filter(operator -> operator.getName().contains("org.apache.wayang.basic.operators") || operator.getName().contains("org.apache.wayang.core.plan.wayangplan"))
           .distinct()
           .sorted(Comparator.comparing(c -> c.getName()))
-          .forEach(entry -> mappings.put(entry.getName(), mappings.size()));
+          .forEachOrdered(entry -> mappings.put(entry.getName(), mappings.size()));
 
         // add a null operator for encoding
         mappings.put(null, mappings.size());
@@ -74,7 +74,7 @@ public class OneHotMappings {
         Platforms.getPlatforms()
         .stream()
         .sorted(Comparator.comparing(c -> c.getName()))
-        .forEach(entry -> mappings.put(entry.getName(), mappings.size()));
+        .forEachOrdered(entry -> mappings.put(entry.getName(), mappings.size()));
 
         //mappings.forEach((k,v) -> System.out.println(k + ": " + v));
 

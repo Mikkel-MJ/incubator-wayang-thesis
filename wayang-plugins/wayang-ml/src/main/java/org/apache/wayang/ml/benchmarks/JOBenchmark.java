@@ -46,6 +46,7 @@ import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.util.ExplainUtils;
+import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.apps.tpch.queries.Query1Wayang;
 import org.apache.wayang.api.DataQuanta;
@@ -75,8 +76,8 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         try {

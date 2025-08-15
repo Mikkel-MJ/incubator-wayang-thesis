@@ -96,7 +96,8 @@ public class OrtMLModel {
 
             options.setInterOpNumThreads(16);
             options.setIntraOpNumThreads(16);
-            options.setSessionLogLevel(OrtLoggingLevel.ORT_LOGGING_LEVEL_VERBOSE);
+            options.setDeterministicCompute(true);
+            //options.setSessionLogLevel(OrtLoggingLevel.ORT_LOGGING_LEVEL_VERBOSE);
             //options.addCUDA(cudaProviderOptions);
             this.session = env.createSession(filePath, options);
         }
@@ -312,11 +313,6 @@ public class OrtMLModel {
 
         OnnxTensor tensorValues = OnnxTensor.createTensor(env, new float[][][]{inputValueStructure});
         OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
-        long[][][] sliced = new long[1][45][1];
-
-        for (int i = 0; i < 45; i++) {
-            sliced[0][i][0] = inputIndexStructure[0][i][0];
-        }
 
         OrtTensorDecoder decoder = new OrtTensorDecoder();
 

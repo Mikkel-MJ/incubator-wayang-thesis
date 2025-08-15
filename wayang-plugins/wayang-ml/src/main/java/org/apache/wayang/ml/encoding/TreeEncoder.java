@@ -278,7 +278,7 @@ public class TreeEncoder implements Encoder {
         }
 
         // Add for later reconstruction in TreeDecoder
-        Collection<Operator> inputs = Stream.of(current.getAllInputs())
+        List<Operator> inputs = Stream.of(current.getAllInputs())
                 .filter(input -> input.getOccupant() != null)
                 .map(input -> input.getOccupant().getOwner()).collect(Collectors.toList());
 
@@ -291,6 +291,7 @@ public class TreeEncoder implements Encoder {
                     .map(input -> input.getOwner());
             })
             .collect(Collectors.toList());*/
+        System.out.println("Inputs: " + inputs);
 
         for (Operator input : inputs) {
             TreeNode next = traverse(input, visited);

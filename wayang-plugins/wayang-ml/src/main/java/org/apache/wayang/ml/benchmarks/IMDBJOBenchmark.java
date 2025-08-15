@@ -22,6 +22,7 @@ import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.types.DataUnitType;
 import org.apache.wayang.apps.imdb.data.*;
+import java.util.Comparator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,7 +31,9 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Arrays;
+import java.util.stream.Stream;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -143,7 +146,12 @@ public class IMDBJOBenchmark {
             }
         });*/
 
-        final Collection<Operator> sources = plan.collectReachableTopLevelSources();
+        final List<Operator> sources = plan.collectReachableTopLevelSources()
+            .stream()
+            .map(op -> (TableSource) op)
+            .sorted(Comparator.comparing(op -> op.getTableName()))
+            .collect(Collectors.toList());
+
         boolean isSet = false;
 
         for (Operator op : sources) {
@@ -231,6 +239,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Changing " + tableName);
                         break;
                     case "company_name":
                         parser = new MapOperator<>(
@@ -244,6 +253,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Changing " + tableName);
                         break;
                     case "info_type":
                         parser = new MapOperator<>(
@@ -257,6 +267,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Changing " + tableName);
                         break;
                     /*
                     case "movie_info":
@@ -323,6 +334,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Changing " + tableName);
                         break;
                     default:
                         break;
