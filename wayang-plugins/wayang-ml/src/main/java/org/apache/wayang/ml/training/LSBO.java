@@ -157,6 +157,9 @@ public class LSBO {
                 execTime = Duration.between(start, end).toMillis();
                 */
 
+                // REMOVE THIS FOR LIVE, ONLY HERE FOR TESTING
+                ExecutionPlan execPlan = context.buildInitialExecutionPlan("Test", sampledPlan, udfJars);
+
                 execTime = (long) new Random().ints(1, 100_000).findFirst().getAsInt();
 
                 encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + execTime;
@@ -319,10 +322,11 @@ public class LSBO {
                 long[][] platformChoices = PlatformChoiceValidator.validate(
                     choices,
                     indexes,
-                    encoded,
+                    encoded
+                    /*
                     new BitmaskValidationRule(),
                     new OperatorValidationRule(),
-                    new PostgresSourceValidationRule()
+                    new PostgresSourceValidationRule()*/
                 );
 
                 /*
