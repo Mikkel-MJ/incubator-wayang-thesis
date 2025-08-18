@@ -147,7 +147,7 @@ public class TrainingCandidates {
                     "wayang.core.optimizer.pruning.strategies",
                     "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
                 );
-                config.setProperty("wayang.core.optimizer.pruning.topk", "10000");
+                config.setProperty("wayang.core.optimizer.pruning.topk", "100");
 
                 final MLContext wayangContext = new MLContext(config);
                 plugins.stream().forEach(plug -> wayangContext.register(plug));
@@ -165,30 +165,31 @@ public class TrainingCandidates {
                 OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
                 OneHotMappings.encodeIds = false;
 
+                System.out.println("Found " + executionPlans.size() + " executionPlans");
+
                 final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
                 (producerTask, channel, consumerTask) -> false;
-                ExecutionPlan exPlan = executionPlans.stream()
-                    .sorted((o1, o2)-> ((Double)o1.getSquashedCostEstimate()).compareTo(o2.getSquashedCostEstimate()))
+                Tuple2<ExecutionPlan, Long> planWithCost = executionPlans.stream()
+                    .sorted((o1, o2)-> ((Long)o1.getTimeEstimate().getUpperEstimate()).compareTo(o2.getTimeEstimate().getUpperEstimate()))
                     .skip(candidateIndex)
                     .limit(1)
                     .map(cand -> {
                         final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(cand);
                         final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, stageSplittingCriterion);
 
-                        return executionPlan;
+                        return new Tuple2<>(executionPlan, cand.getTimeEstimate().getLowerEstimate());
                     })
                     .findFirst()
                     .get();
 
-                HashMap<Operator, Collection<ExecutionTask>> tree = new HashMap<>();
-
+                System.out.println(ExplainUtils.parsePlan(planWithCost.field0, true));
                 OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
                 TreeNode wayangNode = TreeEncoder.encode(plan);
-                TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
+                TreeNode execNode = TreeEncoder.encode(planWithCost.field0, skipConversions).withIdsFrom(wayangNode);
                 //System.out.println(exPlan.toExtensiveString());
                 //System.out.println(execNode.toString());
 
-                writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));
+                writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), planWithCost.field1.intValue()));
                 writer.newLine();
                 writer.flush();
               } catch(WayangException e) {

@@ -313,8 +313,6 @@ public class Job extends OneTimeExecutable {
                 this.logger.warn("Failed to initialize monitor: {}", e);
             }
 
-            System.out.println("EX Sanity check: " + executionPlan.isSane());
-
             // Take care of the execution.
             Instant start = Instant.now();
             while (!this.execute(executionPlan, executionId)) {

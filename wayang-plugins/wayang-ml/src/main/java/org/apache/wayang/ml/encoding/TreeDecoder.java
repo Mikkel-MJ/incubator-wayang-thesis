@@ -109,14 +109,12 @@ public class TreeDecoder {
                 operator.get().addTargetPlatform(platform);
             //}
             //
-            System.out.println("Set op target platform: " + operator + " - " + platform);
 
             Collection<Operator> children = Stream.of(operator.get().getAllInputs())
                 .filter(input -> input.getOccupant() != null)
                 .map(input -> input.getOccupant().getOwner())
                 .collect(Collectors.toList());
 
-            System.out.println("Operator: " + operator + " - " + children);
         } else {
             logger.info("Operator couldn't be recovered, potentially conversion operator: {}", node);
 

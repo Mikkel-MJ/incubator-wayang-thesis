@@ -291,7 +291,6 @@ public class TreeEncoder implements Encoder {
                     .map(input -> input.getOwner());
             })
             .collect(Collectors.toList());*/
-        System.out.println("Inputs: " + inputs);
 
         for (Operator input : inputs) {
             TreeNode next = traverse(input, visited);

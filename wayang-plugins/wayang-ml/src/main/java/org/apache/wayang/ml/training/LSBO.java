@@ -65,6 +65,7 @@ import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -149,10 +150,14 @@ public class LSBO {
             long execTime = Long.MAX_VALUE;
 
             try {
+                /*
                 Instant start = Instant.now();
                 context.execute(sampledPlan, udfJars);
                 Instant end = Instant.now();
                 execTime = Duration.between(start, end).toMillis();
+                */
+
+                execTime = (long) new Random().ints(1, 100_000).findFirst().getAsInt();
 
                 encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + execTime;
                 //System.out.println(encodedInput);

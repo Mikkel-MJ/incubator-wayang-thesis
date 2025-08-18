@@ -217,6 +217,7 @@ public class IMDBJOBenchmark {
                         break;
                     case "aka_name":
                         parser = new MapOperator<>(
+                        System.out.println("Changing " + tableName);
                             (line) -> {
                                 return new Record(AkaName.toArray(AkaName.parseCsv(line)));
                             },
@@ -239,7 +240,6 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
-                        System.out.println("Changing " + tableName);
                         break;
                     case "company_name":
                         parser = new MapOperator<>(
@@ -253,7 +253,6 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
-                        System.out.println("Changing " + tableName);
                         break;
                     case "info_type":
                         parser = new MapOperator<>(
@@ -267,7 +266,6 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
-                        System.out.println("Changing " + tableName);
                         break;
                     /*
                     case "movie_info":
@@ -334,7 +332,6 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
-                        System.out.println("Changing " + tableName);
                         break;
                     default:
                         break;
