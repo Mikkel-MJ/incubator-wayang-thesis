@@ -69,8 +69,8 @@ public class Training {
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
-        trainIMDB(args[0], args[1], args[2], args[3], true);
-        //trainPadding(args[0], args[1], args[2], true);
+        //trainIMDB(args[0], args[1], args[2], args[3], true);
+        trainPadding(args[0], args[1], args[2], true);
     }
 
     /*

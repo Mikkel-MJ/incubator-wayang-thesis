@@ -150,17 +150,17 @@ public class LSBO {
             long execTime = Long.MAX_VALUE;
 
             try {
-                /*
                 Instant start = Instant.now();
                 context.execute(sampledPlan, udfJars);
                 Instant end = Instant.now();
                 execTime = Duration.between(start, end).toMillis();
-                */
 
+                /*
                 // REMOVE THIS FOR LIVE, ONLY HERE FOR TESTING
                 ExecutionPlan execPlan = context.buildInitialExecutionPlan("Test", sampledPlan, udfJars);
 
                 execTime = (long) new Random().ints(1, 100_000).findFirst().getAsInt();
+                */
 
                 encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + execTime;
                 //System.out.println(encodedInput);
