@@ -605,7 +605,16 @@ public class PlanEnumerator {
             this.logger.warn("No implementations enumerated after concatenating {}.", concatenationActivator.outputSlot);
             if (this.isTopLevel()) {
                 throw new WayangException(String.format("No implementations that concatenate %s with %s.",
-                        concatenationActivator.outputSlot.getOwner().getTargetPlatforms(),
+                        ((OperatorAlternative) concatenationActivator.outputSlot.getOwner())
+                            .getAlternatives()
+                            .stream()
+                            .map(
+                                alt -> alt.getContainedOperators()
+                                .stream()
+                                .map(op -> op)
+                                .collect(Collectors.toList())
+                            )
+                            .collect(Collectors.toList()),
                         concatenationActivator.outputSlot.getOccupiedSlots()
                             .stream()
                             .map(slot -> ((OperatorAlternative) slot.getOwner())
