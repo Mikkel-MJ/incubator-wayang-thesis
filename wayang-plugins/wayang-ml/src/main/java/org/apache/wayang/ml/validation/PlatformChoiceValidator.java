@@ -59,7 +59,9 @@ public class PlatformChoiceValidator {
     public static long[][] getPlatformChoices(Float[][] transposed) {
         return Arrays.stream(transposed)
             .map(row -> {
-                Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
+                Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(-Float.MAX_VALUE);
+                System.out.println("Max: " + max);
+                System.out.println("Row: " + Arrays.toString(row));
                 long[] result = Arrays.stream(row)
                         .mapToLong(v -> v.equals(max) ? 1L : 0L)
                         .toArray();

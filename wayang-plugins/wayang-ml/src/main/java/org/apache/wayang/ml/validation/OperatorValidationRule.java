@@ -41,14 +41,14 @@ public class OperatorValidationRule extends ValidationRule {
 
     public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators
-        for(int i = 1; i < choices.length; i++) {
+        for(int i = 1; i < tree.getNumberOfNodes(); i++) {
             TreeNode node = (TreeNode) tree.getNode(i);
 
             if (node != null && !node.isNullOperator()) {
 
                 //Prevent TextFileSources from being in postgres
                 if (node.operator instanceof TextFileSource) {
-                    choices[i][postgresIndex] = 0f;
+                    choices[i][postgresIndex] = -Float.MAX_VALUE;
                 }
 
                 //Prevent TextFileSources from being outside of postgres

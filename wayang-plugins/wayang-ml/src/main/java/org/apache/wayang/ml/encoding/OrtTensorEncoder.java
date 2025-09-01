@@ -93,7 +93,7 @@ public class OrtTensorEncoder {
         }
 
         if (root.isLeaf()) {
-            //acc.add(new long[]{root.encoded[0], 0, 0});
+            acc.add(new long[]{root.encoded[0], 0, 0});
             //acc.add(new long[]{root.encoded[0]});
 
             return;
@@ -128,7 +128,10 @@ public class OrtTensorEncoder {
         //orderedNodes.add(root);
 
         if (root.isNullOperator()) {
-            return new TreeNode(new long[]{0}, null, null);
+            //return new TreeNode(new long[]{0}, null, null);
+            return new TreeNode(
+                new long[]{idx}, null, null
+            );
         }
 
         if (root.isLeaf()) {

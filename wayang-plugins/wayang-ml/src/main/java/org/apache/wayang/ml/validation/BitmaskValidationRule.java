@@ -43,7 +43,7 @@ public class BitmaskValidationRule extends ValidationRule {
         //Start at 1, 0th platform choice is for null operators
         for(int i = 1; i < choices.length; i++) {
             for (Integer disallowedId : disallowed) {
-                    choices[i][disallowedId] = 0f;
+                    choices[i][disallowedId] = -Float.MAX_VALUE;
             }
             /*
             for (int j = 0; j < choices[i].length; j++) {

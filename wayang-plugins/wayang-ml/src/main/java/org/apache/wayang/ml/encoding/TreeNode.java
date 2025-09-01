@@ -199,8 +199,8 @@ public class TreeNode extends BinaryTree<long[]>{
         HashMap<String, Integer> platformMappings = OneHotMappings.getInstance().getPlatformsMapping();
         HashMap<String, Integer> operatorMappings = OneHotMappings.getInstance().getOperatorMapping();
         int platformPosition = -1;
-        System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
         platformPosition = ArrayUtils.indexOf(node.encoded, 1);
+        System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
         String platform = "";
 
         assert platformPosition >= 0;
@@ -239,15 +239,17 @@ public class TreeNode extends BinaryTree<long[]>{
     }
 
     public void softmax() {
-        // allow: 0 3 5 6
-        // [0, 0, 0, 0, 0, 0, 0, 0, 0]
-        Set<Integer> disallowed = Set.of(1, 2, 4, 7, 8);
-
         if (this.encoded == null || this.encoded == OneHotEncoder.encodeNullOperator()) {
             return;
         }
 
+        // All set to 1, aka null operator
+        if (Arrays.stream(this.encoded).sum() == 9) {
+           return;
+        }
 
+
+        System.out.println("Before: " + Arrays.toString(this.encoded));
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
 
@@ -283,11 +285,26 @@ public class TreeNode extends BinaryTree<long[]>{
         nodes.add(new TreeNode());
 
         this.traverse((node) -> {
-            if (!((TreeNode) node).isNullOperator()) {
+            //if (!((TreeNode) node).isNullOperator()) {
                 nodes.add((TreeNode) node);
-            }
+            //}
         });
 
         return nodes.get(index);
+    }
+
+    public int getNumberOfNodes() {
+        List<TreeNode> nodes = new ArrayList<>();
+
+        //Add null operator
+        nodes.add(new TreeNode());
+
+        this.traverse((node) -> {
+            //if (!((TreeNode) node).isNullOperator()) {
+                nodes.add((TreeNode) node);
+            //}
+        });
+
+        return nodes.size();
     }
 }

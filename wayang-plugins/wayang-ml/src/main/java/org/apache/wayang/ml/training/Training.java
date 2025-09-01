@@ -69,8 +69,8 @@ public class Training {
 
     public static void main(String[] args) {
         //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
-        //trainIMDB(args[0], args[1], args[2], args[3], true);
-        trainPadding(args[0], args[1], args[2], true);
+        trainIMDB(args[0], args[1], args[2], args[3], true);
+        //trainPadding(args[0], args[1], args[2], true);
     }
 
     /*
@@ -140,11 +140,12 @@ public class Training {
                 config.setProperty("wayang.flink.port", "7071");
                 config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
                 config.setProperty("wayang.ml.experience.enabled", "false");
+                /*
                 config.setProperty(
                     "wayang.core.optimizer.pruning.strategies",
                     "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
                 );
-                config.setProperty("wayang.core.optimizer.pruning.topk", "10000");
+                config.setProperty("wayang.core.optimizer.pruning.topk", "10000");*/
 
                 final MLContext wayangContext = new MLContext(config);
                 plugins.stream().forEach(plug -> wayangContext.register(plug));
@@ -178,7 +179,7 @@ public class Training {
                 OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
                 TreeNode wayangNode = TreeEncoder.encode(plan);
                 TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
-                //System.out.println(exPlan.toExtensiveString());
+                ExplainUtils.parsePlan(exPlan, false);
                 //System.out.println(execNode.toString());
 
                 writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));

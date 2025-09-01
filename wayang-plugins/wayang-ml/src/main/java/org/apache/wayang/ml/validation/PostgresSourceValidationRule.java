@@ -41,22 +41,22 @@ public class PostgresSourceValidationRule extends ValidationRule {
     public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators
         for(int i = 1; i < choices.length; i++) {
-            Float max = Arrays.stream(choices[i]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
+            Float max = Arrays.stream(choices[i]).max(Comparator.naturalOrder()).orElse(-Float.MAX_VALUE);
 
             //Check if Postgres is to be chosen
             //if (choices[i][postgresIndex].equals(max)) {
             if (indexOfMax(choices[i]) == postgresIndex) {
                 //Check if Postgres has been chosen in one of the preceeding inputs
 
-                if (!isPostgresAllowed(i, indexes, choices)) {
+                if (!isPostgresAllowed(i, indexes, choices, tree)) {
                     for (int j = 0; j < choices[i].length; j++) {
                         if (max.equals(choices[i][j])) {
                             /*
                              * Set this choice to zero, identifying the platform
                              * choices later will take care of the rest
                              */
-                            choices[i][j] = 0f;
-                            System.out.println("Nulling psql choice: " + Arrays.toString(choices[i]));
+                            choices[i][j] = -Float.MAX_VALUE;
+                            System.out.println("Nulling psql choice at index " + i + ": " + Arrays.toString(choices[i]));
                             break;
                         }
                     }
@@ -70,7 +70,8 @@ public class PostgresSourceValidationRule extends ValidationRule {
      */
     private Tuple<Optional<Long>, Optional<Long>> getInputIndexes(
         long index,
-        long[][][] indexes
+        long[][][] indexes,
+        TreeNode tree
     ) {
         long[] flatIndexTree = Arrays.stream(indexes[0]).reduce(Longs::concat).orElseThrow();
         for (int i = 0; i < flatIndexTree.length; i+=3) {
@@ -79,8 +80,11 @@ public class PostgresSourceValidationRule extends ValidationRule {
             final long rightId = flatIndexTree[i+2];
 
             if (rootId == index) {
-                Optional<Long> left = leftId == 0 ? Optional.empty() : Optional.of(leftId);
-                Optional<Long> right = rightId == 0 ? Optional.empty() : Optional.of(rightId);
+                Optional<Long> left = (leftId == 0 || tree.getNode((int) leftId).isNullOperator()) ? Optional.empty() : Optional.of(leftId);
+                Optional<Long> right = (rightId == 0 || tree.getNode((int) rightId).isNullOperator()) ? Optional.empty() : Optional.of(rightId);
+
+                //Optional<Long> left = leftId == 0 ? Optional.empty() : Optional.of(leftId);
+                //Optional<Long> right = rightId == 0 ? Optional.empty() : Optional.of(rightId);
 
                 return new Tuple<>(left, right);
             }
@@ -91,17 +95,18 @@ public class PostgresSourceValidationRule extends ValidationRule {
 
     private boolean isPostgresAllowed(int index,
             long[][][] indexes,
-            Float[][] choices
+            Float[][] choices,
+            TreeNode tree
     ) {
         //Check if current operator choice is on PostgreSQL
         if (indexOfMax(choices[index]) == postgresIndex) {
             //Check for all children recursively
-            Tuple<Optional<Long>, Optional<Long>> inputIndexes = getInputIndexes((long) index, indexes);
+            Tuple<Optional<Long>, Optional<Long>> inputIndexes = getInputIndexes((long) index, indexes, tree);
 
             // Recurse left
             if (inputIndexes.getField0().isPresent()) {
                 int leftIndex = inputIndexes.getField0().get().intValue();
-                if (!isPostgresAllowed(leftIndex, indexes, choices)) {
+                if (!isPostgresAllowed(leftIndex, indexes, choices, tree)) {
                     return false;
                 }
             }
@@ -110,7 +115,7 @@ public class PostgresSourceValidationRule extends ValidationRule {
             if (inputIndexes.getField1().isPresent()) {
                 int rightIndex = inputIndexes.getField1().get().intValue();
 
-                if (!isPostgresAllowed(rightIndex, indexes, choices)) {
+                if (!isPostgresAllowed(rightIndex, indexes, choices, tree)) {
                     return false;
                 }
             }

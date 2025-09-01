@@ -378,7 +378,7 @@ public class OrtMLModel {
             start = Instant.now();
             TreeNode decoded = decoder.decode(decoderInput);
 
-            decoded.softmax();
+            //decoded.softmax();
             end = Instant.now();
 
             execTime = Duration.between(start, end).toMillis();
