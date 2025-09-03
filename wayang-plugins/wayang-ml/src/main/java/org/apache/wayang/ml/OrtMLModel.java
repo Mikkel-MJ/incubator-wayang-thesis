@@ -283,6 +283,7 @@ public class OrtMLModel {
         //long[][][] inputIndexStructure = new long[1][indexDims][1];
         long[][][] inputIndexStructure = new long[1][(int) input2Dims[1]][(int) input2Dims[2]];
 
+
         //inputValueStructure = input1.field0.toArray(input1Left);
         for (int i = 0; i < input.field0.get(0).length; i++) {
             for (int j = 0; j < input.field0.get(0)[i].length; j++) {
@@ -293,7 +294,6 @@ public class OrtMLModel {
                 ).floatValue();
             }
         }
-
         /*
         long[][] inputIndexStructure = input.field1.get(0);
         */
@@ -345,16 +345,15 @@ public class OrtMLModel {
                 this.configuration.getStringProperty("wayang.ml.optimizations.file")
             );
 
-
             start = Instant.now();
 
             long[][] platformChoices = PlatformChoiceValidator.validate(
                 resultTensor,
                 inputIndexStructure,
-                encoded,
+                encoded/*,
                 new BitmaskValidationRule(),
                 new OperatorValidationRule(),
-                new PostgresSourceValidationRule()
+                new PostgresSourceValidationRule()*/
             );
 
             int valueDim = resultTensor[0][0].length;

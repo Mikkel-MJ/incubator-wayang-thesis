@@ -47,6 +47,7 @@ public class PlatformChoiceValidator {
         int rows = tensor[0].length;
         Float[][] transposed = new Float[cols][rows];
 
+
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 transposed[j][i] = tensor[0][i][j];
@@ -60,8 +61,6 @@ public class PlatformChoiceValidator {
         return Arrays.stream(transposed)
             .map(row -> {
                 Float max = Arrays.stream(row).max(Comparator.naturalOrder()).orElse(-Float.MAX_VALUE);
-                System.out.println("Max: " + max);
-                System.out.println("Row: " + Arrays.toString(row));
                 long[] result = Arrays.stream(row)
                         .mapToLong(v -> v.equals(max) ? 1L : 0L)
                         .toArray();

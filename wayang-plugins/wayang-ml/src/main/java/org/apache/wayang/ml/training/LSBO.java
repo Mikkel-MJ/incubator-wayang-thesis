@@ -108,7 +108,7 @@ public class LSBO {
 
             WayangContext context = new WayangContext(config);
             plugins.stream().forEach(plug -> context.register(plug));
-            Job samplingJob = context.createJob("sampling", plan, "");
+            Job samplingJob = context.createJob("sampling", plan, udfJars);
             //ExplainUtils.parsePlan(plan, false);
             samplingJob.estimateKeyFigures();
             //ExecutionPlan exPlan = samplingJob.buildInitialExecutionPlan();
@@ -159,7 +159,7 @@ public class LSBO {
                 // REMOVE THIS FOR LIVE, ONLY HERE FOR TESTING
                 ExecutionPlan execPlan = context.buildInitialExecutionPlan("Test", sampledPlan, udfJars);
 
-                execTime = (long) new Random().ints(1, 100_000).findFirst().getAsInt();
+                execTime = (long) new Random().ints(10_000, 100_000).findFirst().getAsInt();
                 */
 
                 encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + execTime;
@@ -284,7 +284,6 @@ public class LSBO {
         }
     }
 
-
     public static List<WayangPlan> decodePlans(List<String> plans, TreeNode encoded) {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input = OrtTensorEncoder.encode(encoded);
         ArrayList<WayangPlan> resultPlans = new ArrayList<>();
@@ -322,8 +321,7 @@ public class LSBO {
                 long[][] platformChoices = PlatformChoiceValidator.validate(
                     choices,
                     indexes,
-                    encoded
-                    /*
+                    encoded/*,
                     new BitmaskValidationRule(),
                     new OperatorValidationRule(),
                     new PostgresSourceValidationRule()*/
@@ -346,14 +344,15 @@ public class LSBO {
                 ArrayList<long[][]> mlResult = new ArrayList<long[][]>();
                 mlResult.add(platformChoices);
                 ArrayList<long[][]> indexList = new ArrayList<long[][]>();
-                indexList.add(input.field1.get(0));
+                //indexList.add(input.field1.get(0));
+                indexList.add(indexes[0]);
+                //
                 Tuple<ArrayList<long[][]>, ArrayList<long[][]>> decoderInput = new Tuple<>(mlResult, indexList);
                 TreeNode decoded = decoder.decode(decoderInput);
-                decoded.softmax();
 
                 // Now set the platforms on the wayangPlan
-                encoded = encoded.withPlatformChoicesFrom(decoded);
-                WayangPlan decodedPlan = TreeDecoder.decode(encoded);
+                TreeNode reconstructed = encoded.withPlatformChoicesFrom(decoded);
+                WayangPlan decodedPlan = TreeDecoder.decode(reconstructed);
                 System.out.println("DECODED");
                 System.out.flush();
 

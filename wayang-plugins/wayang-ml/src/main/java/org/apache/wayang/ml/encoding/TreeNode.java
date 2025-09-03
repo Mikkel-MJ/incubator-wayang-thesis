@@ -184,20 +184,34 @@ public class TreeNode extends BinaryTree<long[]>{
 
     public TreeNode withPlatformChoicesFrom(TreeNode node) {
         if (this.isNullOperator()) {
+            System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
             return this;
         }
 
         if (this.encoded == OneHotEncoder.encodeNullOperator()) {
+            System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
             return this;
         }
 
         if (node.encoded == null) {
+            System.out.println("Encoding while choices: " + Arrays.toString(this.encoded));
             assert this.encoded != null;
             return this;
         }
-
         HashMap<String, Integer> platformMappings = OneHotMappings.getInstance().getPlatformsMapping();
         HashMap<String, Integer> operatorMappings = OneHotMappings.getInstance().getOperatorMapping();
+        int operatorsCount = operatorMappings.size();
+        int platformsCount = platformMappings.size();
+
+        if (this.encoded.length > 0) {
+            // Check if this already encodes a platform specific operator
+            long[] platformChoices = Arrays.copyOfRange(this.encoded, operatorsCount, operatorsCount + platformsCount);
+            if (ArrayUtils.indexOf(platformChoices, 1) != -1) {
+                System.out.println("Encoding while choices: " + Arrays.toString(platformChoices));
+                return this;
+            }
+        }
+
         int platformPosition = -1;
         platformPosition = ArrayUtils.indexOf(node.encoded, 1);
         System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
@@ -213,7 +227,6 @@ public class TreeNode extends BinaryTree<long[]>{
 
         assert platform != "";
 
-        int operatorsCount = operatorMappings.size();
         this.encoded[operatorsCount + platformPosition] = 1;
 
         /*
@@ -249,7 +262,6 @@ public class TreeNode extends BinaryTree<long[]>{
         }
 
 
-        System.out.println("Before: " + Arrays.toString(this.encoded));
         final long maxValue = Arrays.stream(this.encoded).max().getAsLong();
         long[] values = Arrays.stream(this.encoded).map(value -> value == maxValue ? 1 : 0).toArray();
 
