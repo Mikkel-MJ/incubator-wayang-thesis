@@ -46,8 +46,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -99,12 +99,12 @@ public class PlanEnumerator {
     /**
      * Maintain {@link EnumerationActivator} for {@link Operator}s.
      */
-    private final Map<Tuple<Operator, OptimizationContext>, EnumerationActivator> enumerationActivators = new HashMap<>();
+    private final Map<Tuple<Operator, OptimizationContext>, EnumerationActivator> enumerationActivators = new LinkedHashMap<>();
 
     /**
      * Maintain {@link ConcatenationActivator}s for each {@link OutputSlot}.
      */
-    private final Map<Tuple<OutputSlot<?>, OptimizationContext>, ConcatenationActivator> concatenationActivators = new HashMap<>();
+    private final Map<Tuple<OutputSlot<?>, OptimizationContext>, ConcatenationActivator> concatenationActivators = new LinkedHashMap<>();
 
     /**
      * This instance will put all completed {@link PlanEnumeration}s (which did not cause an activation) here.
@@ -176,9 +176,9 @@ public class PlanEnumerator {
         this(wayangPlan.collectReachableTopLevelSources(),
                 optimizationContext,
                 null,
-                new HashMap<>(),
-                new HashMap<>(),
-                new HashMap<>());
+                new LinkedHashMap<>(),
+                new LinkedHashMap<>(),
+                new LinkedHashMap<>());
 
         // Register all the tasks that have been executed already.
         final Set<ExecutionTask> executedTasks = baseplan.collectAllTasks();
@@ -196,7 +196,7 @@ public class PlanEnumerator {
             final OutputSlot<?> outputSlot = OptimizationUtils.findWayangPlanOutputSlotFor(openChannel);
             if (outputSlot != null) {
                 for (OutputSlot<?> outerOutput : outputSlot.getOwner().getOutermostOutputSlots(outputSlot)) {
-                    final Collection<Channel> channelSet = this.openChannels.computeIfAbsent(outerOutput, k -> new HashSet<>(1));
+                    final Collection<Channel> channelSet = this.openChannels.computeIfAbsent(outerOutput, k -> new LinkedHashSet<>(1));
                     channelSet.add(openChannel);
                 }
             } else {
@@ -984,7 +984,7 @@ public class PlanEnumerator {
             this.outputSlot = outputSlot;
             this.optimizationContext = optimizationContext;
             this.numRequiredActivations = (int) outputSlot.getOccupiedSlots().stream().filter(PlanEnumerator::deemsRelevant).count();
-            this.activationCollector = new HashMap<>(this.numRequiredActivations);
+            this.activationCollector = new LinkedHashMap<>(this.numRequiredActivations);
         }
 
         private boolean canBeActivated() {
@@ -1068,7 +1068,7 @@ public class PlanEnumerator {
          */
         private double countNumOfOpenSlots() {
             // We use the number of open slots in the concatenated PlanEnumeration.
-            Set<Slot<?>> openSlots = new HashSet<>();
+            Set<Slot<?>> openSlots = new LinkedHashSet<>();
             // Add all the slots from the baseEnumeration.
             openSlots.addAll(this.baseEnumeration.getRequestedInputSlots());
             for (Tuple<OutputSlot<?>, InputSlot<?>> outputInput : this.baseEnumeration.getServingOutputSlots()) {

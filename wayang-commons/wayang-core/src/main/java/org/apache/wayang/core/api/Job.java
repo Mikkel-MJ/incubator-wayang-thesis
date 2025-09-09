@@ -82,8 +82,8 @@ import java.io.FileWriter;
 import java.time.Instant;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +126,7 @@ public class Job extends OneTimeExecutable {
     /**
      * General purpose cache.
      */
-    private Map<String, Object> cache = new HashMap<>();
+    private Map<String, Object> cache = new LinkedHashMap<>();
 
     /**
      * Executes the optimized {@link ExecutionPlan}.
@@ -166,7 +166,7 @@ public class Job extends OneTimeExecutable {
     /**
      * JAR files that are needed to execute the UDFs.
      */
-    private final Set<String> udfJarPaths = new HashSet<>();
+    private final Set<String> udfJarPaths = new LinkedHashSet<>();
 
     private Monitor monitor;
 
@@ -272,7 +272,7 @@ public class Job extends OneTimeExecutable {
 
     // TODO: Move outside of Job class
     public void reportProgress(String opName, Integer progress) {
-        HashMap<String, Integer> partialProgress = new HashMap<>();
+        LinkedHashMap<String, Integer> partialProgress = new LinkedHashMap<>();
         partialProgress.put(opName, progress);
         try {
             this.monitor.updateProgress(partialProgress);
@@ -633,7 +633,7 @@ public class Job extends OneTimeExecutable {
         if (this.logger.isInfoEnabled()) {
 
             StringBuilder sb = new StringBuilder();
-            Set<ExecutionStage> seenStages = new HashSet<>();
+            Set<ExecutionStage> seenStages = new LinkedHashSet<>();
             Queue<ExecutionStage> stagedStages = new LinkedList<>(executionPlan.getStartingStages());
             ExecutionStage nextStage;
             while ((nextStage = stagedStages.poll()) != null) {

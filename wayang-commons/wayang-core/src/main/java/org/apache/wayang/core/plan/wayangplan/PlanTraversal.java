@@ -337,7 +337,7 @@ public class PlanTraversal {
         return this.visitedRelevantOperators
             .stream()
             .filter(operatorPredicate)
-            .sorted(Comparator.comparing(op -> op.hashCode()))
+            .sorted(Comparator.comparing(op -> op.getClass().getSimpleName()))
             .collect(Collectors.toList());
     }
 

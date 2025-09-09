@@ -101,12 +101,11 @@ public class JOBenchmark {
             config.setProperty("wayang.flink.port", "7071");
             config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
             config.setProperty("wayang.ml.experience.enabled", "false");
-            /*
             config.setProperty(
                 "wayang.core.optimizer.pruning.strategies",
                 "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
             );
-            config.setProperty("wayang.core.optimizer.pruning.topk", "10000");*/
+            config.setProperty("wayang.core.optimizer.pruning.topk", "1000");
 
             final String calciteModel = "{\n" +
                     "    \"version\": \"1.0\",\n" +
@@ -179,6 +178,8 @@ public class JOBenchmark {
                 WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
                 IMDBJOBenchmark.setSources(plan, args[1]);
+
+                PrintUtils.print("WayangPlan", plan);
 
                 //Set sink to be on Java
                 //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());

@@ -145,7 +145,7 @@ public class Training {
                     "wayang.core.optimizer.pruning.strategies",
                     "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
                 );
-                config.setProperty("wayang.core.optimizer.pruning.topk", "10000");*/
+                config.setProperty("wayang.core.optimizer.pruning.topk", "1000");*/
 
                 final MLContext wayangContext = new MLContext(config);
                 plugins.stream().forEach(plug -> wayangContext.register(plug));
@@ -179,7 +179,7 @@ public class Training {
                 OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
                 TreeNode wayangNode = TreeEncoder.encode(plan);
                 TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
-                ExplainUtils.parsePlan(exPlan, false);
+                ExplainUtils.parsePlan(exPlan, true);
                 //System.out.println(execNode.toString());
 
                 writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));

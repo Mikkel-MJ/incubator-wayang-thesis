@@ -30,7 +30,7 @@ import org.apache.wayang.core.plan.wayangplan.Subplan;
 import org.apache.wayang.core.util.WayangArrays;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,13 +44,13 @@ public class DefaultOptimizationContext extends OptimizationContext {
     /**
      * {@link OperatorContext}s of one-time {@link Operator}s (i.e., that are not nested in a loop).
      */
-    private final Map<Operator, OperatorContext> operatorContexts = new HashMap<>();
+    private final Map<Operator, OperatorContext> operatorContexts = new LinkedHashMap<>();
 
     /**
      * {@link LoopContext}s of one-time {@link LoopSubplan}s (i.e., that are not
      * nested in a loop themselves).
      */
-    private final Map<LoopSubplan, LoopContext> loopContexts = new HashMap<>();
+    private final Map<LoopSubplan, LoopContext> loopContexts = new LinkedHashMap<>();
 
     /**
      * Create a new instance and adds all {@link Operator}s in the {@link WayangPlan}.

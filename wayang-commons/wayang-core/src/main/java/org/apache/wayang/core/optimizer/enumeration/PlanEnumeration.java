@@ -41,8 +41,8 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +91,7 @@ public class PlanEnumeration {
      * Creates a new instance.
      */
     public PlanEnumeration() {
-        this(new HashSet<>(), new HashSet<>(), new HashSet<>());
+        this(new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
     }
 
     /**
@@ -100,7 +100,7 @@ public class PlanEnumeration {
     private PlanEnumeration(Set<OperatorAlternative> scope,
                             Set<InputSlot<?>> requestedInputSlots,
                             Set<Tuple<OutputSlot<?>, InputSlot<?>>> servingOutputSlots) {
-        this(scope, requestedInputSlots, servingOutputSlots, new LinkedList<>(), new HashMap<>());
+        this(scope, requestedInputSlots, servingOutputSlots, new LinkedList<>(), new LinkedHashMap<>());
     }
 
     /**
@@ -416,7 +416,7 @@ public class PlanEnumeration {
                     concatGroupCombo,
                     concatGroup -> {
                         Set<PlanImplementation.ConcatenationDescriptor> concatDescriptors = concatGroup2concatDescriptor.get(concatGroup);
-                        Set<PlanImplementation> planImplementations = new HashSet<>(concatDescriptors.size());
+                        Set<PlanImplementation> planImplementations = new LinkedHashSet<>(concatDescriptors.size());
                         for (PlanImplementation.ConcatenationDescriptor concatDescriptor : concatDescriptors) {
                             planImplementations.add(concatDescriptor.getPlanImplementation());
                         }
@@ -521,7 +521,7 @@ public class PlanEnumeration {
     private PlanImplementation createSingletonPartialPlan(ExecutionOperator executionOperator, OptimizationContext optimizationContext) {
         return new PlanImplementation(
                 this,
-                new HashMap<>(0),
+                new LinkedHashMap<>(0),
                 Collections.singletonList(executionOperator),
                 optimizationContext
         );
