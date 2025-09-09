@@ -18,16 +18,11 @@
 
 package org.apache.wayang.core.plan.executionplan;
 
-import org.apache.wayang.core.optimizer.enumeration.ExecutionTaskFlow;
-import org.apache.wayang.core.optimizer.enumeration.StageAssignmentTraversal;
-import org.apache.wayang.core.util.Counter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,19 +31,41 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.wayang.core.optimizer.enumeration.ExecutionTaskFlow;
+import org.apache.wayang.core.optimizer.enumeration.StageAssignmentTraversal;
+import org.apache.wayang.core.util.Counter;
+
 /**
- * Represents an executable, cross-platform data flow. Consists of muliple {@link PlatformExecution}s.
+ * Represents an executable, cross-platform data flow. Consists of muliple
+ * {@link PlatformExecution}s.
  */
 public class ExecutionPlan {
+
+    /**
+     * Creates a new instance from the given {@link ExecutionTaskFlow}.
+     *
+     * @param executionTaskFlow       should be converted into an
+     *                                {@link ExecutionPlan}
+     * @param stageSplittingCriterion defines where to install
+     *                                {@link ExecutionStage} boundaries
+     * @return the new instance
+     */
+    public static ExecutionPlan createFrom(final ExecutionTaskFlow executionTaskFlow,
+            final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion) {
+        return StageAssignmentTraversal.assignStages(executionTaskFlow, stageSplittingCriterion);
+    }
 
     private final Logger logger = LogManager.getLogger(this.getClass());
 
     /**
-     * All {@link ExecutionStage}s without predecessors that need be executed at first.
+     * All {@link ExecutionStage}s without predecessors that need be executed at
+     * first.
      */
-    private Collection<ExecutionStage> startingStages = new LinkedList<>();
+    private final Collection<ExecutionStage> startingStages = new LinkedList<>();
 
-    public void addStartingStage(ExecutionStage executionStage) {
+    public void addStartingStage(final ExecutionStage executionStage) {
         this.startingStages.add(executionStage);
     }
 
@@ -57,7 +74,8 @@ public class ExecutionPlan {
     }
 
     /**
-     * Creates a {@link String} representation (not strictly ordered) of this instance.
+     * Creates a {@link String} representation (not strictly ordered) of this
+     * instance.
      *
      * @return the {@link String} representation
      */
@@ -68,23 +86,25 @@ public class ExecutionPlan {
     /**
      * Creates a {@link String} representation of this instance.
      *
-     * @param isStriclyOrdering whether {@link ExecutionStage}s should be listed only after <i>all</i> their predecessors
+     * @param isStriclyOrdering whether {@link ExecutionStage}s should be listed
+     *                          only after <i>all</i> their predecessors
      * @return the {@link String} representation
      */
-    public String toExtensiveString(boolean isStriclyOrdering) {
-        StringBuilder sb = new StringBuilder();
-        Counter<ExecutionStage> stageActivationCounter = new Counter<>();
-        Queue<ExecutionStage> activatedStages = new LinkedList<>(this.startingStages);
-        Set<ExecutionStage> seenStages = new HashSet<>();
+    public String toExtensiveString(final boolean isStriclyOrdering) {
+        final StringBuilder sb = new StringBuilder();
+        final Counter<ExecutionStage> stageActivationCounter = new Counter<>();
+        final Queue<ExecutionStage> activatedStages = new LinkedList<>(this.startingStages);
+        final Set<ExecutionStage> seenStages = new HashSet<>();
         while (!activatedStages.isEmpty()) {
             while (!activatedStages.isEmpty()) {
                 final ExecutionStage stage = activatedStages.poll();
-                if (!seenStages.add(stage)) continue;
+                if (!seenStages.add(stage))
+                    continue;
                 sb.append(">>> ").append(stage).append(":\n");
                 stage.getPlanAsString(sb, "> ");
                 sb.append("\n");
 
-                for (ExecutionStage successor : stage.getSuccessors()) {
+                for (final ExecutionStage successor : stage.getSuccessors()) {
                     final int count = stageActivationCounter.add(successor, 1);
                     if (!isStriclyOrdering || count == successor.getPredecessors().size() || successor.isLoopHead()) {
                         activatedStages.add(successor);
@@ -103,20 +123,21 @@ public class ExecutionPlan {
      * @return
      */
     public List<Map> toJsonList() {
-        Counter<ExecutionStage> stageActivationCounter = new Counter<>();
-        Queue<ExecutionStage> activatedStages = new LinkedList<>(this.startingStages);
-        Set<ExecutionStage> seenStages = new HashSet<>();
-        ArrayList<Map> allStages = new ArrayList<>();
+        final Counter<ExecutionStage> stageActivationCounter = new Counter<>();
+        final Queue<ExecutionStage> activatedStages = new LinkedList<>(this.startingStages);
+        final Set<ExecutionStage> seenStages = new HashSet<>();
+        final ArrayList<Map> allStages = new ArrayList<>();
 
         while (!activatedStages.isEmpty()) {
             final ExecutionStage stage = activatedStages.poll();
-            if (!seenStages.add(stage)) continue;
-            Map stageMap = stage.toJsonMap();
+            if (!seenStages.add(stage))
+                continue;
+            final Map stageMap = stage.toJsonMap();
 
             // Better way to put sequence number ?
             stageMap.put("sequence_number", allStages.size());
             allStages.add(stageMap);
-            for (ExecutionStage successor : stage.getSuccessors()) {
+            for (final ExecutionStage successor : stage.getSuccessors()) {
                 final int count = stageActivationCounter.add(successor, 1);
                 if (count == successor.getPredecessors().size() || successor.isLoopHead()) {
                     activatedStages.add(successor);
@@ -128,14 +149,16 @@ public class ExecutionPlan {
     }
 
     /**
-     * Scrap {@link Channel}s and {@link ExecutionTask}s that are not within the given {@link ExecutionStage}s.
+     * Scrap {@link Channel}s and {@link ExecutionTask}s that are not within the
+     * given {@link ExecutionStage}s.
      *
-     * @return {@link Channel}s from that consumer {@link ExecutionTask}s have been removed
+     * @return {@link Channel}s from that consumer {@link ExecutionTask}s have been
+     *         removed
      */
-    public Set<Channel> retain(Set<ExecutionStage> retainableStages) {
-        Set<Channel> openChannels = new HashSet<>();
-        for (ExecutionStage stage : retainableStages) {
-            for (Channel channel : stage.getOutboundChannels()) {
+    public Set<Channel> retain(final Set<ExecutionStage> retainableStages) {
+        final Set<Channel> openChannels = new HashSet<>();
+        for (final ExecutionStage stage : retainableStages) {
+            for (final Channel channel : stage.getOutboundChannels()) {
                 if (channel.retain(retainableStages)) {
                     openChannels.add(channel);
                 }
@@ -152,8 +175,8 @@ public class ExecutionPlan {
      * @return the {@link ExecutionStage}s
      */
     public Set<ExecutionStage> getStages() {
-        Set<ExecutionStage> seenStages = new HashSet<>();
-        Queue<ExecutionStage> openStages = new LinkedList<>(this.getStartingStages());
+        final Set<ExecutionStage> seenStages = new HashSet<>();
+        final Queue<ExecutionStage> openStages = new LinkedList<>(this.getStartingStages());
         while (!openStages.isEmpty()) {
             final ExecutionStage stage = openStages.poll();
             if (seenStages.add(stage)) {
@@ -168,27 +191,28 @@ public class ExecutionPlan {
      *
      * @return the {@link ExecutionTask}s
      */
-    public Set<ExecutionTask> collectAllTasks() {
-        Set<ExecutionTask> allTasks = new HashSet<>();
-        for (ExecutionStage stage : this.getStages()) {
+    public LinkedHashSet<ExecutionTask> collectAllTasks() {
+        final LinkedHashSet<ExecutionTask> allTasks = new LinkedHashSet<>();
+        for (final ExecutionStage stage : this.getStages()) {
             allTasks.addAll(stage.getAllTasks());
         }
         return allTasks;
     }
 
     /**
-     * The given instance should build upon the open {@link Channel}s of this instance. Then, this instance will be
+     * The given instance should build upon the open {@link Channel}s of this
+     * instance. Then, this instance will be
      * expanded with the content of the given instance.
      *
      * @param expansion extends this instance, but they are not overlapping
      */
-    public void expand(ExecutionPlan expansion) {
-        for (Channel openChannel : expansion.getOpenInputChannels()) {
+    public void expand(final ExecutionPlan expansion) {
+        for (final Channel openChannel : expansion.getOpenInputChannels()) {
             openChannel.mergeIntoOriginal();
             final Channel original = openChannel.getOriginal();
             final ExecutionStage producerStage = original.getProducer().getStage();
             assert producerStage != null : String.format("No stage found for %s.", original.getProducer());
-            for (ExecutionTask consumer : original.getConsumers()) {
+            for (final ExecutionTask consumer : original.getConsumers()) {
                 final ExecutionStage consumerStage = consumer.getStage();
                 assert consumerStage != null : String.format("No stage found for %s.", consumer);
                 // Equal stages possible on "partially open" Channels.
@@ -200,7 +224,8 @@ public class ExecutionPlan {
     }
 
     /**
-     * Collects all {@link Channel}s that are copies. We recognize them as {@link Channel}s that are open.
+     * Collects all {@link Channel}s that are copies. We recognize them as
+     * {@link Channel}s that are open.
      */
     public Collection<Channel> getOpenInputChannels() {
         return this.collectAllTasks().stream()
@@ -215,24 +240,25 @@ public class ExecutionPlan {
     public boolean isSane() {
         // 1. Check if every ExecutionTask is assigned an ExecutionStage.
         final Set<ExecutionTask> allTasks = this.collectAllTasks();
-        boolean isAllTasksAssigned = allTasks.stream().allMatch(task -> task.getStage() != null);
+        final boolean isAllTasksAssigned = allTasks.stream().allMatch(task -> task.getStage() != null);
         if (!isAllTasksAssigned) {
             this.logger.error("There are tasks without stages.");
         }
 
         final Set<Channel> allChannels = allTasks.stream()
-                .flatMap(task -> Stream.concat(Arrays.stream(task.getInputChannels()), Arrays.stream(task.getOutputChannels())))
+                .flatMap(task -> Stream.concat(Arrays.stream(task.getInputChannels()),
+                        Arrays.stream(task.getOutputChannels())))
                 .collect(Collectors.toSet());
 
-        boolean isAllChannelsOriginal = allChannels.stream()
+        final boolean isAllChannelsOriginal = allChannels.stream()
                 .allMatch(channel -> !channel.isCopy());
         if (!isAllChannelsOriginal) {
             this.logger.error("There are channels that are copies.");
         }
 
         boolean isAllSiblingsConsistent = true;
-        for (Channel channel : allChannels) {
-            for (Channel sibling : channel.getSiblings()) {
+        for (final Channel channel : allChannels) {
+            for (final Channel sibling : channel.getSiblings()) {
                 if (!allChannels.contains(sibling)) {
                     this.logger.error("A sibling of {}, namely {}, seems to be invalid.", channel, sibling);
                     isAllSiblingsConsistent = false;
@@ -241,17 +267,5 @@ public class ExecutionPlan {
         }
 
         return isAllTasksAssigned && isAllChannelsOriginal && isAllSiblingsConsistent;
-    }
-
-    /**
-     * Creates a new instance from the given {@link ExecutionTaskFlow}.
-     *
-     * @param executionTaskFlow       should be converted into an {@link ExecutionPlan}
-     * @param stageSplittingCriterion defines where to install {@link ExecutionStage} boundaries
-     * @return the new instance
-     */
-    public static ExecutionPlan createFrom(ExecutionTaskFlow executionTaskFlow,
-                                           StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion) {
-        return StageAssignmentTraversal.assignStages(executionTaskFlow, stageSplittingCriterion);
     }
 }

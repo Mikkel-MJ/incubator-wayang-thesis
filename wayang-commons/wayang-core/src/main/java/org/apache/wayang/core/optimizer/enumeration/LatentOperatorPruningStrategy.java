@@ -42,11 +42,11 @@ public class LatentOperatorPruningStrategy implements PlanEnumerationPruningStra
     private static final Logger logger = LogManager.getLogger(LatentOperatorPruningStrategy.class);
 
     @Override
-    public void configure(Configuration configuration) {
+    public void configure(final Configuration configuration) {
     }
 
     @Override
-    public void prune(PlanEnumeration planEnumeration) {
+    public void prune(final PlanEnumeration planEnumeration) {
         // Skip if there is nothing to do...
         if (planEnumeration.getPlanImplementations().size() < 2) return;
 
@@ -67,22 +67,22 @@ public class LatentOperatorPruningStrategy implements PlanEnumerationPruningStra
      * @param implementation whose interesting properties are requested
      * @return the interesting properties of the given {@code implementation}
      */
-    private static Tuple<Set<Platform>, Collection<ExecutionOperator>> getInterestingProperties(PlanImplementation implementation) {
+    private static Tuple<Set<Platform>, Collection<ExecutionOperator>> getInterestingProperties(final PlanImplementation implementation) {
         return new Tuple<>(
                 implementation.getUtilizedPlatforms(),
                 implementation.getInterfaceOperators()
         );
     }
 
-    private PlanImplementation selectBestPlanNary(List<PlanImplementation> planImplementation) {
+    private PlanImplementation selectBestPlanNary(final List<PlanImplementation> planImplementation) {
         assert !planImplementation.isEmpty();
         return planImplementation.stream()
                 .reduce(this::selectBestPlanBinary)
                 .orElseThrow(() -> new WayangException("No plan was selected."));
     }
 
-    private PlanImplementation selectBestPlanBinary(PlanImplementation p1,
-                                                    PlanImplementation p2) {
+    private PlanImplementation selectBestPlanBinary(final PlanImplementation p1,
+                                                    final PlanImplementation p2) {
         final double t1 = p1.getSquashedCostEstimate(true);
         final double t2 = p2.getSquashedCostEstimate(true);
         final boolean isPickP1 = t1 <= t2;

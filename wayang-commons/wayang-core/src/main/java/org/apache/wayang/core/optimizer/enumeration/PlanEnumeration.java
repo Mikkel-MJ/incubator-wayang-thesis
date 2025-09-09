@@ -18,7 +18,6 @@
 
 package org.apache.wayang.core.optimizer.enumeration;
 
-
 import org.apache.wayang.commons.util.profiledb.model.measurement.TimeMeasurement;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.optimizer.OptimizationContext;
@@ -32,7 +31,7 @@ import org.apache.wayang.core.plan.wayangplan.OperatorAlternative;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.platform.Junction;
-import org.apache.wayang.core.util.MultiMap;
+import org.apache.wayang.core.util.LinkedMultiMap;
 import org.apache.wayang.core.util.WayangCollections;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.logging.log4j.LogManager;
@@ -41,76 +40,85 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Represents a collection of {@link PlanImplementation}s that all implement the same section of a {@link WayangPlan} (which
+ * Represents a collection of {@link PlanImplementation}s that all implement the
+ * same section of a {@link WayangPlan} (which
  * is assumed to contain {@link OperatorAlternative}s in general).
- * <p>Instances can be mutated and combined in algebraic manner. In particular, instances can be unioned if they implement
- * the same part of the {@link WayangPlan}, concatenated if there are contact points, and pruned.</p>
+ * <p>
+ * Instances can be mutated and combined in algebraic manner. In particular,
+ * instances can be unioned if they implement
+ * the same part of the {@link WayangPlan}, concatenated if there are contact
+ * points, and pruned.
+ * </p>
  */
 public class PlanEnumeration {
 
     private static final Logger logger = LogManager.getLogger(PlanEnumeration.class);
 
     /**
-     * The {@link OperatorAlternative}s for that an {@link OperatorAlternative.Alternative} has been picked.
+     * The {@link OperatorAlternative}s for that an
+     * {@link OperatorAlternative.Alternative} has been picked.
      */
-    final Set<OperatorAlternative> scope;
+    final LinkedHashSet<OperatorAlternative> scope;
 
     /**
      * {@link InputSlot}s that are not satisfied in this instance.
      */
-    final Set<InputSlot<?>> requestedInputSlots;
+    final LinkedHashSet<InputSlot<?>> requestedInputSlots;
 
     /**
-     * Combinations of {@link OutputSlot}s and {@link InputSlot}, where the former is served by this instance and the
-     * latter is not yet assigned in this instance. If there is no such {@link InputSlot} (because we are enumerating
-     * an {@link OperatorAlternative.Alternative}, then we put {@code null} instead of it.
+     * Combinations of {@link OutputSlot}s and {@link InputSlot}, where the former
+     * is served by this instance and the
+     * latter is not yet assigned in this instance. If there is no such
+     * {@link InputSlot} (because we are enumerating
+     * an {@link OperatorAlternative.Alternative}, then we put {@code null} instead
+     * of it.
      */
-    final Set<Tuple<OutputSlot<?>, InputSlot<?>>> servingOutputSlots;
+    final LinkedHashSet<Tuple<OutputSlot<?>, InputSlot<?>>> servingOutputSlots;
 
     /**
      * {@link PlanImplementation}s contained in this instance.
      */
-    final Collection<PlanImplementation> planImplementations;
+    final List<PlanImplementation> planImplementations;
 
     /**
      * {@link ExecutionTask}s that have already been executed.
      */
-    final Map<ExecutionOperator, ExecutionTask> executedTasks;
+    final LinkedHashMap<ExecutionOperator, ExecutionTask> executedTasks;
 
     /**
      * Creates a new instance.
      */
     public PlanEnumeration() {
-        this(new HashSet<>(), new HashSet<>(), new HashSet<>());
+        this(new LinkedHashSet<>(), new LinkedHashSet<>(), new LinkedHashSet<>());
     }
 
     /**
      * Creates a new instance.
      */
-    private PlanEnumeration(Set<OperatorAlternative> scope,
-                            Set<InputSlot<?>> requestedInputSlots,
-                            Set<Tuple<OutputSlot<?>, InputSlot<?>>> servingOutputSlots) {
-        this(scope, requestedInputSlots, servingOutputSlots, new LinkedList<>(), new HashMap<>());
+    private PlanEnumeration(final LinkedHashSet<OperatorAlternative> scope,
+            final LinkedHashSet<InputSlot<?>> requestedInputSlots,
+            final LinkedHashSet<Tuple<OutputSlot<?>, InputSlot<?>>> servingOutputSlots) {
+        this(scope, requestedInputSlots, servingOutputSlots, new LinkedList<>(), new LinkedHashMap<>());
     }
 
     /**
      * Creates a new instance.
      */
-    private PlanEnumeration(Set<OperatorAlternative> scope,
-                            Set<InputSlot<?>> requestedInputSlots,
-                            Set<Tuple<OutputSlot<?>, InputSlot<?>>> servingOutputSlots,
-                            Collection<PlanImplementation> planImplementations,
-                            Map<ExecutionOperator, ExecutionTask> executedTasks) {
+    private PlanEnumeration(final LinkedHashSet<OperatorAlternative> scope,
+            final LinkedHashSet<InputSlot<?>> requestedInputSlots,
+            final LinkedHashSet<Tuple<OutputSlot<?>, InputSlot<?>>> servingOutputSlots,
+            final List<PlanImplementation> planImplementations,
+            final LinkedHashMap<ExecutionOperator, ExecutionTask> executedTasks) {
         this.scope = scope;
         this.requestedInputSlots = requestedInputSlots;
         this.servingOutputSlots = servingOutputSlots;
@@ -124,9 +132,11 @@ public class PlanEnumeration {
      * @param operator the mentioned {@link ExecutionOperator}
      * @return the new instance
      */
-    static PlanEnumeration createSingleton(ExecutionOperator operator, OptimizationContext optimizationContext) {
+    static PlanEnumeration createSingleton(final ExecutionOperator operator,
+            final OptimizationContext optimizationContext) {
         final PlanEnumeration enumeration = createFor(operator, operator);
-        final PlanImplementation singletonPlanImplementation = enumeration.createSingletonPartialPlan(operator, optimizationContext);
+        final PlanImplementation singletonPlanImplementation = enumeration.createSingletonPartialPlan(operator,
+                optimizationContext);
         enumeration.add(singletonPlanImplementation);
         return enumeration;
     }
@@ -138,7 +148,7 @@ public class PlanEnumeration {
      * @param outputOperator provides the requested {@link OutputSlot}s
      * @return the new instance
      */
-    static PlanEnumeration createFor(Operator inputOperator, Operator outputOperator) {
+    static PlanEnumeration createFor(final Operator inputOperator, final Operator outputOperator) {
         return createFor(inputOperator, input -> true, outputOperator, output -> true);
     }
 
@@ -151,25 +161,25 @@ public class PlanEnumeration {
      * @param outputSlotPredicate can narrow down the {@link OutputSlot}s
      * @return the new instance
      */
-    static PlanEnumeration createFor(Operator inputOperator,
-                                     Predicate<InputSlot<?>> inputSlotPredicate,
-                                     Operator outputOperator,
-                                     Predicate<OutputSlot<?>> outputSlotPredicate) {
+    static PlanEnumeration createFor(final Operator inputOperator,
+            final Predicate<InputSlot<?>> inputSlotPredicate,
+            final Operator outputOperator,
+            final Predicate<OutputSlot<?>> outputSlotPredicate) {
 
         final PlanEnumeration instance = new PlanEnumeration();
-        for (InputSlot<?> inputSlot : inputOperator.getAllInputs()) {
+        for (final InputSlot<?> inputSlot : inputOperator.getAllInputs()) {
             if (inputSlotPredicate.test(inputSlot)) {
                 instance.requestedInputSlots.add(inputSlot);
             }
         }
 
-        for (OutputSlot outputSlot : outputOperator.getAllOutputs()) {
+        for (final OutputSlot outputSlot : outputOperator.getAllOutputs()) {
             if (outputSlotPredicate.test(outputSlot)) {
                 List<InputSlot> inputSlots = outputSlot.getOccupiedSlots();
                 if (inputSlots.isEmpty()) {
                     inputSlots = Collections.singletonList(null); // InputSlot is probably in a surrounding plan.
                 }
-                for (InputSlot inputSlot : inputSlots) {
+                for (final InputSlot inputSlot : inputSlots) {
                     instance.servingOutputSlots.add(new Tuple<>(outputSlot, inputSlot));
                 }
             }
@@ -179,9 +189,10 @@ public class PlanEnumeration {
     }
 
     /**
-     * Asserts that two given instances enumerate the same part of a {@link WayangPlan}.
+     * Asserts that two given instances enumerate the same part of a
+     * {@link WayangPlan}.
      */
-    private static void assertMatchingInterface(PlanEnumeration instance1, PlanEnumeration instance2) {
+    private static void assertMatchingInterface(final PlanEnumeration instance1, final PlanEnumeration instance2) {
         if (!instance1.requestedInputSlots.equals(instance2.requestedInputSlots)) {
             throw new IllegalArgumentException("Input slots are not matching.");
         }
@@ -193,14 +204,15 @@ public class PlanEnumeration {
     }
 
     /**
-     * Concatenates the {@code baseEnumeration} via its {@code openOutputSlot} to the {@code targetEnumerations}.
+     * Concatenates the {@code baseEnumeration} via its {@code openOutputSlot} to
+     * the {@code targetEnumerations}.
      * All {@link PlanEnumeration}s should be distinct.
      */
-    public PlanEnumeration concatenate(OutputSlot<?> openOutputSlot,
-                                       Collection<Channel> openChannels,
-                                       Map<InputSlot<?>, PlanEnumeration> targetEnumerations,
-                                       OptimizationContext optimizationContext,
-                                       TimeMeasurement enumerationMeasurement) {
+    public PlanEnumeration concatenate(final OutputSlot<?> openOutputSlot,
+            final Collection<Channel> openChannels,
+            final LinkedHashMap<InputSlot<?>, PlanEnumeration> targetEnumerations,
+            final OptimizationContext optimizationContext,
+            final TimeMeasurement enumerationMeasurement) {
 
         // Check the parameters' validity.
         assert this.getServingOutputSlots().stream()
@@ -209,14 +221,13 @@ public class PlanEnumeration {
                 : String.format("Cannot concatenate %s: it is not a served output.", openOutputSlot);
         assert !targetEnumerations.isEmpty();
 
-        final TimeMeasurement concatenationMeasurement = enumerationMeasurement == null ?
-                null :
-                enumerationMeasurement.start("Concatenation");
+        final TimeMeasurement concatenationMeasurement = enumerationMeasurement == null ? null
+                : enumerationMeasurement.start("Concatenation");
 
         if (logger.isInfoEnabled()) {
-            StringBuilder sb = new StringBuilder();
+            final StringBuilder sb = new StringBuilder();
             sb.append("Concatenating ").append(this.getPlanImplementations().size());
-            for (PlanEnumeration targetEnumeration : targetEnumerations.values()) {
+            for (final PlanEnumeration targetEnumeration : targetEnumerations.values()) {
                 sb.append("x").append(targetEnumeration.getPlanImplementations().size());
             }
             sb.append(" plan implementations.");
@@ -224,15 +235,14 @@ public class PlanEnumeration {
         }
 
         // Prepare the result instance from this instance.
-        PlanEnumeration result = new PlanEnumeration();
+        final PlanEnumeration result = new PlanEnumeration();
         result.scope.addAll(this.getScope());
         result.requestedInputSlots.addAll(this.getRequestedInputSlots());
         result.servingOutputSlots.addAll(this.getServingOutputSlots());
         result.executedTasks.putAll(this.getExecutedTasks());
 
         // Update the result instance from the target instances.
-        for (Map.Entry<InputSlot<?>, PlanEnumeration> entry : targetEnumerations.entrySet()) {
-            final InputSlot<?> openInputSlot = entry.getKey();
+        for (final Entry<InputSlot<?>, PlanEnumeration> entry : targetEnumerations.entrySet()) {
             final PlanEnumeration targetEnumeration = entry.getValue();
             result.scope.addAll(targetEnumeration.getScope());
             result.requestedInputSlots.addAll(targetEnumeration.getRequestedInputSlots());
@@ -240,8 +250,10 @@ public class PlanEnumeration {
             result.executedTasks.putAll(targetEnumeration.getExecutedTasks());
         }
 
-        // NB: We need to store remove the InputSlots only here, because a single targetEnumeration
-        // might service multiple InputSlots. If this targetEnumeration is then also the baseEnumeration, it might
+        // NB: We need to store remove the InputSlots only here, because a single
+        // targetEnumeration
+        // might service multiple InputSlots. If this targetEnumeration is then also the
+        // baseEnumeration, it might
         // re-request already serviced InputSlots, although already deleted.
         result.requestedInputSlots.removeAll(targetEnumerations.keySet());
         result.servingOutputSlots.removeIf(slotService -> slotService.getField0().equals(openOutputSlot));
@@ -253,28 +265,30 @@ public class PlanEnumeration {
                 targetEnumerations,
                 optimizationContext,
                 result,
-                concatenationMeasurement
-        ));
+                concatenationMeasurement));
 
         logger.debug("Created {} plan implementations.", result.getPlanImplementations().size());
-        if (concatenationMeasurement != null) concatenationMeasurement.stop();
+        if (concatenationMeasurement != null)
+            concatenationMeasurement.stop();
         return result;
     }
 
     /**
-     * Concatenates all {@link PlanImplementation}s of the {@code baseEnumeration} via its {@code openOutputSlot}
+     * Concatenates all {@link PlanImplementation}s of the {@code baseEnumeration}
+     * via its {@code openOutputSlot}
      * to the {@code targetEnumerations}' {@link PlanImplementation}s.
      * All {@link PlanEnumeration}s should be distinct.
      */
-    private Collection<PlanImplementation> concatenatePartialPlans(OutputSlot<?> openOutputSlot,
-                                                                   Collection<Channel> openChannels,
-                                                                   Map<InputSlot<?>, PlanEnumeration> targetEnumerations,
-                                                                   OptimizationContext optimizationContext,
-                                                                   PlanEnumeration concatenationEnumeration,
-                                                                   TimeMeasurement concatenationMeasurement) {
+    private Collection<PlanImplementation> concatenatePartialPlans(final OutputSlot<?> openOutputSlot,
+            final Collection<Channel> openChannels,
+            final LinkedHashMap<InputSlot<?>, PlanEnumeration> targetEnumerations,
+            final OptimizationContext optimizationContext,
+            final PlanEnumeration concatenationEnumeration,
+            final TimeMeasurement concatenationMeasurement) {
         final Job job = optimizationContext.getJob();
-        final OptimizationContext.OperatorContext operatorContext = optimizationContext.getOperatorContext(openOutputSlot.getOwner());
-        boolean isRequestBreakpoint = job.isRequestBreakpointFor(openOutputSlot, operatorContext);
+        final OptimizationContext.OperatorContext operatorContext = optimizationContext
+                .getOperatorContext(openOutputSlot.getOwner());
+        final boolean isRequestBreakpoint = job.isRequestBreakpointFor(openOutputSlot, operatorContext);
         return this.concatenatePartialPlansBatchwise(
                 openOutputSlot,
                 openChannels,
@@ -282,62 +296,66 @@ public class PlanEnumeration {
                 optimizationContext,
                 isRequestBreakpoint,
                 concatenationEnumeration,
-                concatenationMeasurement
-        );
+                concatenationMeasurement);
     }
 
     /**
-     * Concatenates {@link PlanEnumeration}s by batchwise processing of {@link PlanImplementation}s. All {@link PlanImplementation}s
-     * that share a certain implementation of the {@code openOutputSlot} or its fed {@link InputSlot}s are grouped
+     * Concatenates {@link PlanEnumeration}s by batchwise processing of
+     * {@link PlanImplementation}s. All {@link PlanImplementation}s
+     * that share a certain implementation of the {@code openOutputSlot} or its fed
+     * {@link InputSlot}s are grouped
      * into combinations so that we avoid to seek redundant {@link Junction}s.
      *
      * @param openOutputSlot           of this instance to be concatenated
-     * @param targetEnumerations       whose {@link InputSlot}s should be concatenated with the {@code openOutputSlot}
+     * @param targetEnumerations       whose {@link InputSlot}s should be
+     *                                 concatenated with the {@code openOutputSlot}
      * @param optimizationContext      provides concatenation information
-     * @param concatenationEnumeration to which the {@link PlanImplementation}s should be added
+     * @param concatenationEnumeration to which the {@link PlanImplementation}s
+     *                                 should be added
      * @param concatenationMeasurement
-     * @param isRequestBreakpoint      whether a breakpoint-capable {@link Channel} should be inserted
+     * @param isRequestBreakpoint      whether a breakpoint-capable {@link Channel}
+     *                                 should be inserted
      * @return the concatenated {@link PlanImplementation}s
      */
     private Collection<PlanImplementation> concatenatePartialPlansBatchwise(
-            OutputSlot<?> openOutputSlot,
-            Collection<Channel> openChannels,
-            Map<InputSlot<?>, PlanEnumeration> targetEnumerations,
-            OptimizationContext optimizationContext,
-            boolean isRequestBreakpoint,
-            PlanEnumeration concatenationEnumeration,
-            TimeMeasurement concatenationMeasurement) {
+            final OutputSlot<?> openOutputSlot,
+            final Collection<Channel> openChannels,
+            final LinkedHashMap<InputSlot<?>, PlanEnumeration> targetEnumerations,
+            final OptimizationContext optimizationContext,
+            final boolean isRequestBreakpoint,
+            final PlanEnumeration concatenationEnumeration,
+            final TimeMeasurement concatenationMeasurement) {
 
         // Preparatory initializations.
         final ChannelConversionGraph channelConversionGraph = optimizationContext.getChannelConversionGraph();
 
         // Allocate result collector.
-        Collection<PlanImplementation> result = new LinkedList<>();
+        final Collection<PlanImplementation> result = new LinkedList<>();
 
         // Bring the InputSlots to fixed order.
-        List<InputSlot<?>> inputs = new ArrayList<>(targetEnumerations.keySet());
+        final List<InputSlot<?>> inputs = new ArrayList<>(targetEnumerations.keySet());
 
-        // Identify identical PlanEnumerations among the targetEnumerations and baseEnumeration.
-        MultiMap<PlanEnumeration, InputSlot<?>> targetEnumerationGroups = new MultiMap<>();
-        for (Map.Entry<InputSlot<?>, PlanEnumeration> entry : targetEnumerations.entrySet()) {
+        // Identify identical PlanEnumerations among the targetEnumerations and
+        // baseEnumeration.
+        final LinkedMultiMap<PlanEnumeration, InputSlot<?>> targetEnumerationGroups = new LinkedMultiMap<>();
+        for (final Entry<InputSlot<?>, PlanEnumeration> entry : targetEnumerations.entrySet()) {
             targetEnumerationGroups.putSingle(entry.getValue(), entry.getKey());
         }
 
         // Group the PlanImplementations within each enumeration group.
-        MultiMap<PlanEnumeration, PlanImplementation.ConcatenationGroupDescriptor> enum2concatGroup = new MultiMap<>();
-        MultiMap<PlanImplementation.ConcatenationGroupDescriptor, PlanImplementation.ConcatenationDescriptor>
-                concatGroup2concatDescriptor = new MultiMap<>();
-        for (Map.Entry<PlanEnumeration, Set<InputSlot<?>>> entry : targetEnumerationGroups.entrySet()) {
-            PlanEnumeration planEnumeration = entry.getKey();
-            OutputSlot<?> groupOutput = planEnumeration == this ? openOutputSlot : null;
-            Set<InputSlot<?>> groupInputSet = entry.getValue();
-            List<InputSlot<?>> groupInputs = new ArrayList<>(inputs.size());
-            for (InputSlot<?> input : inputs) {
+        final LinkedMultiMap<PlanEnumeration, PlanImplementation.ConcatenationGroupDescriptor> enum2concatGroup = new LinkedMultiMap<>();
+        final LinkedMultiMap<PlanImplementation.ConcatenationGroupDescriptor, PlanImplementation.ConcatenationDescriptor> concatGroup2concatDescriptor = new LinkedMultiMap<>();
+        for (final Entry<PlanEnumeration, LinkedHashSet<InputSlot<?>>> entry : targetEnumerationGroups.entrySet()) {
+            final PlanEnumeration planEnumeration = entry.getKey();
+            final OutputSlot<?> groupOutput = planEnumeration == this ? openOutputSlot : null;
+            final LinkedHashSet<InputSlot<?>> groupInputSet = entry.getValue();
+            final List<InputSlot<?>> groupInputs = new ArrayList<>(inputs.size());
+            for (final InputSlot<?> input : inputs) {
                 groupInputs.add(groupInputSet.contains(input) ? input : null);
             }
-            for (PlanImplementation planImplementation : planEnumeration.getPlanImplementations()) {
-                PlanImplementation.ConcatenationDescriptor concatDescriptor =
-                        planImplementation.createConcatenationDescriptor(groupOutput, groupInputs);
+            for (final PlanImplementation planImplementation : planEnumeration.getPlanImplementations()) {
+                final PlanImplementation.ConcatenationDescriptor concatDescriptor = planImplementation
+                        .createConcatenationDescriptor(groupOutput, groupInputs);
                 concatGroup2concatDescriptor.putSingle(concatDescriptor.groupDescriptor, concatDescriptor);
                 enum2concatGroup.putSingle(planImplementation.getPlanEnumeration(), concatDescriptor.groupDescriptor);
             }
@@ -345,10 +363,10 @@ public class PlanEnumeration {
 
         // Handle cases where this instance is not a target enumeration.
         if (!targetEnumerationGroups.containsKey(this)) {
-            List<InputSlot<?>> emptyGroupInputs = WayangCollections.createNullFilledArrayList(inputs.size());
-            for (PlanImplementation planImplementation : this.getPlanImplementations()) {
-                PlanImplementation.ConcatenationDescriptor concatDescriptor =
-                        planImplementation.createConcatenationDescriptor(openOutputSlot, emptyGroupInputs);
+            final List<InputSlot<?>> emptyGroupInputs = WayangCollections.createNullFilledArrayList(inputs.size());
+            for (final PlanImplementation planImplementation : this.getPlanImplementations()) {
+                final PlanImplementation.ConcatenationDescriptor concatDescriptor = planImplementation
+                        .createConcatenationDescriptor(openOutputSlot, emptyGroupInputs);
                 concatGroup2concatDescriptor.putSingle(concatDescriptor.groupDescriptor, concatDescriptor);
                 enum2concatGroup.putSingle(planImplementation.getPlanEnumeration(), concatDescriptor.groupDescriptor);
             }
@@ -356,77 +374,88 @@ public class PlanEnumeration {
 
         if (logger.isInfoEnabled()) {
             logger.info("Concatenating {}={} concatenation groups ({} -> {} inputs).",
-                    enum2concatGroup.values().stream().map(groups -> String.valueOf(groups.size())).collect(Collectors.joining("*")),
+                    enum2concatGroup.values().stream().map(groups -> String.valueOf(groups.size()))
+                            .collect(Collectors.joining("*")),
                     enum2concatGroup.values().stream().mapToInt(Set::size).reduce(1, (a, b) -> a * b),
                     openOutputSlot,
-                    targetEnumerations.size()
-            );
+                    targetEnumerations.size());
         }
 
         // Enumerate all combinations of the PlanEnumerations.
-        List<PlanEnumeration> orderedEnumerations = new ArrayList<>(enum2concatGroup.keySet());
+        final List<PlanEnumeration> orderedEnumerations = new ArrayList<>(enum2concatGroup.keySet());
         orderedEnumerations.remove(this);
         orderedEnumerations.add(0, this); // Make sure that the base enumeration is in the beginning.
-        List<Set<PlanImplementation.ConcatenationGroupDescriptor>> orderedConcatGroups = new ArrayList<>(orderedEnumerations.size());
-        for (PlanEnumeration enumeration : orderedEnumerations) {
+        final List<Set<PlanImplementation.ConcatenationGroupDescriptor>> orderedConcatGroups = new ArrayList<>(
+                orderedEnumerations.size());
+        for (final PlanEnumeration enumeration : orderedEnumerations) {
             orderedConcatGroups.add(enum2concatGroup.get(enumeration));
         }
-        for (List<PlanImplementation.ConcatenationGroupDescriptor> concatGroupCombo : WayangCollections.streamedCrossProduct(orderedConcatGroups)) {
+        for (final List<PlanImplementation.ConcatenationGroupDescriptor> concatGroupCombo : WayangCollections
+                .streamedCrossProduct(orderedConcatGroups)) {
             // Determine the execution output along with its OptimizationContext.
-            PlanImplementation.ConcatenationGroupDescriptor baseConcatGroup = concatGroupCombo.get(0);
+            final PlanImplementation.ConcatenationGroupDescriptor baseConcatGroup = concatGroupCombo.get(0);
             final OutputSlot<?> execOutput = baseConcatGroup.execOutput;
-            Set<PlanImplementation.ConcatenationDescriptor> baseConcatDescriptors = concatGroup2concatDescriptor.get(baseConcatGroup);
-            final PlanImplementation innerPlanImplementation = WayangCollections.getAny(baseConcatDescriptors).execOutputPlanImplementation;
-            // The output should reside in the same OptimizationContext in all PlanImplementations.
+            final Set<PlanImplementation.ConcatenationDescriptor> baseConcatDescriptors = concatGroup2concatDescriptor
+                    .get(baseConcatGroup);
+            final PlanImplementation innerPlanImplementation = WayangCollections
+                    .getAny(baseConcatDescriptors).execOutputPlanImplementation;
+            // The output should reside in the same OptimizationContext in all
+            // PlanImplementations.
             assert baseConcatDescriptors.stream()
                     .map(cd -> cd.execOutputPlanImplementation)
                     .map(PlanImplementation::getOptimizationContext)
                     .collect(Collectors.toSet()).size() == 1;
 
             // Determine the execution OutputSlots.
-            List<InputSlot<?>> execInputs = new ArrayList<>(inputs.size());
-            for (PlanImplementation.ConcatenationGroupDescriptor concatGroup : concatGroupCombo) {
-                for (Set<InputSlot<?>> execInputSet : concatGroup.execInputs) {
-                    if (execInputSet != null) execInputs.addAll(execInputSet);
+            final List<InputSlot<?>> execInputs = new ArrayList<>(inputs.size());
+            for (final PlanImplementation.ConcatenationGroupDescriptor concatGroup : concatGroupCombo) {
+                for (final Set<InputSlot<?>> execInputSet : concatGroup.execInputs) {
+                    if (execInputSet != null)
+                        execInputs.addAll(execInputSet);
                 }
             }
 
             // Construct a Junction between the ExecutionOperators.
             final Operator outputOperator = execOutput.getOwner();
-            assert outputOperator.isExecutionOperator() : String.format("Expected execution operator, found %s.", outputOperator);
-            TimeMeasurement channelConversionMeasurement = concatenationMeasurement == null ?
-                    null : concatenationMeasurement.start("Channel Conversion");
-            final Junction junction = openChannels == null || openChannels.isEmpty() ?
-                    channelConversionGraph.findMinimumCostJunction(
+            assert outputOperator.isExecutionOperator()
+                    : String.format("Expected execution operator, found %s.", outputOperator);
+            final TimeMeasurement channelConversionMeasurement = concatenationMeasurement == null ? null
+                    : concatenationMeasurement.start("Channel Conversion");
+            final Junction junction = openChannels == null || openChannels.isEmpty()
+                    ? channelConversionGraph.findMinimumCostJunction(
                             execOutput,
                             execInputs,
                             innerPlanImplementation.getOptimizationContext(),
-                            isRequestBreakpoint
-                    ) :
-                    channelConversionGraph.findMinimumCostJunction(
+                            isRequestBreakpoint)
+                    : channelConversionGraph.findMinimumCostJunction(
                             execOutput,
                             openChannels,
                             execInputs,
                             innerPlanImplementation.getOptimizationContext());
-            if (channelConversionMeasurement != null) channelConversionMeasurement.stop();
-            if (junction == null) continue;
+            if (channelConversionMeasurement != null)
+                channelConversionMeasurement.stop();
+            if (junction == null)
+                continue;
 
-            // If we found a junction, then we can enumerate all PlanImplementation combinations.
-            final List<Set<PlanImplementation>> groupPlans = WayangCollections.map(
+            // If we found a junction, then we can enumerate all PlanImplementation
+            // combinations.
+            final List<LinkedHashSet<PlanImplementation>> groupPlans = WayangCollections.map(
                     concatGroupCombo,
                     concatGroup -> {
-                        Set<PlanImplementation.ConcatenationDescriptor> concatDescriptors = concatGroup2concatDescriptor.get(concatGroup);
-                        Set<PlanImplementation> planImplementations = new HashSet<>(concatDescriptors.size());
-                        for (PlanImplementation.ConcatenationDescriptor concatDescriptor : concatDescriptors) {
+                        final LinkedHashSet<PlanImplementation.ConcatenationDescriptor> concatDescriptors = concatGroup2concatDescriptor
+                                .get(concatGroup);
+                        final LinkedHashSet<PlanImplementation> planImplementations = new LinkedHashSet<>(concatDescriptors.size());
+                        for (final PlanImplementation.ConcatenationDescriptor concatDescriptor : concatDescriptors) {
                             planImplementations.add(concatDescriptor.getPlanImplementation());
                         }
                         return planImplementations;
                     });
 
-            for (List<PlanImplementation> planCombo : WayangCollections.streamedCrossProduct(groupPlans)) {
-                PlanImplementation basePlan = planCombo.get(0);
-                List<PlanImplementation> targetPlans = planCombo.subList(0, planCombo.size());
-                PlanImplementation concatenatedPlan = basePlan.concatenate(targetPlans, junction, basePlan, concatenationEnumeration);
+            for (final List<PlanImplementation> planCombo : WayangCollections.streamedCrossProduct(groupPlans)) {
+                final PlanImplementation basePlan = planCombo.get(0);
+                final List<PlanImplementation> targetPlans = planCombo.subList(0, planCombo.size());
+                final PlanImplementation concatenatedPlan = basePlan.concatenate(targetPlans, junction, basePlan,
+                        concatenationEnumeration);
                 if (concatenatedPlan != null) {
                     result.add(concatenatedPlan);
                 }
@@ -437,74 +466,11 @@ public class PlanEnumeration {
     }
 
     /**
-     * Groups all {@link #planImplementations} by their {@link ExecutionOperator}s' {@link OutputSlot}s for the
-     * {@code output}. Additionally preserves the very (nested) {@link PlanImplementation} in that {@code output} resides.
-     *
-     * @param output a (possibly top-level) {@link OutputSlot} that should be connected
-     * @return a mapping that represents each element {@link #planImplementations} by a key value pair
-     * {@code (implementing OutputSlots -> (PlanImplementation, nested PlanImplementation)}
-     */
-    private MultiMap<OutputSlot<?>, Tuple<PlanImplementation, PlanImplementation>>
-    groupImplementationsByOutput(OutputSlot<?> output) {
-        // Sort the PlanEnumerations by their respective open InputSlot or OutputSlot.
-        final MultiMap<OutputSlot<?>, Tuple<PlanImplementation, PlanImplementation>> basePlanGroups =
-                new MultiMap<>();
-        // Find and validate implementing OutputSlots.
-        for (PlanImplementation basePlanImplementation : this.getPlanImplementations()) {
-            final Collection<Tuple<OutputSlot<?>, PlanImplementation>> execOpOutputsWithContext =
-                    basePlanImplementation.findExecutionOperatorOutputWithContext(output);
-            final Tuple<OutputSlot<?>, PlanImplementation> execOpOutputWithCtx =
-                    WayangCollections.getSingleOrNull(execOpOutputsWithContext);
-            assert execOpOutputsWithContext != null && !execOpOutputsWithContext.isEmpty()
-                    : String.format("No outputs found for %s.", output);
-
-            basePlanGroups.putSingle(
-                    execOpOutputWithCtx.getField0(),
-                    new Tuple<>(basePlanImplementation, execOpOutputWithCtx.getField1())
-            );
-        }
-        return basePlanGroups;
-    }
-
-    /**
-     * For each given instance, group the {@link #planImplementations} by their {@link ExecutionOperator} for the
-     * associated {@link InputSlot}.
-     *
-     * @param enumerations a mapping from {@link InputSlot}s to {@link PlanEnumeration}s that request this input
-     * @return a {@link List} with an element for each {@code enumerations} entry; each entry groups the
-     * {@link PlanImplementation}s of the {@link PlanEnumeration} that share the same {@link ExecutionOperator}s for
-     * the requested {@link InputSlot}
-     */
-    private static List<MultiMap<Set<InputSlot<?>>, PlanImplementation>> groupImplementationsByInput(
-            Map<InputSlot<?>, PlanEnumeration> enumerations) {
-
-        // Prepare a collector for the results.
-        List<MultiMap<Set<InputSlot<?>>, PlanImplementation>> targetPlanGroupList = new ArrayList<>(enumerations.size());
-
-        // Go over all PlanEnumerations.
-        for (Map.Entry<InputSlot<?>, PlanEnumeration> entry : enumerations.entrySet()) {
-            // Extract the requested InputSlot and the associated PlanEnumeration requesting it.
-            final InputSlot<?> requestedInput = entry.getKey();
-            final PlanEnumeration targetEnumeration = entry.getValue();
-
-
-            MultiMap<Set<InputSlot<?>>, PlanImplementation> targetPlanGroups = new MultiMap<>();
-            for (PlanImplementation planImpl : targetEnumeration.getPlanImplementations()) {
-                final Collection<InputSlot<?>> openInput = planImpl.findExecutionOperatorInputs(requestedInput);
-                targetPlanGroups.putSingle(WayangCollections.asSet(openInput), planImpl);
-            }
-            targetPlanGroupList.add(targetPlanGroups);
-        }
-        return targetPlanGroupList;
-    }
-
-
-    /**
      * Add a {@link PlanImplementation} to this instance.
      *
      * @param planImplementation to be added
      */
-    public void add(PlanImplementation planImplementation) {
+    public void add(final PlanImplementation planImplementation) {
         // TODO: Check if the plan conforms to this instance.
         this.planImplementations.add(planImplementation);
         assert planImplementation.getTimeEstimate() != null;
@@ -518,22 +484,23 @@ public class PlanEnumeration {
      * @param optimizationContext
      * @return the new instance
      */
-    private PlanImplementation createSingletonPartialPlan(ExecutionOperator executionOperator, OptimizationContext optimizationContext) {
+    private PlanImplementation createSingletonPartialPlan(final ExecutionOperator executionOperator,
+            final OptimizationContext optimizationContext) {
         return new PlanImplementation(
                 this,
-                new HashMap<>(0),
+                new LinkedHashMap<>(0),
                 Collections.singletonList(executionOperator),
-                optimizationContext
-        );
+                optimizationContext);
     }
 
     /**
-     * Unions the {@link PlanImplementation}s of this and {@code that} instance. The operation is in-place, i.e., this instance
+     * Unions the {@link PlanImplementation}s of this and {@code that} instance. The
+     * operation is in-place, i.e., this instance
      * is modified to form the result.
      *
      * @param that the instance to compute the union with
      */
-    public void unionInPlace(PlanEnumeration that) {
+    public void unionInPlace(final PlanEnumeration that) {
         assertMatchingInterface(this, that);
         this.scope.addAll(that.scope);
         that.planImplementations.forEach(partialPlan -> {
@@ -547,12 +514,14 @@ public class PlanEnumeration {
      * Create a new instance that equals this instance but redirects via
      * {@link OperatorAlternative.Alternative#getSlotMapping()}.
      *
-     * @param alternative the alternative to escape or {@code null} if none (in that case, this method returns the
+     * @param alternative the alternative to escape or {@code null} if none (in that
+     *                    case, this method returns the
      *                    this instance)
      */
-    public PlanEnumeration escape(OperatorAlternative.Alternative alternative) {
-        if (alternative == null) return this;
-        PlanEnumeration escapedInstance = new PlanEnumeration();
+    public PlanEnumeration escape(final OperatorAlternative.Alternative alternative) {
+        if (alternative == null)
+            return this;
+        final PlanEnumeration escapedInstance = new PlanEnumeration();
         final OperatorAlternative operatorAlternative = alternative.getOperatorAlternative();
 
         // Copy and widen the scope.
@@ -560,7 +529,7 @@ public class PlanEnumeration {
         escapedInstance.scope.add(operatorAlternative);
 
         // Escape the input slots.
-        for (InputSlot inputSlot : this.requestedInputSlots) {
+        for (final InputSlot inputSlot : this.requestedInputSlots) {
             final InputSlot escapedInput = alternative.getSlotMapping().resolveUpstream(inputSlot);
             if (escapedInput != null) {
                 escapedInstance.requestedInputSlots.add(escapedInput);
@@ -568,18 +537,18 @@ public class PlanEnumeration {
         }
 
         // Escape the output slots.
-        for (Tuple<OutputSlot<?>, InputSlot<?>> link : this.servingOutputSlots) {
+        for (final Tuple<OutputSlot<?>, InputSlot<?>> link : this.servingOutputSlots) {
             if (link.field1 != null) {
                 throw new IllegalStateException("Cannot escape a connected output slot.");
             }
-            final Collection<OutputSlot<Object>> resolvedOutputSlots =
-                    alternative.getSlotMapping().resolveDownstream(link.field0.unchecked());
-            for (OutputSlot escapedOutput : resolvedOutputSlots) {
+            final Collection<OutputSlot<Object>> resolvedOutputSlots = alternative.getSlotMapping()
+                    .resolveDownstream(link.field0.unchecked());
+            for (final OutputSlot escapedOutput : resolvedOutputSlots) {
                 final List<InputSlot<?>> occupiedInputs = escapedOutput.getOccupiedSlots();
                 if (occupiedInputs.isEmpty()) {
                     escapedInstance.servingOutputSlots.add(new Tuple<>(escapedOutput, null));
                 } else {
-                    for (InputSlot inputSlot : occupiedInputs) {
+                    for (final InputSlot inputSlot : occupiedInputs) {
                         escapedInstance.servingOutputSlots.add(new Tuple<>(escapedOutput, inputSlot));
                     }
                 }
@@ -587,30 +556,30 @@ public class PlanEnumeration {
         }
 
         // Escape the PlanImplementation instances.
-        for (PlanImplementation planImplementation : this.planImplementations) {
+        for (final PlanImplementation planImplementation : this.planImplementations) {
             escapedInstance.planImplementations.add(planImplementation.escape(alternative, escapedInstance));
         }
 
         return escapedInstance;
     }
 
-    public Collection<PlanImplementation> getPlanImplementations() {
+    public List<PlanImplementation> getPlanImplementations() {
         return this.planImplementations;
     }
 
-    public Set<InputSlot<?>> getRequestedInputSlots() {
+    public LinkedHashSet<InputSlot<?>> getRequestedInputSlots() {
         return this.requestedInputSlots;
     }
 
-    public Set<Tuple<OutputSlot<?>, InputSlot<?>>> getServingOutputSlots() {
+    public LinkedHashSet<Tuple<OutputSlot<?>, InputSlot<?>>> getServingOutputSlots() {
         return this.servingOutputSlots;
     }
 
-    public Set<OperatorAlternative> getScope() {
+    public LinkedHashSet<OperatorAlternative> getScope() {
         return this.scope;
     }
 
-    public Map<ExecutionOperator, ExecutionTask> getExecutedTasks() {
+    public LinkedHashMap<ExecutionOperator, ExecutionTask> getExecutedTasks() {
         return this.executedTasks;
     }
 
@@ -626,15 +595,13 @@ public class PlanEnumeration {
                 this.requestedInputSlots, this.servingOutputSlots.stream()
                         .map(Tuple::getField0)
                         .distinct()
-                        .collect(Collectors.toList())
-        );
+                        .collect(Collectors.toList()));
     }
 
     @SuppressWarnings("unused")
     private String toScopeString() {
         return String.format("%s[%dx %s]", this.getClass().getSimpleName(),
                 this.getPlanImplementations().size(),
-                this.scope
-        );
+                this.scope);
     }
 }
