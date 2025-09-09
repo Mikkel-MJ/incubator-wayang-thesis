@@ -34,6 +34,7 @@ import org.apache.wayang.core.platform.Junction;
 import org.apache.wayang.core.util.LinkedMultiMap;
 import org.apache.wayang.core.util.WayangCollections;
 import org.apache.wayang.core.util.Tuple;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -200,7 +201,6 @@ public class PlanEnumeration {
         if (!instance1.servingOutputSlots.equals(instance2.servingOutputSlots)) {
             throw new IllegalArgumentException("Output slots are not matching.");
         }
-
     }
 
     /**
@@ -385,7 +385,7 @@ public class PlanEnumeration {
         final List<PlanEnumeration> orderedEnumerations = new ArrayList<>(enum2concatGroup.keySet());
         orderedEnumerations.remove(this);
         orderedEnumerations.add(0, this); // Make sure that the base enumeration is in the beginning.
-        final List<Set<PlanImplementation.ConcatenationGroupDescriptor>> orderedConcatGroups = new ArrayList<>(
+        final List<LinkedHashSet<PlanImplementation.ConcatenationGroupDescriptor>> orderedConcatGroups = new ArrayList<>(
                 orderedEnumerations.size());
         for (final PlanEnumeration enumeration : orderedEnumerations) {
             orderedConcatGroups.add(enum2concatGroup.get(enumeration));
@@ -395,7 +395,7 @@ public class PlanEnumeration {
             // Determine the execution output along with its OptimizationContext.
             final PlanImplementation.ConcatenationGroupDescriptor baseConcatGroup = concatGroupCombo.get(0);
             final OutputSlot<?> execOutput = baseConcatGroup.execOutput;
-            final Set<PlanImplementation.ConcatenationDescriptor> baseConcatDescriptors = concatGroup2concatDescriptor
+            final LinkedHashSet<PlanImplementation.ConcatenationDescriptor> baseConcatDescriptors = concatGroup2concatDescriptor
                     .get(baseConcatGroup);
             final PlanImplementation innerPlanImplementation = WayangCollections
                     .getAny(baseConcatDescriptors).execOutputPlanImplementation;
@@ -409,7 +409,7 @@ public class PlanEnumeration {
             // Determine the execution OutputSlots.
             final List<InputSlot<?>> execInputs = new ArrayList<>(inputs.size());
             for (final PlanImplementation.ConcatenationGroupDescriptor concatGroup : concatGroupCombo) {
-                for (final Set<InputSlot<?>> execInputSet : concatGroup.execInputs) {
+                for (final LinkedHashSet<InputSlot<?>> execInputSet : concatGroup.execInputs) {
                     if (execInputSet != null)
                         execInputs.addAll(execInputSet);
                 }

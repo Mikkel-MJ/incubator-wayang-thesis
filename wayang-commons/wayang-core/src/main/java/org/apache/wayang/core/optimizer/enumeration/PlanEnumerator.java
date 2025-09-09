@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 import org.apache.wayang.commons.util.profiledb.model.measurement.TimeMeasurement;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.exception.WayangException;
@@ -879,10 +880,14 @@ public class PlanEnumerator {
                 branchEnumeration = operatorEnumeration;
             } else {
                 final OutputSlot<?> output = lastOperator.getOutput(0);
+
+                final LinkedHashMap<InputSlot<?>, PlanEnumeration> planEnumeration = new LinkedHashMap<>();
+                planEnumeration.put(operator.getInput(0), operatorEnumeration);
+
                 branchEnumeration = branchEnumeration.concatenate(
                         output,
                         this.openChannels.get(output),
-                        Collections.singletonMap(operator.getInput(0), operatorEnumeration),
+                        planEnumeration,
                         optimizationContext,
                         this.timeMeasurement);
 
@@ -990,7 +995,6 @@ public class PlanEnumerator {
                                         .stream()
                                         .map(alt -> alt.getContainedOperators()
                                                 .stream()
-                                                .map(op -> op)
                                                 .collect(Collectors.toList()))
                                         .collect(Collectors.toList()))
                                 .collect(Collectors.toList())));
@@ -1126,8 +1130,7 @@ public class PlanEnumerator {
         // Activate the ConcatenationActivator.
         final boolean wasActivated = concatenationActivator.canBeActivated();
         concatenationActivator.register(processedEnumeration, input);
-        if (concatenationActivator.canBeActivated()) {
-            if (!wasActivated) {
+        if (concatenationActivator.canBeActivated() && !wasActivated) {
                 if (this.isTopLevel()) {
                     this.logger.debug("Activate {} (open inputs: {}).",
                             concatenationActivator,
@@ -1135,7 +1138,7 @@ public class PlanEnumerator {
                 }
                 this.activatedConcatenations.add(concatenationActivator);
             }
-        }
+        
     }
 
     private ConcatenationActivator getOrCreateConcatenationActivator(final OutputSlot<?> output,

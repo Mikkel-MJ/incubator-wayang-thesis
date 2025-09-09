@@ -18,14 +18,30 @@
 
 package org.apache.wayang.core.optimizer.enumeration;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.Validate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.optimizer.ProbabilisticDoubleInterval;
+import org.apache.wayang.core.optimizer.costs.EstimatableCost;
 import org.apache.wayang.core.optimizer.costs.TimeEstimate;
 import org.apache.wayang.core.optimizer.costs.TimeToCostConverter;
-import org.apache.wayang.core.optimizer.costs.DefaultEstimatableCost;
-import org.apache.wayang.core.optimizer.costs.EstimatableCost;
 import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
 import org.apache.wayang.core.plan.wayangplan.ElementaryOperator;
@@ -35,36 +51,112 @@ import org.apache.wayang.core.plan.wayangplan.LoopSubplan;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.OperatorAlternative;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
-import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.plan.wayangplan.Slot;
+import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.platform.Junction;
 import org.apache.wayang.core.platform.Platform;
 import org.apache.wayang.core.util.Canonicalizer;
-import org.apache.wayang.core.util.WayangCollections;
 import org.apache.wayang.core.util.Tuple;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.ToDoubleFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.apache.wayang.core.util.WayangCollections;
 
 /**
  * Represents a partial execution plan.
  */
 public class PlanImplementation {
+
+    /**
+     * Amends a {@link ConcatenationGroupDescriptor} by
+     * {@link PlanImplementation}-specific information.
+     */
+    class ConcatenationDescriptor {
+
+        final ConcatenationGroupDescriptor groupDescriptor;
+
+        final PlanImplementation execOutputPlanImplementation;
+
+        /**
+         * Creates a new instance.
+         */
+        ConcatenationDescriptor(final OutputSlot<?> output, final List<InputSlot<?>> inputs) {
+            // Find the ExecutionOperator's corresponding OutputSlot along with the nested
+            // PlanImplementation.
+            OutputSlot<?> execOutput = null;
+            PlanImplementation execOutputPlanImplementation = null;
+            if (output != null) {
+                final Collection<Tuple<OutputSlot<?>, PlanImplementation>> execOpOutputsWithContext = PlanImplementation.this
+                        .findExecutionOperatorOutputWithContext(output);
+                final Tuple<OutputSlot<?>, PlanImplementation> execOpOutputWithCtx = WayangCollections
+                        .getSingleOrNull(execOpOutputsWithContext);
+                assert execOpOutputsWithContext != null : String.format("No outputs found for %s.", output);
+                execOutput = execOpOutputWithCtx.field0;
+                execOutputPlanImplementation = execOpOutputWithCtx.field1;
+            }
+
+            // Find the ExecutionOperators' corresponding InputSlots.
+            final List<LinkedHashSet<InputSlot<?>>> execInputs = new ArrayList<>(inputs.size());
+            for (final InputSlot<?> input : inputs) {
+                if (input == null) {
+                    execInputs.add(null);
+                } else {
+                    execInputs.add(WayangCollections
+                            .asLinkedHashSet(PlanImplementation.this.findExecutionOperatorInputs(input)));
+                }
+            }
+
+            this.groupDescriptor = new ConcatenationGroupDescriptor(execOutput, execInputs);
+            this.execOutputPlanImplementation = execOutputPlanImplementation;
+        }
+
+        PlanImplementation getPlanImplementation() {
+            return PlanImplementation.this;
+        }
+
+    }
+
+    /**
+     * Describes a group of {@link PlanImplementation}s in terms of their
+     * implementations for some {@link OutputSlot} and
+     * {@link InputSlot}s. These {@link Slot}s are not stored in this class and must
+     * be clear from the context.
+     */
+    static class ConcatenationGroupDescriptor {
+
+        /**
+         * A corresponding {@link ExecutionOperator}s {@link OutputSlot} or
+         * {@code null}.
+         */
+        final OutputSlot<?> execOutput;
+
+        /**
+         * {@link Set}s of corresponding {@link ExecutionOperator}s' {@link InputSlot}s.
+         * Individual components can
+         * be {@code null} if the {@link PlanImplementation}s do not implement the
+         * corresponding {@link InputSlot}.
+         */
+        final List<LinkedHashSet<InputSlot<?>>> execInputs;
+
+        ConcatenationGroupDescriptor(final OutputSlot<?> execOutput,
+                final List<LinkedHashSet<InputSlot<?>>> execInputs) {
+            this.execOutput = execOutput;
+            this.execInputs = execInputs;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            final ConcatenationGroupDescriptor that = (ConcatenationGroupDescriptor) o;
+            return Objects.equals(execOutput, that.execOutput) &&
+                    Objects.equals(execInputs, that.execInputs);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(execOutput, execInputs);
+        }
+    }
 
     private static final Logger logger = LogManager.getLogger(PlanImplementation.class);
 
@@ -78,19 +170,19 @@ public class PlanImplementation {
      * {@link ExecutionOperator}s and how they are
      * implemented.
      */
-    private final Map<OutputSlot<?>, Junction> junctions = new HashMap<>();
+    private final LinkedHashMap<OutputSlot<?>, Junction> junctions = new LinkedHashMap<>();
 
     /**
      * Defines how {@link LoopSubplan}s should be executed.
      */
-    private final Map<LoopSubplan, LoopImplementation> loopImplementations = new HashMap<>();
+    private final LinkedHashMap<LoopSubplan, LoopImplementation> loopImplementations = new LinkedHashMap<>();
 
     /**
      * An enumerated plan is mainly characterized by the
      * {@link OperatorAlternative.Alternative}s that have
      * been picked so far. This member keeps track of them.
      */
-    private final Map<OperatorAlternative, OperatorAlternative.Alternative> settledAlternatives = new HashMap<>();
+    private final LinkedHashMap<OperatorAlternative, OperatorAlternative.Alternative> settledAlternatives = new LinkedHashMap<>();
 
     /**
      * The {@link PlanEnumeration} that hosts this instance. Can change over time.
@@ -102,7 +194,7 @@ public class PlanImplementation {
     /**
      * Keep track of the {@link Platform}s of our {@link #operators}.
      */
-    private Set<Platform> platformCache;
+    private LinkedHashSet<Platform> platformCache;
 
     /**
      * {@link OptimizationContext} that provides estimates for the
@@ -130,26 +222,6 @@ public class PlanImplementation {
     private final List<Tuple<Operator, Tuple<List<ProbabilisticDoubleInterval>, List<Double>>>> calculatedParallelOperatorCostCache = new ArrayList<>();
 
     /**
-     * Create a new instance.
-     */
-    PlanImplementation(
-            final PlanEnumeration planEnumeration,
-            final Map<OutputSlot<?>, Junction> junctions,
-            final Collection<ExecutionOperator> operators,
-            final OptimizationContext optimizationContext) {
-        this(planEnumeration, junctions, new Canonicalizer<>(operators), optimizationContext);
-    }
-
-    /**
-     * Creates new instance.
-     */
-    PlanImplementation(final PlanEnumeration planEnumeration,
-            final Map<OutputSlot<?>, Junction> junctions,
-            final OptimizationContext optimizationContext) {
-        this(planEnumeration, junctions, new Canonicalizer<>(), optimizationContext);
-    }
-
-    /**
      * Copy constructor.
      */
     public PlanImplementation(final PlanImplementation original) {
@@ -167,10 +239,30 @@ public class PlanImplementation {
     }
 
     /**
+     * Create a new instance.
+     */
+    PlanImplementation(
+            final PlanEnumeration planEnumeration,
+            final LinkedHashMap<OutputSlot<?>, Junction> junctions,
+            final Collection<ExecutionOperator> operators,
+            final OptimizationContext optimizationContext) {
+        this(planEnumeration, junctions, new Canonicalizer<>(operators), optimizationContext);
+    }
+
+    /**
+     * Creates new instance.
+     */
+    PlanImplementation(final PlanEnumeration planEnumeration,
+            final LinkedHashMap<OutputSlot<?>, Junction> junctions,
+            final OptimizationContext optimizationContext) {
+        this(planEnumeration, junctions, new Canonicalizer<>(), optimizationContext);
+    }
+
+    /**
      * Base constructor.
      */
     private PlanImplementation(final PlanEnumeration planEnumeration,
-            final Map<OutputSlot<?>, Junction> junctions,
+            final LinkedHashMap<OutputSlot<?>, Junction> junctions,
             final Canonicalizer<ExecutionOperator> operators,
             final OptimizationContext optimizationContext) {
         this.planEnumeration = planEnumeration;
@@ -195,6 +287,238 @@ public class PlanImplementation {
 
     public void setPlanEnumeration(final PlanEnumeration planEnumeration) {
         this.planEnumeration = planEnumeration;
+    }
+
+    /**
+     * Escapes the {@link OperatorAlternative} that contains this instance.
+     *
+     * @param alternative        contains this instance
+     * @param newPlanEnumeration will host the new instance
+     * @return
+     */
+    public PlanImplementation escape(final OperatorAlternative.Alternative alternative,
+            final PlanEnumeration newPlanEnumeration) {
+        final PlanImplementation escapedPlanImplementation = new PlanImplementation(
+                newPlanEnumeration, this.junctions, this.operators, this.optimizationContext);
+        escapedPlanImplementation.settledAlternatives.putAll(this.settledAlternatives);
+        assert !escapedPlanImplementation.settledAlternatives.containsKey(alternative.getOperatorAlternative());
+        escapedPlanImplementation.settledAlternatives.put(alternative.getOperatorAlternative(), alternative);
+        escapedPlanImplementation.loopImplementations.putAll(this.getLoopImplementations());
+        return escapedPlanImplementation;
+    }
+
+    public Canonicalizer<ExecutionOperator> getOperators() {
+        return this.operators;
+    }
+
+    public LinkedHashMap<OperatorAlternative, OperatorAlternative.Alternative> getSettledAlternatives() {
+        return this.settledAlternatives;
+    }
+
+    public LinkedHashMap<LoopSubplan, LoopImplementation> getLoopImplementations() {
+        return this.loopImplementations;
+    }
+
+    /**
+     * Adds a new {@link LoopImplementation} for a given {@link LoopSubplan}.
+     *
+     * @param loop               the {@link LoopSubplan}
+     * @param loopImplementation the {@link LoopImplementation}
+     */
+    public void addLoopImplementation(final LoopSubplan loop, final LoopImplementation loopImplementation) {
+        this.loopImplementations.put(loop, loopImplementation);
+    }
+
+    /**
+     * @return those contained {@link ExecutionOperator}s that have a {@link Slot}
+     *         that is yet to be connected
+     *         to a further {@link ExecutionOperator} in the further plan
+     *         enumeration process
+     */
+    public Collection<ExecutionOperator> getInterfaceOperators() {
+        Validate.notNull(this.getPlanEnumeration());
+        final LinkedHashSet<OutputSlot> outputSlots = this.getPlanEnumeration().servingOutputSlots.stream()
+                .map(Tuple::getField0)
+                .distinct()
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        final LinkedHashSet<InputSlot<?>> inputSlots = this.getPlanEnumeration().requestedInputSlots;
+
+        return this.operators.stream()
+                .filter(operator -> this.allOutermostInputSlots(operator).anyMatch(inputSlots::contains) ||
+                        this.allOutermostOutputSlots(operator).anyMatch(outputSlots::contains))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Find the {@link ExecutionOperator} that do not depend on any other
+     * {@link ExecutionOperator} as input.
+     *
+     * @return the start {@link ElementaryOperator}s
+     */
+    public List<ExecutionOperator> getStartOperators() {
+        return this.operators.stream()
+                .filter(this::isStartOperator)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Find for a given {@link OperatorAlternative}, which
+     * {@link OperatorAlternative.Alternative} has been picked
+     * by this instance
+     *
+     * @param operatorAlternative the {@link OperatorAlternative} in question
+     * @return the {@link OperatorAlternative.Alternative} or {@code null} if none
+     *         has been chosen in this instance
+     */
+    public OperatorAlternative.Alternative getChosenAlternative(final OperatorAlternative operatorAlternative) {
+        return this.settledAlternatives.get(operatorAlternative);
+    }
+
+    /**
+     * Retrieves the {@link TimeEstimate} for this instance, including platform
+     * overhead.
+     *
+     * @return the {@link TimeEstimate}
+     */
+    public TimeEstimate getTimeEstimate() {
+        return this.getTimeEstimate(true);
+    }
+
+    /**
+     * Retrieves the {@link TimeEstimate} for this instance, including platform
+     * overhead.
+     *
+     * @param isIncludeOverhead whether to include any incurring global overhead
+     * @return the {@link TimeEstimate}
+     */
+    public TimeEstimate getTimeEstimate(final boolean isIncludeOverhead) {
+        final TimeEstimate operatorTimeEstimate = this.operators.stream()
+                .map(op -> this.optimizationContext.getOperatorContext(op).getTimeEstimate())
+                .reduce(TimeEstimate.ZERO, TimeEstimate::plus);
+        final TimeEstimate junctionTimeEstimate = this.optimizationContext.getDefaultOptimizationContexts().stream()
+                .flatMap(optCtx -> this.junctions.values().stream().map(jct -> jct.getTimeEstimate(optCtx)))
+                .reduce(TimeEstimate.ZERO, TimeEstimate::plus);
+        final TimeEstimate loopTimeEstimate = this.loopImplementations.values().stream()
+                .map(LoopImplementation::getTimeEstimate)
+                .reduce(TimeEstimate.ZERO, TimeEstimate::plus);
+        TimeEstimate timeEstimate = operatorTimeEstimate.plus(junctionTimeEstimate).plus(loopTimeEstimate);
+
+        if (isIncludeOverhead) {
+            final long platformInitializationTime = this.getUtilizedPlatforms().stream()
+                    .map(platform -> this.optimizationContext.getConfiguration().getPlatformStartUpTimeProvider()
+                            .provideFor(platform))
+                    .reduce(0L, (a, b) -> a + b);
+            timeEstimate = timeEstimate.plus(platformInitializationTime);
+        }
+
+        return timeEstimate;
+    }
+
+    /**
+     * Retrieves the cost estimate for this instance including any overhead.
+     *
+     * @return the cost estimate
+     */
+    public ProbabilisticDoubleInterval getCostEstimate() {
+        return this.getCostEstimate(true);
+    }
+
+    /**
+     * Retrieves the cost estimate for this instance including any overhead.
+     *
+     * @return the cost estimate
+     */
+    public double getSquashedCostEstimate() {
+        return this.getSquashedCostEstimate(true);
+    }
+
+    public Junction getJunction(final OutputSlot<?> output) {
+        return this.junctions.get(output);
+    }
+
+    public void putJunction(final OutputSlot<?> output, final Junction junction) {
+        final Junction oldValue = junction == null ? this.junctions.remove(output)
+                : this.junctions.put(output, junction);
+        if (oldValue != null) {
+            logger.warn("Replaced {} with {}.", oldValue, junction);
+        }
+    }
+
+    public OptimizationContext getOptimizationContext() {
+        return this.optimizationContext;
+    }
+
+    /**
+     * Merges the {@link OptimizationContext}s of the {@link Junction}s in this
+     * instance into its main
+     * {@link OptimizationContext}/
+     */
+    public void mergeJunctionOptimizationContexts() {
+        // Merge the top-level Junctions.
+        for (final Junction junction : this.junctions.values()) {
+            junction.getOptimizationContexts().forEach(OptimizationContext::mergeToBase);
+        }
+
+        // Descend into loops.
+        this.loopImplementations.values().stream()
+                .flatMap(loopImplementation -> loopImplementation.getIterationImplementations().stream())
+                .map(LoopImplementation.IterationImplementation::getBodyImplementation)
+                .forEach(PlanImplementation::mergeJunctionOptimizationContexts);
+    }
+
+    public void logTimeEstimates() {
+        if (!this.logger.isDebugEnabled())
+            return;
+
+        this.logger.debug(">>> Regular operators");
+        for (final ExecutionOperator operator : this.operators) {
+            this.logger.debug("Estimated execution time of {}: {}",
+                    operator, this.optimizationContext.getOperatorContext(operator).getTimeEstimate());
+        }
+        this.logger.debug(">>> Glue operators");
+        for (final Junction junction : junctions.values()) {
+            for (final ExecutionTask task : junction.getConversionTasks()) {
+                final ExecutionOperator operator = task.getOperator();
+                this.logger.debug("Estimated execution time of {}: {}",
+                        operator, this.optimizationContext.getOperatorContext(operator).getTimeEstimate());
+            }
+        }
+        this.logger.debug(">>> Loops");
+        for (final LoopImplementation loopImplementation : this.loopImplementations.values()) {
+            for (final LoopImplementation.IterationImplementation iterationImplementation : loopImplementation
+                    .getIterationImplementations()) {
+                iterationImplementation.getBodyImplementation().logTimeEstimates();
+            }
+        }
+    }
+
+    public LinkedHashMap<OutputSlot<?>, Junction> getJunctions() {
+        return this.junctions;
+    }
+
+    public EstimatableCost getCost() {
+        return this.costModel;
+    }
+
+    /**
+     * Retrieve the {@link Platform}s that are utilized by this instance.
+     *
+     * @return the {@link Platform}s
+     */
+    public LinkedHashSet<Platform> getUtilizedPlatforms() {
+        if (this.platformCache == null) {
+            this.platformCache = this.streamOperators()
+                    .map(ExecutionOperator::getPlatform)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+        return this.platformCache;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("PlanImplementation[%s, %s, costs=%s]",
+                this.getUtilizedPlatforms(), this.getTimeEstimate(), this.getCostEstimate());
     }
 
     /**
@@ -253,7 +577,7 @@ public class PlanImplementation {
             // Discern LoopHeadOperator InputSlots and loop body InputSlots.
             final List<LoopImplementation.IterationImplementation> iterationImpls = loopImplementation
                     .getIterationImplementations();
-            final Collection<InputSlot<?>> collector = new HashSet<>(innerInputs.size());
+            final Collection<InputSlot<?>> collector = new LinkedHashSet<>(innerInputs.size());
             for (final InputSlot<?> innerInput : innerInputs) {
                 if (innerInput.getOwner() == loopSubplan.getLoopHead()) {
                     final LoopImplementation.IterationImplementation initialIterationImpl = iterationImpls.get(0);
@@ -331,7 +655,8 @@ public class PlanImplementation {
             // For all the iterations, return the potential OutputSlots.
             final List<LoopImplementation.IterationImplementation> iterationImpls = loopImplementation
                     .getIterationImplementations();
-            final Set<Tuple<OutputSlot<?>, PlanImplementation>> collector = new HashSet<>(iterationImpls.size());
+            final LinkedHashSet<Tuple<OutputSlot<?>, PlanImplementation>> collector = new LinkedHashSet<>(
+                    iterationImpls.size());
             for (final LoopImplementation.IterationImplementation iterationImpl : iterationImpls) {
                 final Collection<Tuple<OutputSlot<?>, PlanImplementation>> outputsWithContext = iterationImpl
                         .getBodyImplementation().findExecutionOperatorOutputWithContext(innerOutput);
@@ -367,8 +692,8 @@ public class PlanImplementation {
 
         final PlanImplementation concatenation = new PlanImplementation(
                 concatenationEnumeration,
-                new HashMap<>(this.junctions.size() + 1),
-                new HashSet<>(this.settledAlternatives.size(), targetPlans.size() * 4), // ballpark figure
+                new LinkedHashMap<>(this.junctions.size() + 1),
+                new LinkedHashSet<>(this.settledAlternatives.size(), targetPlans.size() * 4f), // ballpark figure
                 this.optimizationContext);
 
         concatenation.operators.addAll(this.operators);
@@ -403,6 +728,165 @@ public class PlanImplementation {
         }
 
         return concatenation;
+    }
+
+    /**
+     * Retrieves the cost estimate for this instance.
+     *
+     * @param isIncludeOverhead whether to include global overhead in the
+     *                          {@link TimeEstimate} (to avoid repeating
+     *                          overhead in nested instances)
+     * @return the cost estimate
+     */
+    ProbabilisticDoubleInterval getCostEstimate(final boolean isIncludeOverhead) {
+        if (this.optimizationContext.getConfiguration()
+                .getBooleanProperty("wayang.core.optimizer.enumeration.parallel-tasks")) {
+            return this.costModel.getParallelEstimate(this, isIncludeOverhead);
+        } else {
+            return this.costModel.getEstimate(this, isIncludeOverhead);
+        }
+    }
+
+    /**
+     * Retrieves the cost estimate for this instance.
+     *
+     * @param isIncludeOverhead whether to include global overhead in the
+     *                          {@link TimeEstimate} (to avoid repeating
+     *                          overhead in nested instances)
+     * @return the squashed cost estimate
+     */
+    double getSquashedCostEstimate(final boolean isIncludeOverhead) {
+        // Check if the parallel cost calculation is enabled in the configuration file
+        if (this.optimizationContext.getConfiguration()
+                .getBooleanProperty("wayang.core.optimizer.enumeration.parallel-tasks")) {
+            return this.costModel.getSquashedParallelEstimate(this, isIncludeOverhead);
+        } else {
+            return this.costModel.getSquashedEstimate(this, isIncludeOverhead);
+        }
+    }
+
+    /**
+     * Retrieves the cost estimate for this instance taking into account parallel
+     * stage execution.
+     *
+     * @param isIncludeOverhead whether to include global overhead in the
+     *                          {@link TimeEstimate} (to avoid repeating
+     *                          overhead in nested instances)
+     * @return the cost estimate taking into account parallel stage execution
+     */
+    ProbabilisticDoubleInterval getParallelCostEstimate(final boolean isIncludeOverhead) {
+        ProbabilisticDoubleInterval parallelCostEstimateWithoutOverhead, parallelCostEstimate;
+
+        if (this.parallelCostEstimateCache == null) {
+            // It means that the squashed cost is not yet called, might be only one possible
+            // execution plan
+            this.getSquashedParallelCostEstimate(true);
+        }
+
+        final ProbabilisticDoubleInterval loopCosts = this.loopImplementations.values().stream()
+                .map(LoopImplementation::getCostEstimate)
+                .reduce(ProbabilisticDoubleInterval.zero, ProbabilisticDoubleInterval::plus);
+        parallelCostEstimateWithoutOverhead = this.parallelCostEstimateCache.field0.get(0)
+                .plus(this.parallelCostEstimateCache.field0.get(1)).plus(loopCosts);
+        final ProbabilisticDoubleInterval overheadCosts = this.getUtilizedPlatforms().stream()
+                .map(platform -> {
+                    final Configuration configuration = this.optimizationContext.getConfiguration();
+                    final long startUpTime = configuration.getPlatformStartUpTimeProvider().provideFor(platform);
+                    final TimeToCostConverter timeToCostConverter = configuration.getTimeToCostConverterProvider()
+                            .provideFor(platform);
+                    return timeToCostConverter.convert(new TimeEstimate(startUpTime, startUpTime, 1d));
+                })
+                .reduce(ProbabilisticDoubleInterval.zero, ProbabilisticDoubleInterval::plus);
+        parallelCostEstimate = parallelCostEstimateWithoutOverhead.plus(overheadCosts);
+        return isIncludeOverhead ? parallelCostEstimate : parallelCostEstimateWithoutOverhead;
+    }
+
+    /**
+     * Retrieves the cost estimate for this instance taking into account parallel
+     * stage execution.
+     *
+     * @param isIncludeOverhead whether to include global overhead in the
+     *                          {@link TimeEstimate} (to avoid repeating
+     *                          overhead in nested instances)
+     * @return the squashed cost estimate taking into account parallel stage
+     *         execution
+     */
+    double getSquashedParallelCostEstimate(final boolean isIncludeOverhead) {
+        // Collect sink operators by Removing all operators that have an output
+        LinkedHashSet<Operator> sinkOperators;
+        sinkOperators = this.operators.stream()
+                .filter(op -> op.getNumOutputs() == 0)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        // Retrieve operator and junction cost with parallel stage consideration
+        double parallelOperatorCosts = 0f;
+        double parallelJunctionCosts = 0f;
+
+        // Iterate through all sinks to find the expensive sink
+        for (final Operator op : sinkOperators) {
+            final Tuple<List<ProbabilisticDoubleInterval>, List<Double>> tempParallelCostEstimate = this
+                    .getParallelOperatorJunctionAllCostEstimate(op);
+            final List<Double> tempSquashedCost = tempParallelCostEstimate.field1;
+
+            if (tempSquashedCost.get(0) + tempSquashedCost.get(1) > parallelOperatorCosts + parallelJunctionCosts) {
+                parallelOperatorCosts = tempSquashedCost.get(0);
+                parallelJunctionCosts = tempSquashedCost.get(1);
+                this.parallelCostEstimateCache = tempParallelCostEstimate;
+            }
+        }
+        final double loopCosts = this.loopImplementations.values().stream()
+                .mapToDouble(LoopImplementation::getSquashedCostEstimate)
+                .sum();
+        final double parallelSquashedCostEstimateWithoutOverhead = parallelOperatorCosts + parallelJunctionCosts
+                + loopCosts;
+        final double overheadCosts = this.getUtilizedPlatforms().stream()
+                .mapToDouble(platform -> {
+                    final Configuration configuration = this.optimizationContext.getConfiguration();
+
+                    final long startUpTime = configuration.getPlatformStartUpTimeProvider().provideFor(platform);
+
+                    final TimeToCostConverter timeToCostConverter = configuration.getTimeToCostConverterProvider()
+                            .provideFor(platform);
+                    final ProbabilisticDoubleInterval costs = timeToCostConverter
+                            .convert(new TimeEstimate(startUpTime, startUpTime, 1d));
+
+                    final ToDoubleFunction<ProbabilisticDoubleInterval> squasher = configuration
+                            .getCostSquasherProvider().provide();
+                    return squasher.applyAsDouble(costs);
+                })
+                .sum();
+        final double parallelSquashedCostEstimate = parallelSquashedCostEstimateWithoutOverhead + overheadCosts;
+        return isIncludeOverhead ? parallelSquashedCostEstimate : parallelSquashedCostEstimateWithoutOverhead;
+    }
+
+    /**
+     * Stream all the {@link ExecutionOperator}s in this instance.
+     *
+     * @return a {@link Stream} containing every {@link ExecutionOperator} at least
+     *         once
+     */
+    Stream<ExecutionOperator> streamOperators() {
+        Stream<ExecutionOperator> operatorStream = Stream.concat(
+                this.operators.stream(),
+                this.junctions.values().stream().flatMap(j -> j.getConversionTasks().stream())
+                        .map(ExecutionTask::getOperator));
+        if (!this.loopImplementations.isEmpty()) {
+            operatorStream = Stream.concat(
+                    operatorStream,
+                    this.loopImplementations.values().stream().flatMap(LoopImplementation::streamOperators));
+        }
+        return operatorStream;
+    }
+
+    /**
+     * Creates a new {@link ConcatenationDescriptor} for this instance.
+     *
+     * @param output the relevant {@link OutputSlot} or {@code null}
+     * @param inputs the relevant {@link InputSlot}s; components can be {@code null}
+     * @return the {@link ConcatenationDescriptor}
+     */
+    ConcatenationDescriptor createConcatenationDescriptor(final OutputSlot<?> output, final List<InputSlot<?>> inputs) {
+        return new ConcatenationDescriptor(output, inputs);
     }
 
     /**
@@ -473,7 +957,7 @@ public class PlanImplementation {
     }
 
     private boolean isSettledAlternativesContradicting(final PlanImplementation that) {
-        for (final Map.Entry<OperatorAlternative, OperatorAlternative.Alternative> entry : this.settledAlternatives
+        for (final Entry<OperatorAlternative, OperatorAlternative.Alternative> entry : this.settledAlternatives
                 .entrySet()) {
             final OperatorAlternative opAlt = entry.getKey();
             final OperatorAlternative.Alternative alternative = entry.getValue();
@@ -482,7 +966,7 @@ public class PlanImplementation {
                 return true;
             }
         }
-        for (final Map.Entry<LoopSubplan, LoopImplementation> entry : this.loopImplementations.entrySet()) {
+        for (final Entry<LoopSubplan, LoopImplementation> entry : this.loopImplementations.entrySet()) {
             final LoopSubplan loop = entry.getKey();
             final LoopImplementation thisLoopImplementation = entry.getValue();
             final LoopImplementation thatLoopImplementation = that.loopImplementations.get(loop);
@@ -501,65 +985,6 @@ public class PlanImplementation {
         return false;
     }
 
-    /**
-     * Escapes the {@link OperatorAlternative} that contains this instance.
-     *
-     * @param alternative        contains this instance
-     * @param newPlanEnumeration will host the new instance
-     * @return
-     */
-    public PlanImplementation escape(final OperatorAlternative.Alternative alternative, final PlanEnumeration newPlanEnumeration) {
-        final PlanImplementation escapedPlanImplementation = new PlanImplementation(
-                newPlanEnumeration, this.junctions, this.operators, this.optimizationContext);
-        escapedPlanImplementation.settledAlternatives.putAll(this.settledAlternatives);
-        assert !escapedPlanImplementation.settledAlternatives.containsKey(alternative.getOperatorAlternative());
-        escapedPlanImplementation.settledAlternatives.put(alternative.getOperatorAlternative(), alternative);
-        escapedPlanImplementation.loopImplementations.putAll(this.getLoopImplementations());
-        return escapedPlanImplementation;
-    }
-
-    public Canonicalizer<ExecutionOperator> getOperators() {
-        return this.operators;
-    }
-
-    public Map<OperatorAlternative, OperatorAlternative.Alternative> getSettledAlternatives() {
-        return this.settledAlternatives;
-    }
-
-    public Map<LoopSubplan, LoopImplementation> getLoopImplementations() {
-        return this.loopImplementations;
-    }
-
-    /**
-     * Adds a new {@link LoopImplementation} for a given {@link LoopSubplan}.
-     *
-     * @param loop               the {@link LoopSubplan}
-     * @param loopImplementation the {@link LoopImplementation}
-     */
-    public void addLoopImplementation(final LoopSubplan loop, final LoopImplementation loopImplementation) {
-        this.loopImplementations.put(loop, loopImplementation);
-    }
-
-    /**
-     * @return those contained {@link ExecutionOperator}s that have a {@link Slot}
-     *         that is yet to be connected
-     *         to a further {@link ExecutionOperator} in the further plan
-     *         enumeration process
-     */
-    public Collection<ExecutionOperator> getInterfaceOperators() {
-        Validate.notNull(this.getPlanEnumeration());
-        final Set<OutputSlot> outputSlots = this.getPlanEnumeration().servingOutputSlots.stream()
-                .map(Tuple::getField0)
-                .distinct()
-                .collect(Collectors.toSet());
-        final Set<InputSlot<?>> inputSlots = this.getPlanEnumeration().requestedInputSlots;
-
-        return this.operators.stream()
-                .filter(operator -> this.allOutermostInputSlots(operator).anyMatch(inputSlots::contains) ||
-                        this.allOutermostOutputSlots(operator).anyMatch(outputSlots::contains))
-                .collect(Collectors.toList());
-    }
-
     private Stream<OutputSlot> allOutermostOutputSlots(final Operator operator) {
         return Arrays.stream(operator.getAllOutputs())
                 .flatMap(output -> operator.getOutermostOutputSlots(output).stream());
@@ -568,18 +993,6 @@ public class PlanImplementation {
     private Stream<InputSlot> allOutermostInputSlots(final Operator operator) {
         return Arrays.stream(operator.getAllInputs())
                 .map(operator::getOutermostInputSlot);
-    }
-
-    /**
-     * Find the {@link ExecutionOperator} that do not depend on any other
-     * {@link ExecutionOperator} as input.
-     *
-     * @return the start {@link ElementaryOperator}s
-     */
-    public List<ExecutionOperator> getStartOperators() {
-        return this.operators.stream()
-                .filter(this::isStartOperator)
-                .collect(Collectors.toList());
     }
 
     /**
@@ -603,112 +1016,6 @@ public class PlanImplementation {
     }
 
     /**
-     * Find for a given {@link OperatorAlternative}, which
-     * {@link OperatorAlternative.Alternative} has been picked
-     * by this instance
-     *
-     * @param operatorAlternative the {@link OperatorAlternative} in question
-     * @return the {@link OperatorAlternative.Alternative} or {@code null} if none
-     *         has been chosen in this instance
-     */
-    public OperatorAlternative.Alternative getChosenAlternative(final OperatorAlternative operatorAlternative) {
-        return this.settledAlternatives.get(operatorAlternative);
-    }
-
-    /**
-     * Retrieves the {@link TimeEstimate} for this instance, including platform
-     * overhead.
-     *
-     * @return the {@link TimeEstimate}
-     */
-    public TimeEstimate getTimeEstimate() {
-        return this.getTimeEstimate(true);
-    }
-
-    /**
-     * Retrieves the {@link TimeEstimate} for this instance, including platform
-     * overhead.
-     *
-     * @param isIncludeOverhead whether to include any incurring global overhead
-     * @return the {@link TimeEstimate}
-     */
-    public TimeEstimate getTimeEstimate(final boolean isIncludeOverhead) {
-        final TimeEstimate operatorTimeEstimate = this.operators.stream()
-                .map(op -> this.optimizationContext.getOperatorContext(op).getTimeEstimate())
-                .reduce(TimeEstimate.ZERO, TimeEstimate::plus);
-        final TimeEstimate junctionTimeEstimate = this.optimizationContext.getDefaultOptimizationContexts().stream()
-                .flatMap(optCtx -> this.junctions.values().stream().map(jct -> jct.getTimeEstimate(optCtx)))
-                .reduce(TimeEstimate.ZERO, TimeEstimate::plus);
-        final TimeEstimate loopTimeEstimate = this.loopImplementations.values().stream()
-                .map(LoopImplementation::getTimeEstimate)
-                .reduce(TimeEstimate.ZERO, TimeEstimate::plus);
-        TimeEstimate timeEstimate = operatorTimeEstimate.plus(junctionTimeEstimate).plus(loopTimeEstimate);
-
-        if (isIncludeOverhead) {
-            final long platformInitializationTime = this.getUtilizedPlatforms().stream()
-                    .map(platform -> this.optimizationContext.getConfiguration().getPlatformStartUpTimeProvider()
-                            .provideFor(platform))
-                    .reduce(0L, (a, b) -> a + b);
-            timeEstimate = timeEstimate.plus(platformInitializationTime);
-        }
-
-        return timeEstimate;
-    }
-
-    /**
-     * Retrieves the cost estimate for this instance including any overhead.
-     *
-     * @return the cost estimate
-     */
-    public ProbabilisticDoubleInterval getCostEstimate() {
-        return this.getCostEstimate(true);
-    }
-
-    /**
-     * Retrieves the cost estimate for this instance.
-     *
-     * @param isIncludeOverhead whether to include global overhead in the
-     *                          {@link TimeEstimate} (to avoid repeating
-     *                          overhead in nested instances)
-     * @return the cost estimate
-     */
-    ProbabilisticDoubleInterval getCostEstimate(final boolean isIncludeOverhead) {
-        if (this.optimizationContext.getConfiguration()
-                .getBooleanProperty("wayang.core.optimizer.enumeration.parallel-tasks")) {
-            return this.costModel.getParallelEstimate(this, isIncludeOverhead);
-        } else {
-            return this.costModel.getEstimate(this, isIncludeOverhead);
-        }
-    }
-
-    /**
-     * Retrieves the cost estimate for this instance including any overhead.
-     *
-     * @return the cost estimate
-     */
-    public double getSquashedCostEstimate() {
-        return this.getSquashedCostEstimate(true);
-    }
-
-    /**
-     * Retrieves the cost estimate for this instance.
-     *
-     * @param isIncludeOverhead whether to include global overhead in the
-     *                          {@link TimeEstimate} (to avoid repeating
-     *                          overhead in nested instances)
-     * @return the squashed cost estimate
-     */
-    double getSquashedCostEstimate(final boolean isIncludeOverhead) {
-        // Check if the parallel cost calculation is enabled in the configuration file
-        if (this.optimizationContext.getConfiguration()
-                .getBooleanProperty("wayang.core.optimizer.enumeration.parallel-tasks")) {
-            return this.costModel.getSquashedParallelEstimate(this, isIncludeOverhead);
-        } else {
-            return this.costModel.getSquashedEstimate(this, isIncludeOverhead);
-        }
-    }
-
-    /**
      * Retrieves the cost estimate of input {@link Operator} and input
      * {@link Junction} and recurse if there is input Operators
      *
@@ -725,8 +1032,8 @@ public class PlanImplementation {
     private Tuple<List<ProbabilisticDoubleInterval>, List<Double>> getParallelOperatorJunctionAllCostEstimate(
             final Operator operator) {
 
-        final Set<Operator> inputOperators = new HashSet<>();
-        final Set<Junction> inputJunction = new HashSet<>();
+        final LinkedHashSet<Operator> inputOperators = new LinkedHashSet<>();
+        final LinkedHashSet<Junction> inputJunction = new LinkedHashSet<>();
 
         final List<ProbabilisticDoubleInterval> probalisticCost = new ArrayList<>();
         final List<Double> squashedCost = new ArrayList<>();
@@ -839,9 +1146,9 @@ public class PlanImplementation {
                         .getSquashedCostEstimate(this.optimizationContext.getDefaultOptimizationContexts().get(0))
                         + maxJunctionSquash);
 
-                final Tuple<List<ProbabilisticDoubleInterval>, List<Double>> returnedCost = new Tuple(probalisticCost,
+                final Tuple<List<ProbabilisticDoubleInterval>, List<Double>> returnedCost = new Tuple<>(probalisticCost,
                         squashedCost);
-                this.calculatedParallelOperatorCostCache.add(new Tuple(operator, returnedCost));
+                this.calculatedParallelOperatorCostCache.add(new Tuple<>(operator, returnedCost));
                 return returnedCost;
             }
         } else {
@@ -858,310 +1165,6 @@ public class PlanImplementation {
             squashedCost.add(junctionSquash);
 
             return new Tuple<>(probalisticCost, squashedCost);
-        }
-    }
-
-    /**
-     * Retrieves the cost estimate for this instance taking into account parallel
-     * stage execution.
-     *
-     * @param isIncludeOverhead whether to include global overhead in the
-     *                          {@link TimeEstimate} (to avoid repeating
-     *                          overhead in nested instances)
-     * @return the cost estimate taking into account parallel stage execution
-     */
-    ProbabilisticDoubleInterval getParallelCostEstimate(final boolean isIncludeOverhead) {
-        ProbabilisticDoubleInterval parallelCostEstimateWithoutOverhead, parallelCostEstimate;
-
-        if (this.parallelCostEstimateCache == null) {
-            // It means that the squashed cost is not yet called, might be only one possible
-            // execution plan
-            this.getSquashedParallelCostEstimate(true);
-        }
-
-        final ProbabilisticDoubleInterval loopCosts = this.loopImplementations.values().stream()
-                .map(LoopImplementation::getCostEstimate)
-                .reduce(ProbabilisticDoubleInterval.zero, ProbabilisticDoubleInterval::plus);
-        parallelCostEstimateWithoutOverhead = this.parallelCostEstimateCache.field0.get(0)
-                .plus(this.parallelCostEstimateCache.field0.get(1)).plus(loopCosts);
-        final ProbabilisticDoubleInterval overheadCosts = this.getUtilizedPlatforms().stream()
-                .map(platform -> {
-                    final Configuration configuration = this.optimizationContext.getConfiguration();
-                    final long startUpTime = configuration.getPlatformStartUpTimeProvider().provideFor(platform);
-                    final TimeToCostConverter timeToCostConverter = configuration.getTimeToCostConverterProvider()
-                            .provideFor(platform);
-                    return timeToCostConverter.convert(new TimeEstimate(startUpTime, startUpTime, 1d));
-                })
-                .reduce(ProbabilisticDoubleInterval.zero, ProbabilisticDoubleInterval::plus);
-        parallelCostEstimate = parallelCostEstimateWithoutOverhead.plus(overheadCosts);
-        return isIncludeOverhead ? parallelCostEstimate : parallelCostEstimateWithoutOverhead;
-    }
-
-    /**
-     * Retrieves the cost estimate for this instance taking into account parallel
-     * stage execution.
-     *
-     * @param isIncludeOverhead whether to include global overhead in the
-     *                          {@link TimeEstimate} (to avoid repeating
-     *                          overhead in nested instances)
-     * @return the squashed cost estimate taking into account parallel stage
-     *         execution
-     */
-    double getSquashedParallelCostEstimate(final boolean isIncludeOverhead) {
-        // Collect sink operators by Removing all operators that have an output
-        Set<Operator> sinkOperators;
-        sinkOperators = this.operators.stream()
-                .filter(op -> op.getNumOutputs() == 0)
-                .collect(Collectors.toSet());
-
-        // Retrieve operator and junction cost with parallel stage consideration
-        double parallelOperatorCosts = 0f;
-        double parallelJunctionCosts = 0f;
-
-        // Iterate through all sinks to find the expensive sink
-        for (final Operator op : sinkOperators) {
-            final Tuple<List<ProbabilisticDoubleInterval>, List<Double>> tempParallelCostEstimate = this
-                    .getParallelOperatorJunctionAllCostEstimate(op);
-            final List<Double> tempSquashedCost = tempParallelCostEstimate.field1;
-
-            if (tempSquashedCost.get(0) + tempSquashedCost.get(1) > parallelOperatorCosts + parallelJunctionCosts) {
-                parallelOperatorCosts = tempSquashedCost.get(0);
-                parallelJunctionCosts = tempSquashedCost.get(1);
-                this.parallelCostEstimateCache = tempParallelCostEstimate;
-            }
-        }
-        final double loopCosts = this.loopImplementations.values().stream()
-                .mapToDouble(LoopImplementation::getSquashedCostEstimate)
-                .sum();
-        final double parallelSquashedCostEstimateWithoutOverhead = parallelOperatorCosts + parallelJunctionCosts
-                + loopCosts;
-        final double overheadCosts = this.getUtilizedPlatforms().stream()
-                .mapToDouble(platform -> {
-                    final Configuration configuration = this.optimizationContext.getConfiguration();
-
-                    final long startUpTime = configuration.getPlatformStartUpTimeProvider().provideFor(platform);
-
-                    final TimeToCostConverter timeToCostConverter = configuration.getTimeToCostConverterProvider()
-                            .provideFor(platform);
-                    final ProbabilisticDoubleInterval costs = timeToCostConverter
-                            .convert(new TimeEstimate(startUpTime, startUpTime, 1d));
-
-                    final ToDoubleFunction<ProbabilisticDoubleInterval> squasher = configuration
-                            .getCostSquasherProvider().provide();
-                    return squasher.applyAsDouble(costs);
-                })
-                .sum();
-        final double parallelSquashedCostEstimate = parallelSquashedCostEstimateWithoutOverhead + overheadCosts;
-        return isIncludeOverhead ? parallelSquashedCostEstimate : parallelSquashedCostEstimateWithoutOverhead;
-    }
-
-    public Junction getJunction(final OutputSlot<?> output) {
-        return this.junctions.get(output);
-    }
-
-    public void putJunction(final OutputSlot<?> output, final Junction junction) {
-        final Junction oldValue = junction == null ? this.junctions.remove(output)
-                : this.junctions.put(output, junction);
-        if (oldValue != null) {
-            logger.warn("Replaced {} with {}.", oldValue, junction);
-        }
-    }
-
-    public OptimizationContext getOptimizationContext() {
-        return this.optimizationContext;
-    }
-
-    /**
-     * Merges the {@link OptimizationContext}s of the {@link Junction}s in this
-     * instance into its main
-     * {@link OptimizationContext}/
-     */
-    public void mergeJunctionOptimizationContexts() {
-        // Merge the top-level Junctions.
-        for (final Junction junction : this.junctions.values()) {
-            junction.getOptimizationContexts().forEach(OptimizationContext::mergeToBase);
-        }
-
-        // Descend into loops.
-        this.loopImplementations.values().stream()
-                .flatMap(loopImplementation -> loopImplementation.getIterationImplementations().stream())
-                .map(LoopImplementation.IterationImplementation::getBodyImplementation)
-                .forEach(PlanImplementation::mergeJunctionOptimizationContexts);
-    }
-
-    public void logTimeEstimates() {
-        if (!this.logger.isDebugEnabled())
-            return;
-
-        this.logger.debug(">>> Regular operators");
-        for (final ExecutionOperator operator : this.operators) {
-            this.logger.debug("Estimated execution time of {}: {}",
-                    operator, this.optimizationContext.getOperatorContext(operator).getTimeEstimate());
-        }
-        this.logger.debug(">>> Glue operators");
-        for (final Junction junction : junctions.values()) {
-            for (final ExecutionTask task : junction.getConversionTasks()) {
-                final ExecutionOperator operator = task.getOperator();
-                this.logger.debug("Estimated execution time of {}: {}",
-                        operator, this.optimizationContext.getOperatorContext(operator).getTimeEstimate());
-            }
-        }
-        this.logger.debug(">>> Loops");
-        for (final LoopImplementation loopImplementation : this.loopImplementations.values()) {
-            for (final LoopImplementation.IterationImplementation iterationImplementation : loopImplementation
-                    .getIterationImplementations()) {
-                iterationImplementation.getBodyImplementation().logTimeEstimates();
-            }
-        }
-    }
-
-    public Map<OutputSlot<?>, Junction> getJunctions() {
-        return this.junctions;
-    }
-
-    public EstimatableCost getCost() {
-        return this.costModel;
-    }
-
-    /**
-     * Retrieve the {@link Platform}s that are utilized by this instance.
-     *
-     * @return the {@link Platform}s
-     */
-    public Set<Platform> getUtilizedPlatforms() {
-        if (this.platformCache == null) {
-            this.platformCache = this.streamOperators()
-                    .map(ExecutionOperator::getPlatform)
-                    .collect(Collectors.toSet());
-        }
-        return this.platformCache;
-    }
-
-    /**
-     * Stream all the {@link ExecutionOperator}s in this instance.
-     *
-     * @return a {@link Stream} containing every {@link ExecutionOperator} at least
-     *         once
-     */
-    Stream<ExecutionOperator> streamOperators() {
-        Stream<ExecutionOperator> operatorStream = Stream.concat(
-                this.operators.stream(),
-                this.junctions.values().stream().flatMap(j -> j.getConversionTasks().stream())
-                        .map(ExecutionTask::getOperator));
-        if (!this.loopImplementations.isEmpty()) {
-            operatorStream = Stream.concat(
-                    operatorStream,
-                    this.loopImplementations.values().stream().flatMap(LoopImplementation::streamOperators));
-        }
-        return operatorStream;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("PlanImplementation[%s, %s, costs=%s]",
-                this.getUtilizedPlatforms(), this.getTimeEstimate(), this.getCostEstimate());
-    }
-
-    /**
-     * Creates a new {@link ConcatenationDescriptor} for this instance.
-     *
-     * @param output the relevant {@link OutputSlot} or {@code null}
-     * @param inputs the relevant {@link InputSlot}s; components can be {@code null}
-     * @return the {@link ConcatenationDescriptor}
-     */
-    ConcatenationDescriptor createConcatenationDescriptor(final OutputSlot<?> output, final List<InputSlot<?>> inputs) {
-        return new ConcatenationDescriptor(output, inputs);
-    }
-
-    /**
-     * Amends a {@link ConcatenationGroupDescriptor} by
-     * {@link PlanImplementation}-specific information.
-     */
-    class ConcatenationDescriptor {
-
-        final ConcatenationGroupDescriptor groupDescriptor;
-
-        final PlanImplementation execOutputPlanImplementation;
-
-        /**
-         * Creates a new instance.
-         */
-        ConcatenationDescriptor(final OutputSlot<?> output, final List<InputSlot<?>> inputs) {
-            // Find the ExecutionOperator's corresponding OutputSlot along with the nested
-            // PlanImplementation.
-            OutputSlot<?> execOutput = null;
-            PlanImplementation execOutputPlanImplementation = null;
-            if (output != null) {
-                final Collection<Tuple<OutputSlot<?>, PlanImplementation>> execOpOutputsWithContext = PlanImplementation.this
-                        .findExecutionOperatorOutputWithContext(output);
-                final Tuple<OutputSlot<?>, PlanImplementation> execOpOutputWithCtx = WayangCollections
-                        .getSingleOrNull(execOpOutputsWithContext);
-                assert execOpOutputsWithContext != null : String.format("No outputs found for %s.", output);
-                execOutput = execOpOutputWithCtx.field0;
-                execOutputPlanImplementation = execOpOutputWithCtx.field1;
-            }
-
-            // Find the ExecutionOperators' corresponding InputSlots.
-            final List<Set<InputSlot<?>>> execInputs = new ArrayList<>(inputs.size());
-            for (final InputSlot<?> input : inputs) {
-                if (input == null) {
-                    execInputs.add(null);
-                } else {
-                    execInputs.add(WayangCollections.asSet(PlanImplementation.this.findExecutionOperatorInputs(input)));
-                }
-            }
-
-            this.groupDescriptor = new ConcatenationGroupDescriptor(execOutput, execInputs);
-            this.execOutputPlanImplementation = execOutputPlanImplementation;
-        }
-
-        PlanImplementation getPlanImplementation() {
-            return PlanImplementation.this;
-        }
-
-    }
-
-    /**
-     * Describes a group of {@link PlanImplementation}s in terms of their
-     * implementations for some {@link OutputSlot} and
-     * {@link InputSlot}s. These {@link Slot}s are not stored in this class and must
-     * be clear from the context.
-     */
-    static class ConcatenationGroupDescriptor {
-
-        /**
-         * A corresponding {@link ExecutionOperator}s {@link OutputSlot} or
-         * {@code null}.
-         */
-        final OutputSlot<?> execOutput;
-
-        /**
-         * {@link Set}s of corresponding {@link ExecutionOperator}s' {@link InputSlot}s.
-         * Individual components can
-         * be {@code null} if the {@link PlanImplementation}s do not implement the
-         * corresponding {@link InputSlot}.
-         */
-        final List<Set<InputSlot<?>>> execInputs;
-
-        ConcatenationGroupDescriptor(final OutputSlot<?> execOutput, final List<Set<InputSlot<?>>> execInputs) {
-            this.execOutput = execOutput;
-            this.execInputs = execInputs;
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            final ConcatenationGroupDescriptor that = (ConcatenationGroupDescriptor) o;
-            return Objects.equals(execOutput, that.execOutput) &&
-                    Objects.equals(execInputs, that.execInputs);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(execOutput, execInputs);
         }
     }
 }
