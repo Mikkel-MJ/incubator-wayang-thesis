@@ -23,11 +23,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Comparator;
 
 /**
  * Traverse a plan. In each instance, every operator will be traversed only once.
@@ -36,7 +37,7 @@ public class PlanTraversal {
 
     private static final Logger logger = LogManager.getLogger(PlanTraversal.class);
 
-    public Set<Operator> visitedRelevantOperators = new HashSet<>(), visitedIrrelevantOperators = new HashSet<>();
+    public Set<Operator> visitedRelevantOperators = new LinkedHashSet<>(), visitedIrrelevantOperators = new LinkedHashSet<>();
 
     private final boolean isFollowInputs;
 
@@ -333,7 +334,11 @@ public class PlanTraversal {
      * @return previously traversed operators matching the predicated
      */
     public Collection<Operator> getTraversedNodesWith(Predicate<Operator> operatorPredicate) {
-        return this.visitedRelevantOperators.stream().filter(operatorPredicate).collect(Collectors.toList());
+        return this.visitedRelevantOperators
+            .stream()
+            .filter(operatorPredicate)
+            .sorted(Comparator.comparing(op -> op.hashCode()))
+            .collect(Collectors.toList());
     }
 
     /**

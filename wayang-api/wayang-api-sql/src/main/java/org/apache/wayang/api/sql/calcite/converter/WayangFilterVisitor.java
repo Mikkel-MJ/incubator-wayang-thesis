@@ -88,8 +88,10 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
         final PredicateDescriptor<Record> pd = new PredicateDescriptor<>(new FilterPredicateImpl(condition),
                 Record.class);
 
+
         final String extractedFilterFunctions = condition
                 .accept(new FunctionExtractor(true, affectedColumnIndexes, tableSpecifiedColumns));
+
 
         // TODO: migrate over to something like this, however in the current version of
         // Calcite it is broken.

@@ -62,7 +62,7 @@ if [ $UCLOUD_RANK = 0 ]; then
     echo "Configuring workers"
     cp /work/lsbo-paper/runners/flink/workers /opt/flink/conf
 
-    sleep 60s
+    sleep 180s
 
 
     echo "Starting cluster"

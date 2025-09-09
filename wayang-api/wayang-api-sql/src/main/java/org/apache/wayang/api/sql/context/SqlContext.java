@@ -123,6 +123,8 @@ public class SqlContext extends WayangContext {
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
+        System.out.println(relNode.explain());
+
         final RuleSet transformationRules = RuleSets.ofList(
             CoreRules.FILTER_INTO_JOIN.config.withSmart(true).toRule(),
             CoreRules.FILTER_PROJECT_TRANSPOSE,
@@ -147,6 +149,7 @@ public class SqlContext extends WayangContext {
             transformationRules
         );
 
+        System.out.println(optimized.explain());
         //final RelNode converted = optimizer.prepare(optimized, rulesList);
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);

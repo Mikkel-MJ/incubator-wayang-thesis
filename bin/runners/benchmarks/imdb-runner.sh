@@ -19,25 +19,24 @@ timings_path=/work/lsbo-paper/data/JOBenchmark/data/executions
 test_path=/work/lsbo-paper/data/JOBenchmark/queries
 model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-1.onnx
+retrained_bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-1.onnx
+retrained_bvae_2_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-2.onnx
+retrained_bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-5.onnx
+
 echo "Running JOBenchmark"
 
+query="$test_path"/10a.sql
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
-    for query in "$test_path"/*.sql; do
+    #for query in "$test_path"/*.sql; do
     #for query in $(ls "$test_path"/*.sql | tail -n +14); do
     #for query_name in "${selected_queries[@]}"; do
-
-    #    query="$test_path/${query_name}.sql"
-
-        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
-        #timeout --kill-after=10m --foreground 10m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
-        #if [ $? -eq 124 ]; then
-        #    echo "Query ${query} timed out"
-        #fi
-        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/ $query bvae /work/lsbo-paper/python-ml/src/Models/imdb/bvae-1.onnx $data_path/experience/
-        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/new_data_only/1/ $query bvae /work/lsbo-paper/python-ml/src/Models/imdb/retrained/new_data_only/bvae-1.onnx $data_path/experience/
-        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/new_data_only/2/ $query bvae /work/lsbo-paper/python-ml/src/Models/imdb/retrained/new_data_only/bvae-2.onnx $data_path/experience/
-        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/new_hyperparameters/1/ $query bvae /work/lsbo-paper/python-ml/src/Models/imdb/retrained/new_hyperparameters/bvae-1.onnx $data_path/experience/
-        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/new_hyperparameters/2/ $query bvae /work/lsbo-paper/python-ml/src/Models/imdb/retrained/new_hyperparameters/bvae-2.onnx $data_path/experience/
+    for i in {0..2}; do
+        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
+        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/ $query bvae $bvae_1_path $data_path/experience/
+        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/1/ $query bvae $retrained_bvae_1_path $data_path/experience/
+        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/2/ $query bvae $retrained_bvae_2_path $data_path/experience/
+        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/5/ $query bvae $retrained_bvae_5_path $data_path/experience/
 
 
         # Lord forgive me - for Flink has sinned

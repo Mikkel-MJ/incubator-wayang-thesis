@@ -184,17 +184,14 @@ public class TreeNode extends BinaryTree<long[]>{
 
     public TreeNode withPlatformChoicesFrom(TreeNode node) {
         if (this.isNullOperator()) {
-            System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
             return this;
         }
 
         if (this.encoded == OneHotEncoder.encodeNullOperator()) {
-            System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
             return this;
         }
 
         if (node.encoded == null) {
-            System.out.println("Encoding while choices: " + Arrays.toString(this.encoded));
             assert this.encoded != null;
             return this;
         }

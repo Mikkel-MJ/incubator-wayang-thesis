@@ -30,6 +30,7 @@ import org.apache.wayang.core.optimizer.DefaultOptimizationContext;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.optimizer.ProbabilisticDoubleInterval;
 import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimate;
+import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimator;
 import org.apache.wayang.core.optimizer.cardinality.CardinalityEstimatorManager;
 import org.apache.wayang.core.optimizer.costs.TimeEstimate;
 import org.apache.wayang.core.optimizer.costs.TimeToCostConverter;
@@ -42,9 +43,12 @@ import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
 import org.apache.wayang.core.plan.executionplan.ExecutionStage;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
+import org.apache.wayang.core.plan.wayangplan.ElementaryOperator;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.OperatorAlternative;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
+import org.apache.wayang.core.plan.wayangplan.InputSlot;
 import org.apache.wayang.core.plan.wayangplan.PlanMetrics;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.platform.AtomicExecutionGroup;
@@ -70,6 +74,7 @@ import org.apache.wayang.core.util.WayangCollections;
 import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 
 import java.io.IOException;
 import java.io.BufferedWriter;
@@ -291,6 +296,9 @@ public class Job extends OneTimeExecutable {
 
             // Estimate cardinalities and execution times for the #wayangPlan.
             this.estimateKeyFigures();
+
+            System.out.println(this.wayangPlan);
+            System.out.println(this.optimizationContext);
 
             // Get an execution plan.
             int executionId = 0;

@@ -33,9 +33,9 @@ import org.apache.wayang.core.function.FunctionDescriptor;
 
 public class GetResult implements FunctionDescriptor.SerializableFunction<Record, Record> {
         private final List<SqlKind> aggregateKindList;
-        private final Set<Integer> groupingfields;
+        private final List<Integer> groupingfields;
 
-        public GetResult(final List<AggregateCall> aggregateCalls, final Set<Integer> groupingfields) {
+        public GetResult(final List<AggregateCall> aggregateCalls, final List<Integer> groupingfields) {
                 this.aggregateKindList = aggregateCalls.stream()
                                 .map(call -> call.getAggregation().getKind())
                                 .collect(Collectors.toList());

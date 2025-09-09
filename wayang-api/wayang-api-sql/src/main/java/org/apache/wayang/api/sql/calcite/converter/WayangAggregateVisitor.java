@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.Comparator;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
@@ -126,8 +127,13 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
         mapOperator.connectTo(0, aggregateOperator, 0);
 
+        List<Integer> orderedGroupingFields = groupingFields
+                    .stream()
+                    .sorted(Comparator.naturalOrder())
+                    .collect(Collectors.toList());
+
         final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(
-                new GetResult(aggregateCalls, groupingFields),
+                new GetResult(aggregateCalls, orderedGroupingFields),
                 Record.class, Record.class, aliasedFields);
 
         final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);

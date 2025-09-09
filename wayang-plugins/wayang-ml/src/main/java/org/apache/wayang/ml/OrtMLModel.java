@@ -350,10 +350,10 @@ public class OrtMLModel {
             long[][] platformChoices = PlatformChoiceValidator.validate(
                 resultTensor,
                 inputIndexStructure,
-                encoded/*,
+                encoded,
                 new BitmaskValidationRule(),
                 new OperatorValidationRule(),
-                new PostgresSourceValidationRule()*/
+                new PostgresSourceValidationRule()
             );
 
             int valueDim = resultTensor[0][0].length;

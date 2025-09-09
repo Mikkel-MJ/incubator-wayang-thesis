@@ -30,6 +30,7 @@ import org.apache.wayang.flink.Flink;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.ml.MLContext;
 import org.apache.wayang.spark.Spark;
+import org.apache.logging.log4j.Level;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.wayang.api.PlanBuilder;
 import org.apache.wayang.core.util.ReflectionUtils;
@@ -76,8 +77,8 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         try {
@@ -196,6 +197,7 @@ public class JOBenchmark {
                 writer.newLine();
                 writer.flush();
                 writer.close();&*/
+                wayangContext.setLogLevel(Level.DEBUG);
 
                 if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                     System.out.println("Executing query " + args[3]);

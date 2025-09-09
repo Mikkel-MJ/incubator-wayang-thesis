@@ -149,8 +149,10 @@ public class IMDBJOBenchmark {
         final List<Operator> sources = plan.collectReachableTopLevelSources()
             .stream()
             .map(op -> (TableSource) op)
-            .sorted(Comparator.comparing(op -> op.getTableName()))
+            //.sorted(Comparator.comparing(op -> op.getTableName()))
             .collect(Collectors.toList());
+
+        System.out.println("Sources: " + sources);
 
         boolean isSet = false;
 
@@ -240,6 +242,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Setting to file: " + tableName);
                         break;
                     case "company_name":
                         parser = new MapOperator<>(
@@ -253,6 +256,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Setting to file: " + tableName);
                         break;
                     case "info_type":
                         parser = new MapOperator<>(
@@ -266,6 +270,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Setting to file: " + tableName);
                         break;
                     /*
                     case "movie_info":
@@ -332,6 +337,7 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         isSet = true;
+                        System.out.println("Setting to file: " + tableName);
                         break;
                     default:
                         break;
