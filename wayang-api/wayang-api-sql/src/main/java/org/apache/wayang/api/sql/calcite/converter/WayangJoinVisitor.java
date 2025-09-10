@@ -50,6 +50,7 @@ import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.util.ReflectionUtils;
+import org.apache.wayang.postgres.Postgres;
 
 import java.util.Set;
 
@@ -167,11 +168,14 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String[] joinTableNames = { leftTableName + "." + leftFieldName,
                 rightTableName + "." + rightFieldName };
 
+        ProjectionDescriptor<Tuple2<Record, Record>, Record> projectionDescriptor = new ProjectionDescriptor(
+            new JoinFlattenResult(),
+            ReflectionUtils.specify(Tuple2.class),
+            Record.class
+        );
+
         // Join returns Tuple2 - map to a Record
-        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<Tuple2<Record, Record>, Record>(
-                new JoinFlattenResult(),
-                ReflectionUtils.specify(Tuple2.class),
-                Record.class);
+        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<Tuple2<Record, Record>, Record>(projectionDescriptor);
 
         join.connectTo(0, mapOperator, 0);
 

@@ -36,7 +36,7 @@ public class PrintUtils {
         sw.append(header).append(":").append("\n");
 
         final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
-        operators.forEachOrdered(o -> sw.append(o.toString()));
+        operators.forEach(o -> sw.append(o.toString()));
 
         System.out.println(sw.toString());
     }

@@ -59,8 +59,13 @@ public class ProjectionMapping implements Mapping {
                 false
         )
         .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
-        .withAdditionalTest(op -> op.getNumInputs() == 1); // No broadcasts.
-        
+        .withAdditionalTest(op -> op.getNumInputs() == 1) // No broadcasts.
+        .withAdditionalTest(op -> {
+            System.out.println("ProjectionMapping: " + op);
+
+            return true;
+        }); // No broadcasts.
+
         return SubplanPattern.createSingleton(operatorPattern);
     }
 

@@ -277,6 +277,7 @@ public class PlanEnumerator {
     private void scheduleForEnumeration(Operator operator, OptimizationContext optimizationContext) {
         final EnumerationActivator enumerationActivator = new EnumerationActivator(operator, optimizationContext);
         if (enumerationActivator.canBeActivated()) {
+            System.out.println("scheduleForEnumeration: " + operator);
             this.activatedEnumerations.add(enumerationActivator);
         }
         this.enumerationActivators.put(enumerationActivator.getKey(), enumerationActivator);

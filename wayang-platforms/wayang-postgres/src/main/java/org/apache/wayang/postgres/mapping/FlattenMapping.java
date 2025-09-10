@@ -28,6 +28,7 @@ import org.apache.wayang.core.mapping.OperatorPattern;
 import org.apache.wayang.core.mapping.PlanTransformation;
 import org.apache.wayang.core.mapping.ReplacementSubplanFactory;
 import org.apache.wayang.core.mapping.SubplanPattern;
+import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.postgres.operators.PostgresProjectionOperator;
 import org.apache.wayang.postgres.platform.PostgresPlatform;
@@ -55,15 +56,21 @@ public class FlattenMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        OperatorPattern<MapOperator<Tuple2, Record>> operatorPattern = new OperatorPattern<>(
-                "projection",
-                new MapOperator<>(
+        OperatorPattern<MapOperator<Tuple2<Record, Record>, Record>> operatorPattern = new OperatorPattern<>(
+                "flatten",
+                new MapOperator<Tuple2<Record, Record>, Record>(
                         null,
-                        DataSetType.createDefault(Tuple2.class),
+                        //DataSetType.createDefault(Tuple2.class),
+                        DataSetType.createDefault(ReflectionUtils.specify(Tuple2.class)),
                         DataSetType.createDefault(Record.class)),
                 false)
-                .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
-                .withAdditionalTest(op -> op.getNumInputs() == 1); // No broadcasts.
+                //.withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
+                .withAdditionalTest(op -> op.getNumInputs() == 1) // No broadcasts.
+                .withAdditionalTest(op -> {
+                    System.out.println("FlattenMapping: " + op);
+
+                    return true;
+                }); // No broadcasts.
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
