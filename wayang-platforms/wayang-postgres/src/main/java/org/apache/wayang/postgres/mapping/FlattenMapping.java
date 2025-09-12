@@ -18,7 +18,9 @@
 
 package org.apache.wayang.postgres.mapping;
 
+import org.apache.wayang.core.types.BasicDataUnitType;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.JoinOperator;
@@ -56,26 +58,24 @@ public class FlattenMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        OperatorPattern<MapOperator<Tuple2<Record, Record>, Record>> operatorPattern = new OperatorPattern<>(
+        OperatorPattern<MapOperator<Tuple2, Record>> operatorPattern = new OperatorPattern<>(
                 "flatten",
-                new MapOperator<Tuple2<Record, Record>, Record>(
+                new MapOperator<Tuple2, Record>(
                         null,
-                        //DataSetType.createDefault(Tuple2.class),
-                        DataSetType.createDefault(ReflectionUtils.specify(Tuple2.class)),
+                        DataSetType.createDefault(Tuple2.class),
+                        //DataSetType.createDefault(ReflectionUtils.specify(Tuple2.class)),
                         DataSetType.createDefault(Record.class)),
                 false)
-                //.withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
+                .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
                 .withAdditionalTest(op -> op.getNumInputs() == 1) // No broadcasts.
                 .withAdditionalTest(op -> {
-                    System.out.println("FlattenMapping: " + op);
-
-                    return true;
-                }); // No broadcasts.
+                    return Mappings.isValidPostgres(op);
+                });
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
-        return new ReplacementSubplanFactory.OfSingleOperators<MapOperator<Record, Record>>(
-                (matchedOperator, epoch) -> new PostgresProjectionOperator(matchedOperator).at(epoch));
+        return new ReplacementSubplanFactory.OfSingleOperators<MapOperator<Tuple2, Record>>(
+                (matchedOperator, epoch) -> new PostgresProjectionOperator<>(matchedOperator).at(epoch));
     }
 }

@@ -33,18 +33,10 @@ import java.util.Optional;
 /**
  * Projects the fields of {@link Record}s.
  */
-public abstract class JdbcProjectionOperator extends MapOperator<Record, Record>
+public abstract class JdbcProjectionOperator<I, O> extends MapOperator<I, O>
         implements JdbcExecutionOperator {
 
-    public JdbcProjectionOperator(String... fieldNames) {
-        super(
-                new ProjectionDescriptor<>(Record.class, Record.class, fieldNames),
-                DataSetType.createDefault(Record.class),
-                DataSetType.createDefault(Record.class)
-        );
-    }
-
-    public JdbcProjectionOperator(ProjectionDescriptor<Record, Record> functionDescriptor) {
+    public JdbcProjectionOperator(ProjectionDescriptor<I, O> functionDescriptor) {
         super(functionDescriptor);
     }
 
@@ -53,7 +45,7 @@ public abstract class JdbcProjectionOperator extends MapOperator<Record, Record>
      *
      * @param that that should be copied
      */
-    public JdbcProjectionOperator(MapOperator<Record, Record> that) {
+    public JdbcProjectionOperator(MapOperator<I, O> that) {
         super(that);
         if (!(that.getFunctionDescriptor() instanceof ProjectionDescriptor)) {
             throw new IllegalArgumentException("Can only copy from MapOperators with ProjectionDescriptors.");
@@ -66,8 +58,8 @@ public abstract class JdbcProjectionOperator extends MapOperator<Record, Record>
     }
 
     @Override
-    public ProjectionDescriptor<Record, Record> getFunctionDescriptor() {
-        return (ProjectionDescriptor<Record, Record>) super.getFunctionDescriptor();
+    public ProjectionDescriptor<I, O> getFunctionDescriptor() {
+        return (ProjectionDescriptor<I, O>) super.getFunctionDescriptor();
     }
 
     @Override

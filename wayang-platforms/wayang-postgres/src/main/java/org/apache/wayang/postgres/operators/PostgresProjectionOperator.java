@@ -30,17 +30,13 @@ import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
 /**
  * PostgreSQL implementation of the {@link FilterOperator}.
  */
-public class PostgresProjectionOperator extends JdbcProjectionOperator implements PostgresExecutionOperator {
-    
-    public PostgresProjectionOperator(String... fieldNames) {
-        super(fieldNames);
-    }
+public class PostgresProjectionOperator<I, O> extends JdbcProjectionOperator<I, O> implements PostgresExecutionOperator {
 
-    public PostgresProjectionOperator(ProjectionDescriptor<Record, Record> functionDescriptor) {
+    public PostgresProjectionOperator(ProjectionDescriptor<I, O> functionDescriptor) {
         super(functionDescriptor);
     }
 
-    public PostgresProjectionOperator(MapOperator<Record, Record> that) {
+    public PostgresProjectionOperator(MapOperator<I, O> that) {
         super(that);
     }
 

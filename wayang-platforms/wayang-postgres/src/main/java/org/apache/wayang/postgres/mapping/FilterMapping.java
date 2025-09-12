@@ -19,6 +19,7 @@
 package org.apache.wayang.postgres.mapping;
 
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.core.mapping.Mapping;
 import org.apache.wayang.core.mapping.OperatorPattern;
@@ -51,7 +52,10 @@ public class FilterMapping implements Mapping {
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern<FilterOperator<Record>> operatorPattern = new OperatorPattern<>(
                 "filter", new FilterOperator<>(null, DataSetType.createDefault(Record.class)), false
-        ).withAdditionalTest(op -> op.getPredicateDescriptor().getSqlImplementation() != null);
+        ).withAdditionalTest(op -> op.getPredicateDescriptor().getSqlImplementation() != null)
+        .withAdditionalTest(op -> {
+            return Mappings.isValidPostgres(op);
+        });
         return SubplanPattern.createSingleton(operatorPattern);
     }
 

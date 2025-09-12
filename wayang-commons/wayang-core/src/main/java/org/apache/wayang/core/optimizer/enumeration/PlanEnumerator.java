@@ -277,7 +277,6 @@ public class PlanEnumerator {
     private void scheduleForEnumeration(Operator operator, OptimizationContext optimizationContext) {
         final EnumerationActivator enumerationActivator = new EnumerationActivator(operator, optimizationContext);
         if (enumerationActivator.canBeActivated()) {
-            System.out.println("scheduleForEnumeration: " + operator);
             this.activatedEnumerations.add(enumerationActivator);
         }
         this.enumerationActivators.put(enumerationActivator.getKey(), enumerationActivator);
@@ -612,7 +611,6 @@ public class PlanEnumerator {
                             .map(
                                 alt -> alt.getContainedOperators()
                                 .stream()
-                                .map(op -> op)
                                 .collect(Collectors.toList())
                             )
                             .collect(Collectors.toList()),
@@ -624,7 +622,6 @@ public class PlanEnumerator {
                                 .map(
                                     alt -> alt.getContainedOperators()
                                     .stream()
-                                    .map(op -> op)
                                     .collect(Collectors.toList())
                                 )
                                 .collect(Collectors.toList())

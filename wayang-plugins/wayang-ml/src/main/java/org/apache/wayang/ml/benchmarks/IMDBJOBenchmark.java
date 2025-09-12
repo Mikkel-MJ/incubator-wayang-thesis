@@ -2,6 +2,7 @@ package org.apache.wayang.ml.benchmarks;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.wayang.api.sql.context.SqlContext;
+import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
@@ -16,7 +17,7 @@ import org.apache.wayang.spark.Spark;
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
-import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.basic.types.RecordType;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.types.DataSetType;
@@ -149,7 +150,7 @@ public class IMDBJOBenchmark {
         final List<Operator> sources = plan.collectReachableTopLevelSources()
             .stream()
             .map(op -> (TableSource) op)
-            //.sorted(Comparator.comparing(op -> op.getTableName()))
+            .sorted(Comparator.comparing(op -> op.getTableName()))
             .collect(Collectors.toList());
 
         System.out.println("Sources: " + sources);
@@ -158,36 +159,37 @@ public class IMDBJOBenchmark {
 
         for (Operator op : sources) {
         //sources.stream().forEach(op -> {
-            if (op instanceof TableSource && !isSet) {
+            //if (op instanceof TableSource && !isSet) {
+            if (op instanceof TableSource) {
                 String tableName = ((TableSource) op).getTableName();
                 String filePath = dataPath + tableName + ".csv";
                 TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
 
-                MapOperator<String, Record> parser;
+                MapOperator<String, JVMRecord> parser;
 
                 /*
                 if (tableName.equals("movie_companies")) {
-                    parser = new MapOperator<String, Record>(
+                    parser = new MapOperator<String, JVMRecord>(
                         new TransformationDescriptor<>(
                             line -> {
                                 //System.out.println(line);
                                 //System.out.println(line.replaceAll("\"", "\\\""));
                                 //Object[] values = new Object[]{25010,104018,6,1,"(2008) (USA) (TV)"};
-                                //Record comp = new Record(values);
+                                //JVMRecord comp = new JVMRecord(values);
                                 Object[] parsed = MovieCompanies.toArray(MovieCompanies.parseCsv(line));
-                                Record record = new Record(parsed);
+                                JVMRecord record = new JVMRecord(parsed);
 
                                 return record;
                             },
                             DataUnitType.createBasic(String.class),
-                            DataUnitType.createBasicUnchecked(Record.class)
+                            DataUnitType.createBasicUnchecked(JVMRecord.class)
                         ),
                         DataSetType.createDefault(String.class),
-                        DataSetType.createDefault(new RecordType(MovieCompanies.getFields()))
+                        DataSetType.createDefault(new JVMRecordType(MovieCompanies.getFields()))
                     );
 
-                    MapOperator<Record, Record> projection = MapOperator.createProjection(
-                            (RecordType) ((TableSource) op).getType().getDataUnitType(),
+                    MapOperator<JVMRecord, JVMRecord> projection = MapOperator.createProjection(
+                            (JVMRecordType) ((TableSource) op).getType().getDataUnitType(),
                             MovieCompanies.getFields()
                     );
 
@@ -206,11 +208,11 @@ public class IMDBJOBenchmark {
                     /*
                     case "movie_companies": parser = new MapOperator<>(
                             (line) -> {
-                                Record record = new Record(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
+                                JVMRecord record = new JVMRecord(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
                                 return record;
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -221,10 +223,10 @@ public class IMDBJOBenchmark {
                         parser = new MapOperator<>(
                         System.out.println("Changing " + tableName);
                             (line) -> {
-                                return new Record(AkaName.toArray(AkaName.parseCsv(line)));
+                                return new JVMRecord(AkaName.toArray(AkaName.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -233,10 +235,10 @@ public class IMDBJOBenchmark {
                     */
                     case "comp_cast_type":
                         parser = new MapOperator<>(
-                            (line) -> { return new Record(CompCastType.toArray(CompCastType.parseCsv(line)));
+                            (line) -> { return new JVMRecord(CompCastType.toArray(CompCastType.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -247,10 +249,10 @@ public class IMDBJOBenchmark {
                     case "company_name":
                         parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(CompanyName.toArray(CompanyName.parseCsv(line)));
+                                return new JVMRecord(CompanyName.toArray(CompanyName.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -261,10 +263,10 @@ public class IMDBJOBenchmark {
                     case "info_type":
                         parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(InfoType.toArray(InfoType.parseCsv(line)));
+                                return new JVMRecord(InfoType.toArray(InfoType.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -276,11 +278,11 @@ public class IMDBJOBenchmark {
                     case "movie_info":
                         parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(MovieInfo.toArray(MovieInfo.parseCsv(line)));
+                                return new JVMRecord(MovieInfo.toArray(MovieInfo.parseCsv(line)));
                             },
 
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -289,10 +291,10 @@ public class IMDBJOBenchmark {
                     case "person_info":
                         parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(PersonInfo.toArray(PersonInfo.parseCsv(line)));
+                                return new JVMRecord(PersonInfo.toArray(PersonInfo.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -301,10 +303,10 @@ public class IMDBJOBenchmark {
                     case "movie_keyword":
                         parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(MovieKeyword.toArray(MovieKeyword.parseCsv(line)));
+                                return new JVMRecord(MovieKeyword.toArray(MovieKeyword.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
 
                         replacement.connectTo(0, parser, 0);
@@ -315,10 +317,10 @@ public class IMDBJOBenchmark {
                     case "cast_info":
                         parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(CastInfo.toArray(CastInfo.parseCsv(line)));
+                                return new JVMRecord(CastInfo.toArray(CastInfo.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 
@@ -328,10 +330,10 @@ public class IMDBJOBenchmark {
                     case "movie_link":
                         parser = new MapOperator<>(
                             (line) -> {
-                                return new Record(MovieLink.toArray(MovieLink.parseCsv(line)));
+                                return new JVMRecord(MovieLink.toArray(MovieLink.parseCsv(line)));
                             },
                             String.class,
-                            Record.class
+                            JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
 

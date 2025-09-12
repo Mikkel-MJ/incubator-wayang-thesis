@@ -179,7 +179,7 @@ public class JOBenchmark {
 
                 IMDBJOBenchmark.setSources(plan, args[1]);
 
-                PrintUtils.print("WayangPlan", plan);
+                ExplainUtils.parsePlan(plan, true);
 
                 //Set sink to be on Java
                 //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());

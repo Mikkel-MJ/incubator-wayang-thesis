@@ -18,6 +18,8 @@
 
 package org.apache.wayang.jdbc.test;
 
+import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.core.platform.ChannelDescriptor;
 import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
@@ -27,10 +29,10 @@ import java.util.List;
 /**
  * Test implementation of {@link JdbcFilterOperator}.
  */
-public class HsqldbProjectionOperator extends JdbcProjectionOperator {
+public class HsqldbProjectionOperator extends JdbcProjectionOperator<Record, Record> {
 
     public HsqldbProjectionOperator(String... names) {
-        super(names);
+        super(new ProjectionDescriptor<>(Record.class, Record.class, names));
     }
 
     @Override

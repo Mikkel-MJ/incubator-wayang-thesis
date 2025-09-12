@@ -18,8 +18,11 @@
 
 package org.apache.wayang.postgres.mapping;
 
+import org.apache.wayang.core.types.BasicDataUnitType;
 import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
+import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.core.mapping.Mapping;
 import org.apache.wayang.core.mapping.OperatorPattern;
@@ -61,10 +64,8 @@ public class ProjectionMapping implements Mapping {
         .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
         .withAdditionalTest(op -> op.getNumInputs() == 1) // No broadcasts.
         .withAdditionalTest(op -> {
-            System.out.println("ProjectionMapping: " + op);
-
-            return true;
-        }); // No broadcasts.
+            return Mappings.isValidPostgres(op);
+        });
 
         return SubplanPattern.createSingleton(operatorPattern);
     }

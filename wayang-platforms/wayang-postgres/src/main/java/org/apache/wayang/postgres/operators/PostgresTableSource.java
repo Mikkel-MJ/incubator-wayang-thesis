@@ -35,7 +35,7 @@ public class PostgresTableSource extends JdbcTableSource implements PostgresExec
      * @see TableSource#TableSource(String, String...)
      */
     public PostgresTableSource(String tableName, String... columnNames) {
-        super(tableName, columnNames);
+        super(tableName, new String[]{});
     }
 
     /**

@@ -1,6 +1,8 @@
 package org.apache.wayang.postgres.mapping;
 
 import org.apache.wayang.basic.operators.GlobalReduceOperator;
+import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.core.mapping.Mapping;
 import org.apache.wayang.core.mapping.OperatorPattern;
 import org.apache.wayang.core.mapping.PlanTransformation;
@@ -31,8 +33,11 @@ public class GlobalReduceMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        final OperatorPattern operatorPattern = new OperatorPattern(
-                "reduce", new GlobalReduceOperator<>(null, DataSetType.none()), false);
+        final OperatorPattern<GlobalReduceOperator<Record>> operatorPattern = new OperatorPattern<>(
+                "reduce", new GlobalReduceOperator<Record>(null, DataSetType.createDefault(Record.class)), false)
+                .withAdditionalTest(op -> {
+                    return Mappings.isValidPostgres(op);
+                });
         return SubplanPattern.createSingleton(operatorPattern);
     }
 

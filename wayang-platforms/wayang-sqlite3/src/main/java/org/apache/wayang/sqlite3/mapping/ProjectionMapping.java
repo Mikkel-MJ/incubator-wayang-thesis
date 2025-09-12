@@ -53,7 +53,7 @@ public class ProjectionMapping implements Mapping {
         final OperatorPattern<MapOperator<Record, Record>> operatorPattern = new OperatorPattern<>(
                 "projection", new MapOperator<>(null, Record.class, Record.class), false
         )
-                .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof TransformationDescriptor)
+                .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
                 .withAdditionalTest(op -> op.getNumInputs() == 1); // No broadcasts.
         return SubplanPattern.createSingleton(operatorPattern);
     }
