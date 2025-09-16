@@ -40,7 +40,6 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule.FilterIntoJoinRuleConfig;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -65,7 +64,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.rel.rules.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
-
+import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.api.sql.calcite.converter.WayangRelConverter;
@@ -299,7 +298,8 @@ public class Optimizer {
                 node,
                 requiredTraitSet,
                 Collections.emptyList(),
-                Collections.emptyList());
+                Collections.emptyList()
+        );
     }
 
     public WayangPlan convert(RelNode relNode) {

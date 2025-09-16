@@ -31,6 +31,8 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
+import org.apache.wayang.api.sql.calcite.converter.RelNodeVisitor;
+import org.apache.wayang.api.sql.calcite.converter.SqlNodeVisitor;
 import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
@@ -57,6 +59,7 @@ import org.apache.calcite.util.Optionality;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
@@ -147,13 +150,15 @@ public class SqlContext extends WayangContext {
             transformationRules
         );
 
-        //final RelNode converted = optimizer.prepare(optimized, rulesList);
+        System.out.println(optimized.explain());
 
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
-
         visitor.visit(optimized, 0, null);
 
+        //final RelNode converted = optimizer.prepare(optimized, rulesList);
+
         final AliasFinder aliasFinder = new AliasFinder(visitor);
+        //aliasFinder.context = relContext;
 
         final Collection<Record> collector = new ArrayList<>();
         return optimizer.convert(optimized, collector, aliasFinder);

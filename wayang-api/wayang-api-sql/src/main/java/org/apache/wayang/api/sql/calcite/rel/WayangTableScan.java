@@ -30,8 +30,10 @@ import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
 
 import java.util.List;
+import java.util.UUID;
 
 public class WayangTableScan extends TableScan implements WayangRel {
+    public UUID uuid = UUID.randomUUID();
 
     private final int[] fields;
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 
 public class TableScanVisitor extends RelVisitor {
@@ -30,7 +31,7 @@ public class TableScanVisitor extends RelVisitor {
             catalog = node;
         }
 
-        if (node instanceof LogicalTableScan) {
+        if (node instanceof TableScan) {
             tableScans.add(node);
         }
 

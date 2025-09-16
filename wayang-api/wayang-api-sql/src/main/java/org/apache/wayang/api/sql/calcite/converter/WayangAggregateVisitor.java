@@ -62,7 +62,6 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                 .map(agg -> agg.getArgList().get(0))
                 .collect(Collectors.toList());
 
-
         final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
 
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);

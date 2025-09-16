@@ -18,8 +18,9 @@
 
 package org.apache.wayang.api.sql.calcite.rel;
 
+import java.util.UUID;
+
 import org.apache.calcite.rel.RelNode;
 
 public interface WayangRel extends RelNode {
-
 }

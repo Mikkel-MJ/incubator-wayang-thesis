@@ -31,11 +31,15 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.SqlNode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +64,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
                 .collect(Collectors.toList());
 
         final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
+
 
         // list of projects passed to the serializable function, for java & others usage
         final List<RexNode> projects = ((Project) wayangRelNode).getProjects();

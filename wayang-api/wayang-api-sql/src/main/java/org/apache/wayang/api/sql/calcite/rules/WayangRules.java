@@ -123,7 +123,7 @@ public class WayangRules {
     private static class WayangTableScanRule extends ConverterRule {
 
         public static final Config DEFAULT_CONFIG = Config.INSTANCE
-                .withConversion(LogicalTableScan.class,
+                .withConversion(TableScan.class,
                         Convention.NONE, WayangConvention.INSTANCE,
                         "WayangTableScanRule")
                 .withRuleFactory(WayangTableScanRule::new);
@@ -199,7 +199,7 @@ public class WayangRules {
         @Override
         public @Nullable RelNode convert(final RelNode relNode) {
             final LogicalAggregate aggregate = (LogicalAggregate) relNode;
-            
+
             return new WayangAggregate(
                     aggregate.getCluster(),
                     aggregate.getTraitSet().replace(WayangConvention.INSTANCE),

@@ -20,7 +20,9 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
+import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
 import org.apache.wayang.api.sql.sources.fs.JavaCSVTableSource;
@@ -43,12 +45,12 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
 
     @Override
     Operator visit(final WayangTableScan wayangRelNode) {
-
         final String tableName = wayangRelNode.getTableName();
         final List<String> columnNames = wayangRelNode.getColumnNames();
 
         // Get the source platform for this table
         final String tableSource = wayangRelNode.getTable().getQualifiedName().get(0);
+        wayangRelNode.getRowType().getFieldList();
 
         if (tableSource.equals("postgres")) {
             return new PostgresTableSource(tableName, columnNames.toArray(new String[]{}));

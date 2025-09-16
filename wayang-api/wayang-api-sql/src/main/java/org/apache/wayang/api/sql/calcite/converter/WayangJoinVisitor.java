@@ -53,6 +53,7 @@ import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.postgres.Postgres;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
 

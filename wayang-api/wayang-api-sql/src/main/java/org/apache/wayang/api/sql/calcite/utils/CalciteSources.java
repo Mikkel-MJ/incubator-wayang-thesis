@@ -240,4 +240,9 @@ public final class CalciteSources {
     protected CalciteSources() {
 
     }
+
+    // Recursively traverse the tree and get a RelNodes origin TableScan
+    public static RelNode findTableSource(final RelNode startNode) {
+        return startNode;
+    }
 }

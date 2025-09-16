@@ -177,7 +177,7 @@ public class JOBenchmark {
             try {
                 WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
-                IMDBJOBenchmark.setSources(plan, args[1]);
+                //IMDBJOBenchmark.setSources(plan, args[1]);
 
                 ExplainUtils.parsePlan(plan, true);
 

@@ -103,10 +103,10 @@ public class JdbcExecutor extends ExecutorTemplate {
         public int compare(final ExecutionTask arg0, final ExecutionTask arg1) {
             // arg0 69a {12a} arg1 A12{}
             if (ordering.get(arg0).contains(arg1)) {
-                return -1;
+                return 1;
             }
             if (ordering.get(arg1).contains(arg0)) {
-                return 1;
+                return -1;
             }
             return 0;
         }
@@ -122,8 +122,14 @@ public class JdbcExecutor extends ExecutorTemplate {
         // i have to cast it to a list here otherwise java wont maintain ordering
         final List<ExecutionTask> allTasksWithTableSources = Arrays
                 .stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
+                .peek(task -> {
+                    System.out.println(task);
+                    System.out.println(task.getOperator());
+                    System.out.println(stage.canReachMap().get(task));
+                })
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
+
 
         final List<ExecutionTask> allTasks = allTasksWithTableSources.stream()
                 .filter(task -> !(task.getOperator() instanceof TableSource))
@@ -351,12 +357,6 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         // Union of projectionTableNames, leftJoinTableNames, and rightJoinTableNames
         final Set<String> unionSet = new HashSet<>();
-        unionSet.addAll(projectionTableNames);
-
-        /*
-         * unionSet.addAll(leftJoinTableNames);
-         * unionSet.addAll(rightJoinTableNames);
-         */
 
         // Remove tables that will be joined on, from the from clause
         unionSet.removeAll(joinTableNames);
@@ -379,6 +379,9 @@ public class JdbcExecutor extends ExecutorTemplate {
                 final String joiningTable = matcher.group("joiningTable");
                 final String left = matcher.group("left");
                 final String right = matcher.group("right");
+                System.out.println("JoiningTable: " + joiningTable);
+                System.out.println("left: " + left);
+                System.out.println("right: " + right);
 
                 if (joiningTable != null && left != null && right != null) {
                     String leftTable = left.split("\\.")[0];
@@ -389,6 +392,10 @@ public class JdbcExecutor extends ExecutorTemplate {
                 }
             }
         }
+
+        System.out.println("Union set: " + unionSet);
+        unionSet.remove("null");
+        unionSet.remove(null);
 
         final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
 
