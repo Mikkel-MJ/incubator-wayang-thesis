@@ -38,6 +38,7 @@ import java.util.TimeZone;
 public class CsvRowConverter {
 
 
+
     private static final CSVParser parser;
 
     private static final FastDateFormat TIME_FORMAT_DATE;

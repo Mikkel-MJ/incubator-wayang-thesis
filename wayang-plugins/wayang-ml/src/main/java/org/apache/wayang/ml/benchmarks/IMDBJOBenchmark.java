@@ -134,6 +134,25 @@ public class IMDBJOBenchmark {
         }
     }
 
+    /*
+    public static void replaceSources(WayangPlan, String dataPath) {
+        final List<Operator> sources = plan.collectReachableTopLevelSources()
+            .stream()
+            .map(op -> (TableSource) op)
+            .sorted(Comparator.comparing(op -> op.getTableName()))
+            .collect(Collectors.toList());
+
+        for (Operator op : sources) {
+            if (op instanceof TableSource) {
+                String tableName = ((TableSource) op).getTableName();
+                String filePath = dataPath + tableName + ".csv";
+                TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
+
+                MapOperator<String, JVMRecord> parser;
+            }
+        }
+    }*/
+
     // Only source in postgres, compute elsewhere
     public static void setSources(WayangPlan plan, String dataPath) {
         /*
@@ -205,7 +224,6 @@ public class IMDBJOBenchmark {
                 }*/
 
                 switch (tableName) {
-                    /*
                     case "movie_companies": parser = new MapOperator<>(
                             (line) -> {
                                 JVMRecord record = new JVMRecord(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
@@ -221,7 +239,6 @@ public class IMDBJOBenchmark {
                         break;
                     case "aka_name":
                         parser = new MapOperator<>(
-                        System.out.println("Changing " + tableName);
                             (line) -> {
                                 return new JVMRecord(AkaName.toArray(AkaName.parseCsv(line)));
                             },
@@ -232,7 +249,6 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         break;
-                    */
                     case "comp_cast_type":
                         parser = new MapOperator<>(
                             (line) -> { return new JVMRecord(CompCastType.toArray(CompCastType.parseCsv(line)));
@@ -274,7 +290,6 @@ public class IMDBJOBenchmark {
                         isSet = true;
                         System.out.println("Setting to file: " + tableName);
                         break;
-                    /*
                     case "movie_info":
                         parser = new MapOperator<>(
                             (line) -> {
@@ -326,7 +341,6 @@ public class IMDBJOBenchmark {
 
                         replacement.connectTo(0, parser, 0);
                         break;
-                    */
                     case "movie_link":
                         parser = new MapOperator<>(
                             (line) -> {

@@ -58,9 +58,15 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
         // fetch the indexes of colmuns affected, in calcite aggregates and projections
         // have their own catalog, we need to find the column indexes in the global
         // catalog
-        final List<Integer> columnIndexes = wayangRelNode.getAggCallList().stream()
+        List<Integer> columnIndexes;
+
+        if (wayangRelNode.getAggCallList().get(0).getAggregation().getSqlIdentifier() == null) {
+            columnIndexes = wayangRelNode.getRowType().getFieldList().stream().map(RelDataTypeField::getIndex).collect(Collectors.toList());
+        } else {
+            columnIndexes = wayangRelNode.getAggCallList().stream()
                 .map(agg -> agg.getArgList().get(0))
                 .collect(Collectors.toList());
+        }
 
         final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
 

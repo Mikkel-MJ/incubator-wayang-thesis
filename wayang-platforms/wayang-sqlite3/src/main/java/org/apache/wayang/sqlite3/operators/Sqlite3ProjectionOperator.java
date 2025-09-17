@@ -33,10 +33,6 @@ public class Sqlite3ProjectionOperator extends JdbcProjectionOperator {
         super(functionDescriptor);
     }
 
-    public Sqlite3ProjectionOperator(Class<Record> inputClass, Class<Record> outputClass, String... fieldNames) {
-        super(fieldNames);
-    }
-
     public Sqlite3ProjectionOperator(MapOperator<Record, Record> that) {
         super(that);
     }

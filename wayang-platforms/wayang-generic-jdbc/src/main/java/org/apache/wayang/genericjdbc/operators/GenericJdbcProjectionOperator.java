@@ -29,10 +29,6 @@ import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
  */
 public class GenericJdbcProjectionOperator extends JdbcProjectionOperator implements GenericJdbcExecutionOperator {
 
-    public GenericJdbcProjectionOperator(String... fieldNames) {
-        super(fieldNames);
-    }
-
     public GenericJdbcProjectionOperator(ProjectionDescriptor<Record, Record> functionDescriptor) {
         super(functionDescriptor);
     }
