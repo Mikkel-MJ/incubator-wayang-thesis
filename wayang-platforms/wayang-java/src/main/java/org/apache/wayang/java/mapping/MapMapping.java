@@ -46,14 +46,15 @@ public class MapMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        final OperatorPattern<?> operatorPattern = new OperatorPattern<MapOperator<?,?>>(
+        final OperatorPattern operatorPattern = new OperatorPattern(
                 "map", new MapOperator<>(null, DataSetType.none(), DataSetType.none()), false);
+
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
-        return new ReplacementSubplanFactory.OfSingleOperators<MapOperator<?,?>>(
+        return new ReplacementSubplanFactory.OfSingleOperators<MapOperator>(
                 (matchedOperator, epoch) -> new JavaMapOperator<>(matchedOperator).at(epoch)
         );
     }

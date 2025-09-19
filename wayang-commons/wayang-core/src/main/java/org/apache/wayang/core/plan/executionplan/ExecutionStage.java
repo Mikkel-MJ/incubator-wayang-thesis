@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -69,7 +69,7 @@ public class ExecutionStage {
     /**
      * Directly succeeding instances (have to be executed after this instance).
      */
-    private final Set<ExecutionStage> successors = new HashSet<>();
+    private final Set<ExecutionStage> successors = new LinkedHashSet<>();
 
     /**
      * Tasks that have to be done first when processing this instance.
@@ -295,7 +295,7 @@ public class ExecutionStage {
      * @param indent will be used to indent every line of the textual representation
      */
     public void getPlanAsString(StringBuilder sb, String indent) {
-        Set<ExecutionTask> seenTasks = new HashSet<>();
+        Set<ExecutionTask> seenTasks = new LinkedHashSet<>();
         for (ExecutionTask startTask : this.startTasks) {
             for (Channel inputChannel : startTask.getInputChannels()) {
                 sb.append(indent)
@@ -342,7 +342,7 @@ public class ExecutionStage {
 
         jsonMap.put("platform", this.getPlatformExecution().getPlatform().getName());
         jsonMap.put("operators", operators);
-        Set<ExecutionTask> seenTasks = new HashSet<>();
+        Set<ExecutionTask> seenTasks = new LinkedHashSet<>();
         for (ExecutionTask startTask : this.startTasks) {
             this.toJsonMapAux(startTask, seenTasks, operators);
         }
@@ -398,7 +398,7 @@ public class ExecutionStage {
      */
     public Set<ExecutionTask> getAllTasks() {
         final Queue<ExecutionTask> nextTasks = new LinkedList<>(this.startTasks);
-        final Set<ExecutionTask> allTasks = new HashSet<>();
+        final Set<ExecutionTask> allTasks = new LinkedHashSet<>();
 
         while (!nextTasks.isEmpty()) {
             final ExecutionTask task = nextTasks.poll();
@@ -426,7 +426,7 @@ public class ExecutionStage {
             this.getNextTask(startTask).forEach(nextTasks::add);
 
             // init startTask, in map
-            canReachHashMap.put(startTask, new HashSet<>()); // starting task reaches no subsequent tasks
+            canReachHashMap.put(startTask, new LinkedHashSet<>()); // starting task reaches no subsequent tasks
 
             while (!nextTasks.isEmpty()) {
                 final ExecutionTask nextTask = nextTasks.poll(); // fetch the next task in the dfs
@@ -434,7 +434,7 @@ public class ExecutionStage {
                 // very cumbersome way of getting the preceeding task's reachable nodes:
                 final Set<ExecutionTask> reachableNodes = this.getPreceedingTask(nextTask)
                         .stream()
-                        .map(reachable -> canReachHashMap.getOrDefault(reachable, new HashSet<>()))
+                        .map(reachable -> canReachHashMap.getOrDefault(reachable, new LinkedHashSet<>()))
                         .flatMap(Set::stream)
                         .collect(Collectors.toSet());
 
@@ -442,7 +442,7 @@ public class ExecutionStage {
 
                 reachableNodes.addAll(this.getPreceedingTask(nextTask)); // Add the preceding tasks themselves
 
-                canReachHashMap.computeIfAbsent(nextTask, k -> new HashSet<>()).addAll(reachableNodes);
+                canReachHashMap.computeIfAbsent(nextTask, k -> new LinkedHashSet<>()).addAll(reachableNodes);
 
                 this.getNextTask(nextTask).forEach(nextTasks::add); // add all proceeding tasks to nexttasks so they
             }
@@ -460,15 +460,15 @@ public class ExecutionStage {
     public Map<ExecutionTask, Set<ExecutionTask>> canReachMap2() {
         final HashMap<ExecutionTask, Set<ExecutionTask>> canReachHashMap = new HashMap<>();
         final Queue<ExecutionTask> nextTasks = new LinkedList<>(this.terminalTasks);
-        final Set<ExecutionTask> allTasks = new HashSet<>(this.getAllTasks());
+        final Set<ExecutionTask> allTasks = new LinkedHashSet<>(this.getAllTasks());
 
         // init sets for all tasks in hashmap
-        allTasks.forEach(task -> canReachHashMap.put(task, new HashSet<>()));
+        allTasks.forEach(task -> canReachHashMap.put(task, new LinkedHashSet<>()));
 
         // setup the starting task and its reachable nodes, which should be all since it
         // is the terminal node
         final ExecutionTask startingTask = nextTasks.poll();
-        canReachHashMap.put(startingTask, new HashSet<>(allTasks));
+        canReachHashMap.put(startingTask, new LinkedHashSet<>(allTasks));
         canReachHashMap.get(startingTask).remove(startingTask);
         this.getPreceedingTask(startingTask).forEach(nextTasks::add);
 

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -216,13 +217,12 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         final ResultSetIterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(),
                 boundaryOperator instanceof JoinOperator);
-        final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
-        final Stream<Output> resultSetStream = StreamSupport.stream(resultSetSpliterator, false)
-                .onClose(resultSetIterator::close);
+        //final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
+        final Iterable<Output> resultSetIterable = () -> resultSetIterator;
+        final List<Output> resultSetStream = StreamSupport.stream(resultSetIterable.spliterator(), false)
+                .onClose(resultSetIterator::close).collect(Collectors.toList());
 
         output.accept(resultSetStream);
-
-        input.dispose();
 
         final ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
         queryLineageNode.add(LoadProfileEstimators.createFromSpecification(

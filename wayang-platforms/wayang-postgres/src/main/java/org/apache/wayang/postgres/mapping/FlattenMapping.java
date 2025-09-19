@@ -34,6 +34,7 @@ import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.postgres.operators.PostgresProjectionOperator;
 import org.apache.wayang.postgres.platform.PostgresPlatform;
+import org.apache.wayang.core.plan.wayangplan.OperatorAlternative;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -68,6 +69,14 @@ public class FlattenMapping implements Mapping {
                 false)
                 .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
                 .withAdditionalTest(op -> op.getNumInputs() == 1) // No broadcasts.
+                /*
+                .withAdditionalTest(op -> {
+                    if(((OperatorAlternative)op.getEffectiveOccupant(0).getOwner()).getAlternatives().get(0).getContainedOperators().stream().findFirst().get() instanceof JoinOperator) {
+                        return false;
+                    }
+
+                    return true;
+                })*/
                 .withAdditionalTest(op -> {
                     return Mappings.isValidPostgres(op);
                 });

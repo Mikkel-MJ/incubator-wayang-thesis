@@ -23,6 +23,7 @@ import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.optimizer.OptimizationContext;
+import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.plan.executionplan.ExecutionStage;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
@@ -122,14 +123,8 @@ public class JdbcExecutor extends ExecutorTemplate {
         // i have to cast it to a list here otherwise java wont maintain ordering
         final List<ExecutionTask> allTasksWithTableSources = Arrays
                 .stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
-                .peek(task -> {
-                    System.out.println(task);
-                    System.out.println(task.getOperator());
-                    System.out.println(stage.canReachMap().get(task));
-                })
                 .sorted(new ExecutionTaskOrderingComparator(stage.canReachMap()))
                 .collect(Collectors.toList());
-
 
         final List<ExecutionTask> allTasks = allTasksWithTableSources.stream()
                 .filter(task -> !(task.getOperator() instanceof TableSource))
@@ -224,7 +219,7 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         if (boundaryPipeline.size() > 0) {
             projectionStatement = this.getSqlClause(validPipelineOperator.stream()
-                    .filter(op -> op instanceof JdbcGlobalReduceOperator)
+                    //.filter(op -> op instanceof JdbcGlobalReduceOperator)
                     .findFirst().orElse(validPipelineOperator.get(0)));
         }
 
@@ -357,6 +352,7 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         // Union of projectionTableNames, leftJoinTableNames, and rightJoinTableNames
         final Set<String> unionSet = new HashSet<>();
+        unionSet.addAll(projectionTableNames);
 
         // Remove tables that will be joined on, from the from clause
         unionSet.removeAll(joinTableNames);
@@ -379,9 +375,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                 final String joiningTable = matcher.group("joiningTable");
                 final String left = matcher.group("left");
                 final String right = matcher.group("right");
-                System.out.println("JoiningTable: " + joiningTable);
-                System.out.println("left: " + left);
-                System.out.println("right: " + right);
 
                 if (joiningTable != null && left != null && right != null) {
                     String leftTable = left.split("\\.")[0];
@@ -393,7 +386,6 @@ public class JdbcExecutor extends ExecutorTemplate {
             }
         }
 
-        System.out.println("Union set: " + unionSet);
         unionSet.remove("null");
         unionSet.remove(null);
 
@@ -418,6 +410,8 @@ public class JdbcExecutor extends ExecutorTemplate {
             }
         }
         sb.append(';');
+
+        System.out.println(sb.toString());
 
         return sb.toString();
     }

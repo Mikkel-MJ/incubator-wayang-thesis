@@ -40,9 +40,10 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -69,12 +70,12 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
     /**
      * Assigns {@link ExecutionTask}s with {@link InterimStage}s.
      */
-    private final Map<ExecutionTask, InterimStage> assignedInterimStages = new HashMap<>();
+    private final Map<ExecutionTask, InterimStage> assignedInterimStages = new LinkedHashMap<>();
 
     /**
      * Keeps track of {@link InterimStage}s that must be executed before executing a certain {@link ExecutionTask}.
      */
-    private final Map<ExecutionTask, Set<InterimStage>> requiredStages = new HashMap<>();
+    private final Map<ExecutionTask, Set<InterimStage>> requiredStages = new LinkedHashMap<>();
 
     /**
      * Zero or more {@link StageSplittingCriterion}s to further refine {@link ExecutionStage}s.
@@ -94,7 +95,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
     /**
      * Maintains {@link ExecutionStageLoop}s that are being created.
      */
-    private Map<LoopSubplan, ExecutionStageLoop> stageLoops = new HashMap<>();
+    private Map<LoopSubplan, ExecutionStageLoop> stageLoops = new LinkedHashMap<>();
 
     /**
      * Accepts the result of this instance after execution.
@@ -216,7 +217,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
      */
     private void discoverInitialStages() {
         // ExecutionTasks which have to be assigned an InterimStage.
-        final Set<ExecutionTask> relevantTasks = new HashSet<>();
+        final Set<ExecutionTask> relevantTasks = new LinkedHashSet<>();
 
         // ExecutionTasks that are staged for exploration.
         final Queue<ExecutionTask> stagedTasks = new LinkedList<>(this.executionTaskFlow.getSinkTasks());
@@ -392,10 +393,10 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
         // TODO: This splitting mechanism can cause unnecessary fragmentation of stages. Most likely, because "willTaskBeSeparated" depends on the traversal order of the stage DAG.
 
         // Keeps track of ExecutionTasks that should be separated from those that are not in this Set.
-        Set<ExecutionTask> tasksToSeparate = new HashSet<>();
+        Set<ExecutionTask> tasksToSeparate = new LinkedHashSet<>();
 
         // Maintains ExecutionTasks whose outgoing Channels have been visited.
-        Set<ExecutionTask> seenTasks = new HashSet<>();
+        Set<ExecutionTask> seenTasks = new LinkedHashSet<>();
 
         // Maintains ExecutionTasks to be visited and checked for split criteria.
         Queue<ExecutionTask> taskQueue = new LinkedList<>(stage.getStartTasks());
@@ -437,7 +438,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
                     "Cannot separate all tasks from stage with tasks %s.", tasksToSeparate
             );
             // Prepare to split the ExecutionTasks that are not separated.
-            final HashSet<ExecutionTask> tasksToKeep = new HashSet<>(stage.getTasks());
+            final HashSet<ExecutionTask> tasksToKeep = new LinkedHashSet<>(stage.getTasks());
             tasksToKeep.removeAll(tasksToSeparate);
 
             // Separate the ExecutionTasks and create stages for each connected component.
@@ -469,7 +470,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
 
         // Prepare data structures.
         Queue<ExecutionTask> stagedTasks = new LinkedList<>();
-        Set<ExecutionTask> connectedComponent = new HashSet<>(tasks.size());
+        Set<ExecutionTask> connectedComponent = new LinkedHashSet<>(tasks.size());
 
         // Remove any element from the tasks.
         final Iterator<ExecutionTask> iterator = tasks.iterator();
@@ -508,7 +509,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
         // Assign the required stages for each ExecutionTask: Each one requires its very own stage.
         for (InterimStage stage : this.newStages) {
             for (ExecutionTask task : stage.getTasks()) {
-                this.requiredStages.computeIfAbsent(task, key -> new HashSet<>(4)).add(stage);
+                this.requiredStages.computeIfAbsent(task, key -> new LinkedHashSet<>(4)).add(stage);
             }
         }
 
@@ -522,7 +523,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
                 for (ExecutionTask outboundTask : currentStage.getOutboundTasks()) {
 
                     // Start with the currently required stages.
-                    final HashSet<InterimStage> requiredStages = new HashSet<>(this.requiredStages.get(outboundTask));
+                    final HashSet<InterimStage> requiredStages = new LinkedHashSet<>(this.requiredStages.get(outboundTask));
 
                     // Propagate these stages to all follow-up tasks.
                     for (Channel channel : outboundTask.getOutputChannels()) {
@@ -597,7 +598,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
         }
         int minRequiredStages = -1;
         final Collection<ExecutionTask> initialTasks = new LinkedList<>();
-        final Set<ExecutionTask> tasksToSeparate = new HashSet<>();
+        final Set<ExecutionTask> tasksToSeparate = new LinkedHashSet<>();
         for (ExecutionTask task : stage.getTasks()) {
             final Set<InterimStage> requiredStages = this.requiredStages.get(task);
             if (minRequiredStages == -1 || requiredStages.size() < minRequiredStages) {
@@ -613,7 +614,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
             return false;
         } else {
             // Prepare to split the ExecutionTasks that are not separated.
-            final HashSet<ExecutionTask> tasksToKeep = new HashSet<>(stage.getTasks());
+            final HashSet<ExecutionTask> tasksToKeep = new LinkedHashSet<>(stage.getTasks());
             tasksToKeep.removeAll(tasksToSeparate);
 
             // Separate the ExecutionTasks and create stages for each connected component.
@@ -641,7 +642,7 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
      */
     private InterimStage splitStage(InterimStage stage, Set<ExecutionTask> separableTasks) {
         if (logger.isDebugEnabled()) {
-            Set<ExecutionTask> residualTasks = new HashSet<>(stage.getTasks());
+            Set<ExecutionTask> residualTasks = new LinkedHashSet<>(stage.getTasks());
             residualTasks.removeAll(separableTasks);
             logger.debug("Separating " + separableTasks + " from " + residualTasks + "...");
 
@@ -655,9 +656,9 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
     }
 
     private ExecutionPlan assembleExecutionPlan() {
-        final Map<InterimStage, ExecutionStage> finalStages = new HashMap<>(this.allStages.size());
+        final Map<InterimStage, ExecutionStage> finalStages = new LinkedHashMap<>(this.allStages.size());
         for (ExecutionTask sinkTask : this.executionTaskFlow.getSinkTasks()) {
-            this.assembleExecutionPlan(finalStages, null, sinkTask, new HashSet<>());
+            this.assembleExecutionPlan(finalStages, null, sinkTask, new LinkedHashSet<>());
         }
         final ExecutionPlan executionPlan = new ExecutionPlan();
         finalStages.values().stream().filter(ExecutionStage::isStartingStage).forEach(executionPlan::addStartingStage);
@@ -757,12 +758,12 @@ public class StageAssignmentTraversal extends OneTimeExecutable {
         /**
          * All tasks being in this instance.
          */
-        private final Set<ExecutionTask> allTasks = new HashSet<>();
+        private final Set<ExecutionTask> allTasks = new LinkedHashSet<>();
 
         /**
          * All tasks that feed a {@link Channel} that is consumed by a different {@link PlatformExecution}.
          */
-        private final Set<ExecutionTask> outboundTasks = new HashSet<>();
+        private final Set<ExecutionTask> outboundTasks = new LinkedHashSet<>();
 
         /**
          * Use for mark-and-sweep algorithms. (Specifically: mark changed stages)

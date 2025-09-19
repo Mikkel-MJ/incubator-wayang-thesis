@@ -95,9 +95,10 @@ public class SqlToRddOperator extends UnaryToUnaryOperator<Record, Record>
                 input.getSqlQuery(), boundaryOperator instanceof JoinOperator);
         final Iterable<Record> resultSetIterable = () -> resultSetIterator;
 
+        List<Record> inputList = StreamSupport.stream(resultSetIterable.spliterator(), false).onClose(resultSetIterator::close).collect(Collectors.toList());
         // Convert the ResultSet to a JavaRDD.
         final JavaRDD<Record> resultSetRDD = executor.sc.parallelize(
-                StreamSupport.stream(resultSetIterable.spliterator(), false).onClose(resultSetIterator::close).collect(Collectors.toList()),
+                inputList,
                 executor.getNumDefaultPartitions());
 
         output.accept(resultSetRDD, executor);

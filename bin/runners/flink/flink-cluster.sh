@@ -53,6 +53,10 @@ if [ $UCLOUD_RANK = 0 ]; then
     ssh-keygen -t rsa -q -f /home/ucloud/.ssh/id_rsa
     sudo cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 
+    echo "Copying hosts for child nodes"
+    sudo scp /etc/hosts node1:/etc/hosts
+    sudo scp /etc/hosts node2:/etc/hosts
+
     echo "Copying jobmanager config"
     cp -r /work/lsbo-paper/runners/flink/node0.yaml /opt/flink/conf/config.yaml
 

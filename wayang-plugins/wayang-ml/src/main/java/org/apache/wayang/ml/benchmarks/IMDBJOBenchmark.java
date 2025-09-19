@@ -172,8 +172,6 @@ public class IMDBJOBenchmark {
             .sorted(Comparator.comparing(op -> op.getTableName()))
             .collect(Collectors.toList());
 
-        System.out.println("Sources: " + sources);
-
         boolean isSet = false;
 
         for (Operator op : sources) {
@@ -233,8 +231,9 @@ public class IMDBJOBenchmark {
                             JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
-
+                        System.out.println("Setting to file: " + tableName);
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
 
                         break;
                     case "aka_name":
@@ -246,6 +245,8 @@ public class IMDBJOBenchmark {
                             JVMRecord.class
                         );
                         OutputSlot.stealConnections(op, parser);
+                        System.out.println("Setting to file: " + tableName);
+                        isSet = true;
 
                         replacement.connectTo(0, parser, 0);
                         break;
@@ -302,6 +303,8 @@ public class IMDBJOBenchmark {
                         OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
+                        System.out.println("Setting to file: " + tableName);
                         break;
                     case "person_info":
                         parser = new MapOperator<>(
@@ -314,6 +317,8 @@ public class IMDBJOBenchmark {
                         OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
+                        System.out.println("Setting to file: " + tableName);
                         break;
                     case "movie_keyword":
                         parser = new MapOperator<>(
@@ -327,6 +332,8 @@ public class IMDBJOBenchmark {
                         replacement.connectTo(0, parser, 0);
 
                         OutputSlot.stealConnections(op, parser);
+                        isSet = true;
+                        System.out.println("Setting to file: " + tableName);
 
                         break;
                     case "cast_info":
@@ -340,6 +347,8 @@ public class IMDBJOBenchmark {
                         OutputSlot.stealConnections(op, parser);
 
                         replacement.connectTo(0, parser, 0);
+                        isSet = true;
+                        System.out.println("Setting to file: " + tableName);
                         break;
                     case "movie_link":
                         parser = new MapOperator<>(

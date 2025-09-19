@@ -34,7 +34,9 @@ import org.apache.wayang.java.channels.CollectionChannel;
 import org.apache.wayang.java.channels.JavaChannelInstance;
 import org.apache.wayang.java.channels.StreamChannel;
 import org.apache.wayang.java.execution.JavaExecutor;
+import org.apache.wayang.basic.data.Record;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -84,7 +86,8 @@ public class JavaGlobalReduceOperator<Type>
         final BinaryOperator<Type> reduceFunction = javaExecutor.getCompiler().compile(this.reduceDescriptor);
         JavaExecutor.openFunction(this, reduceFunction, inputs, operatorContext);
 
-        final Optional<Type> reduction = ((JavaChannelInstance) inputs[0]).<Type>provideStream().reduce(reduceFunction);
+        final Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream();
+        final Optional<Type> reduction = inputStream.reduce(reduceFunction);
 
         ((CollectionChannel.Instance) outputs[0]).accept(reduction.isPresent() ?
                 Collections.singleton(reduction.get()) :

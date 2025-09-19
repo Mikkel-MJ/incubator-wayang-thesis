@@ -287,7 +287,7 @@ public interface Operator extends Serializable {
      *
      * @param input the slot to track
      * @return the outermost {@link InputSlot}
-     * @see #getParent()
+     * @see #getParent())
      */
     default <T> InputSlot<T> getOutermostInputSlot(InputSlot<T> input) {
         if (!this.isOwnerOf(input)) {

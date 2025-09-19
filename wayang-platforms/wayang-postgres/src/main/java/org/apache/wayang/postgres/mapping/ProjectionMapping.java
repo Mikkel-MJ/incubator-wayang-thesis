@@ -24,6 +24,7 @@ import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.basic.operators.GlobalReduceOperator;
 import org.apache.wayang.core.mapping.Mapping;
 import org.apache.wayang.core.mapping.OperatorPattern;
 import org.apache.wayang.core.mapping.PlanTransformation;
@@ -32,9 +33,14 @@ import org.apache.wayang.core.mapping.SubplanPattern;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.postgres.operators.PostgresProjectionOperator;
 import org.apache.wayang.postgres.platform.PostgresPlatform;
+import org.apache.wayang.core.plan.wayangplan.OperatorAlternative;
+import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.plan.wayangplan.Slot;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * /**
@@ -64,6 +70,9 @@ public class ProjectionMapping implements Mapping {
         .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
         .withAdditionalTest(op -> op.getNumInputs() == 1) // No broadcasts.
         .withAdditionalTest(op -> {
+            return !isAddAggColsMapping(op);
+        })
+        .withAdditionalTest(op -> {
             return Mappings.isValidPostgres(op);
         });
 
@@ -76,5 +85,37 @@ public class ProjectionMapping implements Mapping {
                         return new PostgresProjectionOperator(matchedOperator).at(epoch);
                 }
         );
+    }
+
+    /* I am sorry for this test, but it test if this Map is the predecessor of a GlobalReduce.
+     * If it is, this map can't be in postgres, as all GlobalReduce's from the sql api hold AddAggCols
+     * which won't be executed if its in postgres. AddAggCols needs to be executed for effective counting though.
+     */
+    private static boolean isAddAggColsMapping(Operator op) {
+        List<Slot<?>> slots = op.getOutermostOutputSlots(op.getOutput(0))
+                    .stream()
+                    .flatMap(outputSlot -> outputSlot.getOccupiedSlots().stream())
+                    .collect(Collectors.toList());
+        for (Slot<?> slot : slots) {
+            Operator owner = slot.getOwner();
+
+            if (owner instanceof OperatorAlternative) {
+                List<Operator> alternatives = ((OperatorAlternative) owner).getAlternatives()
+                    .stream()
+                    .map(parent -> parent.getContainedOperators().stream().findFirst().get())
+                    .collect(Collectors.toList());
+
+                for (Operator o : alternatives) {
+                        if(o instanceof GlobalReduceOperator){
+                            return true;
+                        }
+                }
+            } else {
+                if(owner instanceof GlobalReduceOperator){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

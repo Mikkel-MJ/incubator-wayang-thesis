@@ -15,8 +15,8 @@ cd ${WORKDIR}
 cd wayang-0.7.1
 
 data_path=/work/lsbo-paper/data/JOBenchmark/data
-timings_path=/work/lsbo-paper/data/JOBenchmark/data/executions
-test_path=/work/lsbo-paper/data/JOBenchmark/queries
+timings_path=/work/lsbo-paper/data/JOBenchmark/data/executions/light
+test_path=/work/lsbo-paper/data/JOBenchmark/queries/light
 model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
 bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-1.onnx
@@ -26,14 +26,11 @@ retrained_bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-
 
 echo "Running JOBenchmark"
 
-query="$test_path"/1a.sql
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
-    #for query in "$test_path"/*.sql; do
+    for query in "$test_path"/*.sql; do
     #for query in $(ls "$test_path"/*.sql | tail -n +14); do
     #for query_name in "${selected_queries[@]}"; do
         timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
-        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark spark,postgres file://$data_path/ $timings_path/ $query
-        timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark flink,postgres file://$data_path/ $timings_path/ $query
         #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/ $query bvae $bvae_1_path $data_path/experience/
         #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/1/ $query bvae $retrained_bvae_1_path $data_path/experience/
         #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/2/ $query bvae $retrained_bvae_2_path $data_path/experience/
@@ -44,4 +41,5 @@ query="$test_path"/1a.sql
         sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
         sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
         sleep 1s
+    done
 

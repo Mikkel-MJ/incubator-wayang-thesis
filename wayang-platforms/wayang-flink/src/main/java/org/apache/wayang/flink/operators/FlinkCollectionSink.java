@@ -20,6 +20,7 @@ package org.apache.wayang.flink.operators;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.util.Collector;
 import org.apache.flink.api.common.functions.MapPartitionFunction;
 import org.apache.wayang.core.api.Configuration;
@@ -78,8 +79,19 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
         }*/
 
         //flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(dataSetInput.getType().getClass(), Serializer.class);
+        //
 
-        output.accept(dataSetInput.collect());
+        // --- Step 2: Convert DataSet -> Table ---
+
+        //dataSetInput.writeAsText("file:///tmp/flink-data/", WriteMode.OVERWRITE);
+        //output.accept(dataSetInput.collect());
+        //output.accept(dataSetInput.first(10_000).collect());
+        List<Type> results = new ArrayList<>();
+        dataSetInput.output(new ListOutputFormat<>(results));
+        flinkExecutor.fee.execute();
+        System.out.println("Collected results: " + results.size());
+
+        output.accept(results);
 
         return ExecutionOperator.modelEagerExecution(inputs, outputs, operatorContext);
     }

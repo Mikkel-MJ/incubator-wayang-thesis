@@ -10,7 +10,7 @@ taskmanager:
   cpu:
     cores: 8
   bind-host: 0.0.0.0
-  numberOfTaskSlots: 2
+  numberOfTaskSlots: 1
 classloader:
   check-leaked-classloader: 'false'
   resolve-order: parent-first
@@ -42,7 +42,7 @@ pekko:
     timeout: 100s
 high-availability: NONE
 parallelism:
-  default: 4
+  default: 1
 env:
   java:
     opts:

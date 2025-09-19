@@ -36,7 +36,7 @@ public class AddAggCols extends CalciteAggSerializable implements FunctionDescri
             }
             i++;
         }
-        
+
         resValues[newRecordSize - 1] = 1;
         return new Record(resValues);
     }
