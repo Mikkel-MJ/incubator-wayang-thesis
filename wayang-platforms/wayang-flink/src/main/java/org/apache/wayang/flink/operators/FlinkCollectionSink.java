@@ -39,6 +39,16 @@ import org.apache.wayang.flink.execution.FlinkExecutor;
 import org.apache.wayang.java.channels.CollectionChannel;
 import com.esotericsoftware.kryo.Serializer;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.DataStreamUtils;
+import org.apache.flink.util.CloseableIterator;
+import org.apache.flink.api.java.io.TypeSerializerInputFormat;
+import org.apache.flink.api.java.io.TypeSerializerOutputFormat;
+import org.apache.flink.core.fs.Path;
+import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.util.CollectionUtil;
+
 
 import java.util.Collection;
 import java.util.Collections;
@@ -73,23 +83,40 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
         final DataSet<Type> dataSetInput = input.provideDataSet();
         TypeInformation<Type> type = dataSetInput.getType();
 
+        TypeSerializerInputFormat<Type> in = new TypeSerializerInputFormat<>(type);
+
+        Configuration config = flinkExecutor.getConfiguration();
+
+        TypeSerializerOutputFormat<Type> out = new TypeSerializerOutputFormat<>();
+        out.setOutputFilePath(new Path("file:///tmp/flink-data"));
+        out.setWriteMode(WriteMode.OVERWRITE);
+
+        dataSetInput.output(out);
+
+        //dataSetInput.writeAsText("file:///tmp/flink-data", WriteMode.OVERWRITE);
+        flinkExecutor.fee.execute();
+
+        System.out.println("Finished writing to file");
+
+        DataStream<Type> stream = flinkExecutor.sEnv.readFile(in, "file:///tmp/flink-data");
+
+        System.out.println("Finished reading from file");
+
+
+        List<Type> results = CollectionUtil.iteratorToList(stream.executeAndCollect());
         /*
-        if (type.getTypeClass().getName().contains("scala.Tuple")) {
-            flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(type.getTypeClass(), ScalaTupleSerializer.class);
+        try (CloseableIterator<Type> it = stream.executeAndCollect()) {
+            it.forEachRemaining(results::add);
         }*/
 
-        //flinkExecutor.fee.getConfig().registerTypeWithKryoSerializer(dataSetInput.getType().getClass(), Serializer.class);
-        //
-
-        // --- Step 2: Convert DataSet -> Table ---
-
-        //dataSetInput.writeAsText("file:///tmp/flink-data/", WriteMode.OVERWRITE);
+        System.out.println("Finished executing in Flink: " + results);
         //output.accept(dataSetInput.collect());
         //output.accept(dataSetInput.first(10_000).collect());
+        /*
         List<Type> results = new ArrayList<>();
         dataSetInput.output(new ListOutputFormat<>(results));
         flinkExecutor.fee.execute();
-        System.out.println("Collected results: " + results.size());
+        System.out.println("Collected results: " + results.size());*/
 
         output.accept(results);
 

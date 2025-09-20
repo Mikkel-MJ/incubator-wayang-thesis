@@ -1,4 +1,4 @@
-/*
+/*FlinkExecutor.java
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -36,6 +36,7 @@ import org.apache.wayang.flink.compiler.FunctionCompiler;
 import org.apache.wayang.flink.operators.FlinkExecutionOperator;
 import org.apache.wayang.flink.platform.FlinkPlatform;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +57,8 @@ public class FlinkExecutor extends PushExecutorTemplate {
      */
     public ExecutionEnvironment fee;
 
+
+    public StreamExecutionEnvironment sEnv;
     /**
      * Compiler to create flink UDFs.
      */
@@ -77,6 +80,7 @@ public class FlinkExecutor extends PushExecutorTemplate {
         this.platform = flinkPlatform;
         this.flinkContextReference = this.platform.getFlinkContext(job);
         this.fee = this.flinkContextReference.get();
+        this.sEnv = flinkPlatform.streamExecutionEnvironment;
         this.numDefaultPartitions = (int) this.getConfiguration().getLongProperty("wayang.flink.parallelism");
         this.fee.setParallelism(this.numDefaultPartitions);
         this.flinkContextReference.noteObtainedReference();

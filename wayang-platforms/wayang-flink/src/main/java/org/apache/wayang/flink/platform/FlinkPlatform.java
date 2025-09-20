@@ -32,6 +32,7 @@ import org.apache.wayang.core.platform.Platform;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.flink.execution.FlinkContextReference;
 import org.apache.wayang.flink.execution.FlinkExecutor;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,6 +66,8 @@ public class FlinkPlatform extends Platform {
      * does not hold a counted reference, so it might be disposed.
      */
     private FlinkContextReference flinkContextReference = null;
+
+    public StreamExecutionEnvironment streamExecutionEnvironment = null;
 
     private Logger logger = LogManager.getLogger(this.getClass());
 
@@ -109,6 +112,12 @@ public class FlinkPlatform extends Platform {
                                 jars
                         ),
                         (int)conf.getLongProperty("wayang.flink.parallelism")
+                );
+                this.streamExecutionEnvironment = StreamExecutionEnvironment.createRemoteEnvironment(
+                        conf.getStringProperty("wayang.flink.master"),
+                        Integer.parseInt(conf.getStringProperty("wayang.flink.port")),
+                        flinkConfig,
+                        jars
                 );
                 break;
             case "collection":
