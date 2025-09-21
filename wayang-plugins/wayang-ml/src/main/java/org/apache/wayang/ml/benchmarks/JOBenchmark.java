@@ -89,10 +89,10 @@ public class JOBenchmark {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "JOB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
-            config.setProperty("spark.executor.memory", "32g");
-            config.setProperty("spark.executor.cores", "6");
+            config.setProperty("spark.executor.memory", "6g");
+            config.setProperty("spark.executor.cores", "1");
             config.setProperty("spark.executor.instances", "1");
-            config.setProperty("spark.default.parallelism", "8");
+            config.setProperty("spark.default.parallelism", "1");
             config.setProperty("spark.driver.maxResultSize", "16g");
             config.setProperty("spark.dynamicAllocation.enabled", "true");
             config.setProperty("wayang.flink.mode.run", "distribution");

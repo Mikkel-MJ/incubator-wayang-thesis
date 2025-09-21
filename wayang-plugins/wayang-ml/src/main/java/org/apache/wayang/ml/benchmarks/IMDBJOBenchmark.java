@@ -224,8 +224,7 @@ public class IMDBJOBenchmark {
                 switch (tableName) {
                     case "movie_companies": parser = new MapOperator<>(
                             (line) -> {
-                                JVMRecord record = new JVMRecord(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
-                                return record;
+                                return new JVMRecord(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
                             },
                             String.class,
                             JVMRecord.class

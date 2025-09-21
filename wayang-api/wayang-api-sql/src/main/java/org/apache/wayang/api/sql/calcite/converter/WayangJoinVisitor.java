@@ -51,6 +51,7 @@ import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.util.ReflectionUtils;
 import org.apache.wayang.postgres.Postgres;
+import org.apache.wayang.spark.Spark;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -260,6 +261,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
                 leftProjectionDescriptor,
                 righProjectionDescriptor);
+
+            join.addTargetPlatform(Spark.platform());
 
         return join;
     }

@@ -222,6 +222,8 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
         final List<Output> resultSetStream = StreamSupport.stream(resultSetIterable.spliterator(), false)
                 .onClose(resultSetIterator::close).collect(Collectors.toList());
 
+        System.out.println("SqlToStream: " + resultSetStream.size());
+
         output.accept(resultSetStream);
 
         final ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);

@@ -109,7 +109,8 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
             it.forEachRemaining(results::add);
         }*/
 
-        System.out.println("Finished executing in Flink: " + results);
+        System.out.println("Finished executing in Flink: " + results.size());
+        System.out.println("Last: " + results.get(results.size() - 1));
         //output.accept(dataSetInput.collect());
         //output.accept(dataSetInput.first(10_000).collect());
         /*
