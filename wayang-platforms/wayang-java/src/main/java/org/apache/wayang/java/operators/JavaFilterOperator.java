@@ -18,6 +18,14 @@
 
 package org.apache.wayang.java.operators;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.function.PredicateDescriptor;
@@ -34,14 +42,6 @@ import org.apache.wayang.java.channels.CollectionChannel;
 import org.apache.wayang.java.channels.JavaChannelInstance;
 import org.apache.wayang.java.channels.StreamChannel;
 import org.apache.wayang.java.execution.JavaExecutor;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Stream;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
  * Java implementation of the {@link FilterOperator}.
@@ -84,8 +84,7 @@ public class JavaFilterOperator<Type>
 
         final Predicate<Type> filterFunction = javaExecutor.getCompiler().compile(this.predicateDescriptor);
         JavaExecutor.openFunction(this, filterFunction, inputs, operatorContext);
-
-        final Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream();
+        final Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream().filter(filterFunction);
 
         ((StreamChannel.Instance) outputs[0]).accept(inputStream);
 
