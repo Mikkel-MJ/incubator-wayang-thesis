@@ -37,8 +37,8 @@ import java.util.Objects;
 //TODO: create tablesource with column types
 //TODO: support other sources
 public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan> {
-    WayangTableScanVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangTableScanVisitor(final AliasFinder aliasFinder) {
+        super(aliasFinder);
     }
 
     @Override
