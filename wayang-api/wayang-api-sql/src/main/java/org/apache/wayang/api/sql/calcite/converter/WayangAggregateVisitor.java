@@ -31,13 +31,13 @@ import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
 import org.apache.wayang.api.sql.calcite.rel.WayangRel;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.GlobalReduceOperator;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.operators.ReduceByOperator;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.function.ReduceDescriptor;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
@@ -45,13 +45,13 @@ import org.apache.wayang.core.types.DataUnitType;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
-    WayangAggregateVisitor(final AliasFinder aliasFinder) {
-        super(aliasFinder);
+    WayangAggregateVisitor(final Configuration configuration) {
+        super(configuration);
     }
 
     @Override
     Operator visit(final WayangAggregate wayangRelNode) {
-        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(), super.aliasFinder);
+        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(), super.configuration);
 
         // fetch the indexes of colmuns affected, in calcite aggregates and projections
         // have their own catalog, we need to find the column indexes in the global

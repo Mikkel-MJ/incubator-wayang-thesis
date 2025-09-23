@@ -33,7 +33,6 @@ import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoiningTableExtra
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.api.sql.calcite.utils.SqlField;
 import org.apache.wayang.basic.data.Record;
@@ -41,6 +40,7 @@ import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.util.ReflectionUtils;
@@ -52,8 +52,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         LEFT, RIGHT
     }
 
-    WayangJoinVisitor(final AliasFinder aliasFinder) {
-        super(aliasFinder);
+    WayangJoinVisitor(final Configuration configuration) {
+        super(configuration);
     }
 
     /**
@@ -137,8 +137,8 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-        final Operator childOpLeft = WayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
-        final Operator childOpRight = WayangRelConverter.convert(wayangRelNode.getInput(1), super.aliasFinder);
+        final Operator childOpLeft = WayangRelConverter.convert(wayangRelNode.getInput(0), configuration);
+        final Operator childOpRight = WayangRelConverter.convert(wayangRelNode.getInput(1), configuration);
 
         final RexNode condition = wayangRelNode.getCondition();
 

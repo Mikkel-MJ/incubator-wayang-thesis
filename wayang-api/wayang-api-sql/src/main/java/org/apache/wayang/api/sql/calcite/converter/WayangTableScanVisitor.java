@@ -21,9 +21,9 @@ package org.apache.wayang.api.sql.calcite.converter;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
 import org.apache.wayang.api.sql.sources.fs.JavaCSVTableSource;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.postgres.operators.PostgresTableSource;
@@ -37,16 +37,15 @@ import java.util.Objects;
 //TODO: create tablesource with column types
 //TODO: support other sources
 public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan> {
-    WayangTableScanVisitor(final AliasFinder aliasFinder) {
-        super(aliasFinder);
+
+    WayangTableScanVisitor(final Configuration configuration) {
+        super(configuration);
     }
 
     @Override
     Operator visit(final WayangTableScan wayangRelNode) {
-
         final String tableName = wayangRelNode.getTableName();
         final List<String> columnNames = wayangRelNode.getColumnNames();
-
         // Get the source platform for this table
         final String tableSource = wayangRelNode.getTable().getQualifiedName().get(0);
 
@@ -55,11 +54,17 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
         }
 
         if (tableSource.equals("fs")) {
-            ModelParser modelParser;
+            final ModelParser modelParser;
             try {
-                modelParser = new ModelParser();
+                modelParser = this.configuration == null
+                        ? new ModelParser()
+                        : new ModelParser(this.configuration);
+
+                System.out.println("[WayangTableScanVisitor.path]: " + modelParser.getFsPath());
             } catch (final Exception e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
+                throw new IllegalArgumentException(
+                        "Could not initialize calcite model parser from current Wayang configuration");
             }
             final RelDataType rowType = wayangRelNode.getRowType();
             final List<RelDataType> fieldTypes = new ArrayList<>();

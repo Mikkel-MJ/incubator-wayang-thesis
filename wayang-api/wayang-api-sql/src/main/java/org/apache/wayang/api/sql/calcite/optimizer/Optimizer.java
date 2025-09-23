@@ -17,7 +17,12 @@
 
 package org.apache.wayang.api.sql.calcite.optimizer;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -26,24 +31,28 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptSchema;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.schema.Schema;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule.FilterIntoJoinRuleConfig;
+import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.schema.Schema;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -58,57 +67,42 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
-import org.apache.calcite.plan.hep.HepPlanner;
-import org.apache.calcite.plan.hep.HepProgram;
-import org.apache.calcite.plan.hep.HepProgramBuilder;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.rel.rules.*;
-import org.apache.calcite.rel.logical.*;
-import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
-
-import org.apache.wayang.api.sql.calcite.rules.WayangRules;
-import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.api.sql.calcite.converter.WayangRelConverter;
+import org.apache.wayang.api.sql.calcite.rules.WayangMultiConditionJoinSplitRule;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.LocalCallbackSink;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Iterator;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-import java.util.Properties;
+import com.google.common.collect.ImmutableList;
 
 public class Optimizer {
 
-    private final CalciteConnectionConfig config;
-    private final SqlValidator sqlValidator;
-    private final SqlToRelConverter sqlToRelConverter;
-    private final VolcanoPlanner volcanoPlanner;
+    public static class ConfigProperties {
+
+        public static Properties getDefaults() {
+            final Properties configProperties = new Properties();
+            configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
+            configProperties.put(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
+            configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
+            return configProperties;
+        }
+    }
     private static RelOptCluster cluster;
     private static RelOptSchema relOptSchema;
     private static Schema schema;
     private static RelDataTypeFactory relDataTypeFactory;
-
     /**
-     * Rule {@link JoinCommuteRule} takes too long when joins number grows. We disable this rule if query has joins
+     * Rule {@link JoinCommuteRule} takes too long when joins number grows. We
+     * disable this rule if query has joins
      * count bigger than this value.
      */
     public static final int MAX_JOINS_TO_COMMUTE = 999;
-
-    public VolcanoPlanner getPlanner(){
-        return this.volcanoPlanner;
-    }
-    public static Schema getCalciteSchema(){
+    public static Schema getCalciteSchema() {
         return schema;
     }
-
     public static RelOptSchema getRelOptSchema() {
         return relOptSchema;
     }
@@ -117,68 +111,57 @@ public class Optimizer {
         return cluster;
     }
 
-    public static RelDataTypeFactory getTypeFactory(){
+    public static RelDataTypeFactory getTypeFactory() {
         return relDataTypeFactory;
     }
 
-    protected Optimizer(
-            CalciteConnectionConfig config,
-            SqlValidator sqlValidator,
-            SqlToRelConverter sqlToRelConverter,
-            VolcanoPlanner volcanoPlanner) {
-        this.config = config;
-        this.sqlValidator = sqlValidator;
-        this.sqlToRelConverter = sqlToRelConverter;
-        this.volcanoPlanner = volcanoPlanner;
-    }
-
     public static Optimizer create(
-            CalciteSchema calciteSchema,
-            Properties configProperties,
-            RelDataTypeFactory typeFactory) {
+            final CalciteSchema calciteSchema,
+            final Properties configProperties,
+            final RelDataTypeFactory typeFactory) {
         relDataTypeFactory = typeFactory;
         schema = calciteSchema.schema;
-        CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
+        final CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
 
-        CalciteCatalogReader catalogReader = new CalciteCatalogReader(
+        final CalciteCatalogReader catalogReader = new CalciteCatalogReader(
                 calciteSchema.root(),
                 ImmutableList.of(calciteSchema.name),
                 typeFactory,
                 config);
 
-        relOptSchema = catalogReader; //set the reloptschema for serialisation access
+        relOptSchema = catalogReader; // set the reloptschema for serialisation access
 
-        SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
+        final SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
 
-        SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
+        final SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
                 .withLenientOperatorLookup(config.lenientOperatorLookup())
                 .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
 
-        SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
+        final SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
                 validatorConfig);
 
-        VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
+        final VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
 
         // Set up the trait def (mandatory in VolcanoPlanner)
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.setNoneConventionHasInfiniteCost(true);
-        //planner.setTopDownOpt(true);
+        // planner.setTopDownOpt(true);
 
         // Add some core rules
-        //planner.addRule(CoreRules.FILTER_INTO_JOIN);
+        // planner.addRule(CoreRules.FILTER_INTO_JOIN);
 
         // Create an empty trait set
-        RelTraitSet traitSet = planner.emptyTraitSet().replace(Convention.NONE);
+        final RelTraitSet traitSet = planner.emptyTraitSet().replace(Convention.NONE);
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
-        SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
+        final SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
                 .withExpand(false);
 
-        SqlToRelConverter converter = new SqlToRelConverter(
+        final SqlToRelConverter converter = new SqlToRelConverter(
                 null,
                 validator,
                 catalogReader,
@@ -199,50 +182,48 @@ public class Optimizer {
      *             instead
      */
     @Deprecated
-    public static Optimizer create(WayangSchema wayangSchema) {
-        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
+    public static Optimizer create(final WayangSchema wayangSchema) {
+        final RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
         relDataTypeFactory = typeFactory;
         // Configuration
-        Properties configProperties = new Properties();
+        final Properties configProperties = new Properties();
         configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
         configProperties.put(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
         configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
 
-        CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
+        final CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
 
-        CalciteSchema rootSchema = CalciteSchema.createRootSchema(false, false);
+        final CalciteSchema rootSchema = CalciteSchema.createRootSchema(false, false);
         rootSchema.add(wayangSchema.getSchemaName(), wayangSchema);
 
-        Prepare.CatalogReader catalogReader = new CalciteCatalogReader(
+        final Prepare.CatalogReader catalogReader = new CalciteCatalogReader(
                 rootSchema,
                 Collections.singletonList(wayangSchema.getSchemaName()),
                 typeFactory,
-                config
-        );
+                config);
 
-        SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
+        final SqlOperatorTable operatorTable = SqlOperatorTables.chain(ImmutableList.of(SqlStdOperatorTable.instance()));
 
-        SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
+        final SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
                 .withLenientOperatorLookup(config.lenientOperatorLookup())
                 .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
 
-        SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
+        final SqlValidator validator = SqlValidatorUtil.newValidator(operatorTable, catalogReader, typeFactory,
                 validatorConfig);
 
-        VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
+        final VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         planner.addRule(FilterIntoJoinRuleConfig.DEFAULT.toRule());
 
         cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
 
-        SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
+        final SqlToRelConverter.Config converterConfig = SqlToRelConverter.config()
                 .withTrimUnusedFields(true)
                 .withExpand(false);
 
-
-        SqlToRelConverter converter = new SqlToRelConverter(
+        final SqlToRelConverter converter = new SqlToRelConverter(
                 null,
                 validator,
                 catalogReader,
@@ -253,46 +234,90 @@ public class Optimizer {
         return new Optimizer(config, validator, converter, planner);
     }
 
-    public SqlNode parseSql(String sql) throws SqlParseException {
-        SqlParser.Config parserConfig = SqlParser.config()
+    public static RelOptCluster createCluster() {
+        // Recreate Cluster because serialization is hard uwu
+        final RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        final Properties configProperties = new Properties();
+        configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
+        configProperties.put(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
+        configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
+
+        final CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
+
+        final VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
+        planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+        // planner.setTopDownOpt(true);
+
+        final RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
+
+        return cluster;
+    }
+
+    public static RelDataTypeFactory createTypeFactory() {
+        return new JavaTypeFactoryImpl();
+    }
+
+    private final CalciteConnectionConfig config;
+
+    private final SqlValidator sqlValidator;
+
+    private final SqlToRelConverter sqlToRelConverter;
+
+    private final VolcanoPlanner volcanoPlanner;
+
+    protected Optimizer(
+            final CalciteConnectionConfig config,
+            final SqlValidator sqlValidator,
+            final SqlToRelConverter sqlToRelConverter,
+            final VolcanoPlanner volcanoPlanner) {
+        this.config = config;
+        this.sqlValidator = sqlValidator;
+        this.sqlToRelConverter = sqlToRelConverter;
+        this.volcanoPlanner = volcanoPlanner;
+    }
+
+    public VolcanoPlanner getPlanner() {
+        return this.volcanoPlanner;
+    }
+
+    public SqlNode parseSql(final String sql) throws SqlParseException {
+        final SqlParser.Config parserConfig = SqlParser.config()
                 .withCaseSensitive(config.caseSensitive())
                 .withQuotedCasing(config.quotedCasing())
                 .withUnquotedCasing(config.unquotedCasing())
                 .withConformance(config.conformance());
 
-        SqlParser parser = SqlParser.create(sql, parserConfig);
+        final SqlParser parser = SqlParser.create(sql, parserConfig);
 
         return parser.parseStmt();
     }
 
-    public SqlNode validate(SqlNode sqlNode) {
+    public SqlNode validate(final SqlNode sqlNode) {
         return sqlValidator.validate(sqlNode);
     }
 
-    public RelNode convert(SqlNode sqlNode) {
-        RelRoot root = sqlToRelConverter.convertQuery(sqlNode, false, true);
+    public RelNode convert(final SqlNode sqlNode) {
+        final RelRoot root = sqlToRelConverter.convertQuery(sqlNode, false, true);
         return root.rel;
     }
 
     // TODO: create a basic ruleset
-    public RelNode optimize(RelNode node, RelTraitSet requiredTraitSet, RuleSet rules) {
-        int joinsCnt = RelOptUtil.countJoins(node);
+    public RelNode optimize(final RelNode node, final RelTraitSet requiredTraitSet, RuleSet rules) {
+        final int joinsCnt = RelOptUtil.countJoins(node);
 
         if (joinsCnt > MAX_JOINS_TO_COMMUTE) {
 
             rules = RuleSets.ofList(
-                StreamSupport.stream(rules.spliterator(), false)
-                .filter(rule -> rule != CoreRules.JOIN_ASSOCIATE)
-                .collect(Collectors.toList())
-            );
+                    StreamSupport.stream(rules.spliterator(), false)
+                            .filter(rule -> rule != CoreRules.JOIN_ASSOCIATE)
+                            .collect(Collectors.toList()));
         }
 
-        //Program program = Programs.of(RuleSets.ofList(rules));
-        Program logicalRules = Programs.heuristicJoinOrder(
-            rules,
-            false,
-            0
-        );
+        // Program program = Programs.of(RuleSets.ofList(rules));
+        final Program logicalRules = Programs.heuristicJoinOrder(
+                rules,
+                false,
+                0);
 
         return logicalRules.run(
                 volcanoPlanner,
@@ -302,52 +327,29 @@ public class Optimizer {
                 Collections.emptyList());
     }
 
-    public WayangPlan convert(RelNode relNode) {
+    public WayangPlan convert(final RelNode relNode) {
         return convert(relNode, new ArrayList<>(), null);
     }
 
-    public WayangPlan convert(RelNode relNode, Collection<Record> collector, AliasFinder aliasFinder) {
-        //LocalCallbackSink<Record> sink = LocalCallbackSink.createCollectingSink(collector, Record.class);
-        LocalCallbackSink<Record> sink = LocalCallbackSink.createStdoutSink(Record.class);
-        Operator op = new WayangRelConverter().convert(relNode, aliasFinder);
+    public WayangPlan convert(final RelNode relNode, final Collection<Record> collector, final Configuration configuration) {
+        // LocalCallbackSink<Record> sink =
+        // LocalCallbackSink.createCollectingSink(collector, Record.class);
+        final LocalCallbackSink<Record> sink = LocalCallbackSink.createStdoutSink(Record.class);
+        final Operator op = WayangRelConverter.convert(relNode, configuration);
 
         op.connectTo(0, sink, 0);
 
         return new WayangPlan(sink);
     }
 
-    public static RelOptCluster createCluster() {
-        // Recreate Cluster because serialization is hard uwu
-        RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
-        Properties configProperties = new Properties();
-        configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
-        configProperties.put(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
-        configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
+    public WayangPlan convertWithConfig(final RelNode relNode, final Configuration configuration, final Collection<Record> collector) {
 
-        CalciteConnectionConfig config = new CalciteConnectionConfigImpl(configProperties);
+        final LocalCallbackSink<Record> sink = LocalCallbackSink.createCollectingSink(collector, Record.class);
 
-        VolcanoPlanner planner = new VolcanoPlanner(RelOptCostImpl.FACTORY, Contexts.of(config));
-        planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-        //planner.setTopDownOpt(true);
+        final Operator op = WayangRelConverter.convert(relNode, configuration);
 
-        RelOptCluster cluster = RelOptCluster.create(planner, new RexBuilder(typeFactory));
-
-        return cluster;
-    }
-
-    public static RelDataTypeFactory createTypeFactory() {
-        return new JavaTypeFactoryImpl();
-    }
-
-    public static class ConfigProperties {
-
-        public static Properties getDefaults() {
-            Properties configProperties = new Properties();
-            configProperties.put(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), Boolean.TRUE.toString());
-            configProperties.put(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
-            configProperties.put(CalciteConnectionProperty.QUOTED_CASING.camelName(), Casing.UNCHANGED.toString());
-            return configProperties;
-        }
+        op.connectTo(0, sink, 0);
+        return new WayangPlan(sink);
     }
 
     /**
@@ -360,10 +362,10 @@ public class Optimizer {
      * @param rules
      * @return
      */
-    public RelNode prepare(final RelNode node, Collection<RelOptRule> rules) {
+    public RelNode prepare(final RelNode node, final Collection<RelOptRule> rules) {
         // use hep as it doesnt take cost into consideration while volcano planner does.
         final HepProgramBuilder programBuilder = HepProgram.builder();
-        //programBuilder.addRuleInstance(rule);
+        // programBuilder.addRuleInstance(rule);
         programBuilder.addRuleCollection(rules);
 
         final HepProgram program = programBuilder.build();

@@ -17,53 +17,46 @@
 
 package org.apache.wayang.api.sql.context;
 
-import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.hep.HepRelVertex;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.tools.RuleSet;
-import org.apache.calcite.tools.RuleSets;
-import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
-import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
-import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
-import org.apache.wayang.api.sql.calcite.rules.WayangRules;
-import org.apache.calcite.rel.rules.CoreRules;
-import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
-import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
-import org.apache.wayang.basic.data.Record;
-import org.apache.wayang.core.api.Configuration;
-import org.apache.wayang.core.plugin.Plugin;
-import org.apache.wayang.core.api.WayangContext;
-import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
-import org.apache.wayang.core.plan.wayangplan.WayangPlan;
-import org.apache.wayang.java.Java;
-import org.apache.wayang.postgres.Postgres;
-import org.apache.wayang.spark.Spark;
-import org.apache.calcite.adapter.enumerable.EnumerableRules;
-import org.apache.calcite.rel.rules.*;
-import org.apache.calcite.rel.logical.*;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.util.Optionality;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
+
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.tools.RuleSet;
+import org.apache.calcite.tools.RuleSets;
+
+import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
+import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
+import org.apache.wayang.api.sql.calcite.rules.WayangRules;
+import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
+import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.core.api.Configuration;
+import org.apache.wayang.core.api.WayangContext;
+import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.core.plugin.Plugin;
+import org.apache.wayang.java.Java;
+import org.apache.wayang.postgres.Postgres;
+import org.apache.wayang.spark.Spark;
 
 public class SqlContext extends WayangContext {
 
     private static final AtomicInteger jobId = new AtomicInteger(0);
+
+    private static String getJobName() {
+        return "SQL[" + jobId.incrementAndGet() + "]";
+    }
 
     public final CalciteSchema calciteSchema;
 
@@ -141,22 +134,14 @@ public class SqlContext extends WayangContext {
             WayangRules.WAYANG_JOIN_RULE
         );
 
-        RelNode optimized = optimizer.optimize(
+        final RelNode optimized = optimizer.optimize(
             relNode,
             relNode.getTraitSet().plus(WayangConvention.INSTANCE),
             transformationRules
         );
 
-        //final RelNode converted = optimizer.prepare(optimized, rulesList);
-
-        final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
-
-        visitor.visit(optimized, 0, null);
-
-        final AliasFinder aliasFinder = new AliasFinder(visitor);
-
         final Collection<Record> collector = new ArrayList<>();
-        return optimizer.convert(optimized, collector, aliasFinder);
+        return optimizer.convert(optimized, collector, this.getConfiguration());
     }
 
     /**
@@ -182,16 +167,6 @@ public class SqlContext extends WayangContext {
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
-        // initialisations that handles decompilations of calcite's relnodes back to SQL
-        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
-        final SqlImplementor.Context relContext = decompiler.visitInput(relNode,0).qualifiedContext();
-
-        final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
-        visitor.visit(relNode, 0, null);
-
-        final AliasFinder aliasFinder = new AliasFinder(visitor);
-        aliasFinder.context = relContext;
-
         final RuleSet rules = RuleSets.ofList(
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
@@ -206,7 +181,7 @@ public class SqlContext extends WayangContext {
                 rules);
 
         final Collection<Record> collector = new ArrayList<>();
-        final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
+        final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, this.getConfiguration());
 
         if (udfJars.length == 0) {
              PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node
@@ -217,9 +192,5 @@ public class SqlContext extends WayangContext {
         }
 
         return collector;
-    }
-
-    private static String getJobName() {
-        return "SQL[" + jobId.incrementAndGet() + "]";
     }
 }

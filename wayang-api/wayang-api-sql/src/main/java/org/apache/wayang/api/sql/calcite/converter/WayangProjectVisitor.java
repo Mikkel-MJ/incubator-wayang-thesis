@@ -40,11 +40,11 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
 import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
 public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
@@ -114,12 +114,13 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         }
     }
 
-    WayangProjectVisitor(final AliasFinder aliasFinder) {
-        super(aliasFinder);
+    WayangProjectVisitor(final Configuration configuration) {
+        super(configuration);
     }
 
     @Override
     Operator visit(final WayangProject wayangRelNode) {
+        /*
         System.out.println("is an identity mapping:" + RexUtil.isIdentity(wayangRelNode.getProjects(), wayangRelNode.getInput().getRowType()));
 
         final RelToSqlConverter converter = new RelToSqlConverter(PostgresqlSqlDialect.DEFAULT);
@@ -169,9 +170,9 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
         System.out.println("[WayangProjectVisitor.originColumns]: " + originColumns);
         System.out.println("[WayangProjectVisitor.columns]: " + wayangRelNode.getRowType().getFieldList());
+        */
 
-
-        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(0), super.configuration);
 
         // projections on fields:
         System.out.println("[WayangProjectVisitor.dealiasedFields]: " + List.of(CalciteSources.getUnaliasedFields(wayangRelNode)));

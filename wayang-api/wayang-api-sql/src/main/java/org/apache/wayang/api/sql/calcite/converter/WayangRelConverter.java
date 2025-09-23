@@ -20,7 +20,7 @@
 package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.wayang.api.sql.calcite.rel.*;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
 import org.apache.calcite.rel.RelNode;
@@ -30,21 +30,21 @@ public final class WayangRelConverter {
 
     protected WayangRelConverter () { }
 
-    public static Operator convert(final RelNode node, AliasFinder aliasFinder) {
-        if(node instanceof WayangTableScan) {
-            return new WayangTableScanVisitor(aliasFinder).visit((WayangTableScan)node);
+    public static Operator convert(final RelNode node, final Configuration configuration) {
+        if (node instanceof WayangTableScan) {
+            return new WayangTableScanVisitor(configuration).visit((WayangTableScan)node);
         } else if (node instanceof WayangProject) {
-            return new WayangProjectVisitor(aliasFinder).visit((WayangProject) node);
+            return new WayangProjectVisitor(configuration).visit((WayangProject) node);
         } else if (node instanceof WayangFilter) {
-            return new WayangFilterVisitor(aliasFinder).visit((WayangFilter) node);
+            return new WayangFilterVisitor(configuration).visit((WayangFilter) node);
         } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isAlwaysTrue()) {
-            return new WayangCrossJoinVisitor(aliasFinder).visit((WayangJoin) node);
+            return new WayangCrossJoinVisitor(configuration).visit((WayangJoin) node);
         } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isA(SqlKind.AND)) {
-            return new WayangMultiConditionJoinVisitor(aliasFinder).visit((WayangJoin) node);
+            return new WayangMultiConditionJoinVisitor(configuration).visit((WayangJoin) node);
         }else if (node instanceof WayangJoin) {
-            return new WayangJoinVisitor(aliasFinder).visit((WayangJoin) node);
+            return new WayangJoinVisitor(configuration).visit((WayangJoin) node);
         } else if (node instanceof WayangAggregate) {
-            return new WayangAggregateVisitor(aliasFinder).visit((WayangAggregate) node);
+            return new WayangAggregateVisitor(configuration).visit((WayangAggregate) node);
         }
         throw new IllegalStateException("Operator translation not supported yet " + node);
     }

@@ -1,0 +1,479 @@
+134
+134
+124
+126
+132
+109
+99
+103
+110
+90
+95
+93
+104
+123
+162
+111
+144
+114
+109
+160
+124
+119
+104
+139
+101
+91
+106
+93
+93
+89
+85
+90
+85
+117
+82
+102
+105
+93
+96
+84
+111
+81
+87
+112
+92
+93
+106
+87
+104
+98
+100
+121
+102
+102
+96
+98
+132
+94
+91
+111
+81
+82
+85
+123
+84
+89
+86
+122
+123
+125
+95
+97
+103
+128
+100
+102
+95
+111
+102
+111
+128
+105
+117
+40
+128
+101
+100
+104
+98
+117
+109
+101
+103
+108
+104
+106
+144
+102
+145
+95
+83
+94
+98
+86
+92
+85
+104
+95
+108
+94
+91
+96
+94
+102
+84
+87
+89
+86
+102
+95
+116
+90
+118
+107
+95
+89
+83
+104
+101
+97
+96
+86
+105
+109
+98
+89
+95
+89
+71
+50
+61
+51
+79
+104
+104
+67
+Conversion: 103
+Conversion: 47
+Conversion: 121
+Conversion: 110
+Conversion: 113
+Conversion: 108
+Conversion: 47
+Conversion: 59
+Conversion: 53
+Conversion: 47
+Conversion: 45
+Conversion: 67
+Conversion: 83
+Conversion: 46
+Conversion: 47
+Conversion: 73
+Conversion: 47
+Conversion: 56
+Conversion: 48
+Conversion: 49
+Conversion: 54
+Conversion: 48
+Conversion: 47
+Conversion: 58
+Conversion: 53
+Conversion: 48
+Conversion: 53
+Conversion: 52
+Conversion: 51
+Conversion: 89
+Conversion: 59
+Conversion: 53
+Conversion: 50
+Conversion: 77
+Conversion: 46
+Conversion: 58
+Conversion: 44
+Conversion: 50
+Conversion: 49
+Conversion: 51
+Conversion: 55
+Conversion: 5
+Conversion: 54
+Conversion: 8
+Conversion: 55
+Conversion: 6
+Conversion: 46
+Conversion: 6
+Conversion: 53
+Conversion: 7
+Conversion: 77
+Conversion: 6
+Conversion: 45
+Conversion: 6
+Conversion: 46
+Conversion: 5
+Conversion: 52
+Conversion: 9
+Conversion: 46
+Conversion: 54
+Conversion: 59
+Conversion: 49
+Conversion: 55
+Conversion: 49
+Conversion: 43
+Conversion: 88
+Conversion: 58
+Conversion: 48
+Conversion: 46
+Conversion: 51
+Conversion: 47
+Conversion: 59
+Conversion: 53
+Conversion: 55
+Conversion: 56
+Conversion: 49
+Conversion: 50
+Conversion: 51
+Conversion: 65
+Conversion: 55
+Conversion: 70
+Conversion: 56
+Conversion: 48
+Conversion: 57
+Conversion: 61
+Conversion: 59
+Conversion: 60
+Conversion: 46
+Conversion: 46
+Conversion: 48
+Conversion: 46
+Conversion: 53
+Conversion: 91
+Conversion: 63
+Conversion: 80
+Conversion: 66
+Conversion: 51
+Conversion: 64
+Conversion: 74
+Conversion: 52
+Conversion: 53
+Conversion: 101
+Conversion: 55
+Conversion: 48
+Conversion: 46
+Conversion: 58
+Conversion: 53
+Conversion: 54
+Conversion: 72
+Conversion: 61
+Conversion: 51
+Conversion: 43
+Conversion: 46
+Conversion: 7
+Conversion: 9
+Conversion: 6
+Conversion: 4
+Conversion: 4
+Conversion: 4
+Conversion: 4
+Conversion: 3
+Conversion: 3
+Conversion: 46
+Conversion: 6
+Conversion: 5
+Conversion: 5
+Conversion: 4
+Conversion: 4
+Conversion: 6
+Conversion: 3
+Conversion: 8
+Conversion: 5
+Conversion: 48
+Conversion: 56
+Conversion: 54
+Conversion: 44
+Conversion: 50
+Conversion: 49
+Conversion: 101
+Conversion: 39
+Conversion: 10
+Conversion: 21
+Conversion: 11
+Conversion: 29
+Conversion: 23
+Conversion: 27
+Conversion: 24
+Conversion: 4
+Conversion: 4
+Conversion: 3
+Conversion: 5
+Conversion: 21
+Conversion: 22
+Conversion: 23
+Conversion: 10
+Conversion: 85
+Conversion: 39
+Conversion: 11
+Conversion: 22
+Conversion: 12
+Conversion: 25
+Conversion: 30
+Conversion: 29
+Conversion: 19
+Conversion: 3
+Conversion: 4
+Conversion: 3
+Conversion: 4
+Conversion: 26
+Conversion: 21
+Conversion: 20
+Conversion: 9
+Conversion: 96
+Conversion: 48
+Conversion: 12
+Conversion: 23
+Conversion: 10
+Conversion: 36
+Conversion: 28
+Conversion: 26
+Conversion: 18
+Conversion: 3
+Conversion: 3
+Conversion: 16
+Conversion: 4
+Conversion: 33
+Conversion: 24
+Conversion: 19
+Conversion: 14
+Conversion: 78
+Conversion: 43
+Conversion: 11
+Conversion: 36
+Conversion: 10
+Conversion: 22
+Conversion: 21
+Conversion: 19
+Conversion: 21
+Conversion: 4
+Conversion: 3
+Conversion: 4
+Conversion: 3
+Conversion: 34
+Conversion: 38
+Conversion: 27
+Conversion: 13
+Conversion: 94
+Conversion: 53
+Conversion: 11
+Conversion: 23
+Conversion: 14
+Conversion: 21
+Conversion: 30
+Conversion: 28
+Conversion: 20
+Conversion: 5
+Conversion: 4
+Conversion: 3
+Conversion: 3
+Conversion: 19
+Conversion: 24
+Conversion: 16
+Conversion: 7
+Conversion: 92
+Conversion: 101
+Conversion: 105
+Conversion: 39
+Conversion: 12
+Conversion: 23
+Conversion: 11
+Conversion: 25
+Conversion: 21
+Conversion: 21
+Conversion: 19
+Conversion: 3
+Conversion: 4
+Conversion: 3
+Conversion: 3
+Conversion: 22
+Conversion: 22
+Conversion: 46
+Conversion: 8
+Conversion: 102
+Conversion: 91
+Conversion: 41
+Conversion: 13
+Conversion: 22
+Conversion: 10
+Conversion: 31
+Conversion: 24
+Conversion: 22
+Conversion: 27
+Conversion: 4
+Conversion: 5
+Conversion: 3
+Conversion: 3
+Conversion: 19
+Conversion: 21
+Conversion: 16
+Conversion: 7
+Conversion: 116
+Conversion: 106
+Conversion: 43
+Conversion: 12
+Conversion: 35
+Conversion: 21
+Conversion: 10
+Conversion: 20
+Conversion: 28
+Conversion: 22
+Conversion: 24
+Conversion: 4
+Conversion: 4
+Conversion: 3
+Conversion: 3
+Conversion: 28
+Conversion: 40
+Conversion: 17
+Conversion: 8
+Conversion: 101
+Conversion: 52
+Conversion: 13
+Conversion: 44
+Conversion: 24
+Conversion: 9
+Conversion: 42
+Conversion: 30
+Conversion: 23
+Conversion: 19
+Conversion: 4
+Conversion: 15
+Conversion: 7
+Conversion: 6
+Conversion: 19
+Conversion: 34
+Conversion: 16
+Conversion: 8
+Conversion: 99
+Conversion: 56
+Conversion: 21
+Conversion: 40
+Conversion: 29
+Conversion: 14
+Conversion: 40
+Conversion: 31
+Conversion: 26
+Conversion: 3
+Conversion: 4
+Conversion: 3
+Conversion: 3
+Conversion: 19
+Conversion: 24
+Conversion: 34
+Conversion: 8
+Conversion: 49
+Conversion: 108
+Conversion: 48
+Conversion: 14
+Conversion: 35
+Conversion: 34
+Conversion: 9
+Conversion: 20
+Conversion: 21
+Conversion: 21
+Conversion: 6
+Conversion: 9
+Conversion: 5
+Conversion: 4
+Conversion: 6
+Conversion: 25
+Conversion: 20
+Conversion: 18
+Conversion: 11

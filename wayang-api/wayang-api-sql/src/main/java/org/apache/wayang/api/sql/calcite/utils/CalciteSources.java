@@ -12,9 +12,6 @@ import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexTableInputRef.RelTableRef;
-
-import org.apache.wayang.api.sql.calcite.converter.WayangAggregateVisitor;
-import org.apache.wayang.api.sql.calcite.converter.WayangProjectVisitor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
@@ -30,6 +27,7 @@ public final class CalciteSources {
      * These nodes uses aliases which have to be unpacked by finding the last
      * non aliased input. This input still contains Calcite's unique integer
      * identifier at the end of the column name which will have to be removed.
+     * 
      * @param startNode     starting {@link WayangAggregate} or
      *                      {@link WayangProject}
      * @param columnIndexes starting column indexes that you want to de-alias
@@ -71,11 +69,10 @@ public final class CalciteSources {
                 .collect(Collectors.toList());
     }
 
-
     public static String[] getAliasedFields(final WayangRel wayangRelNode) {
         final String[] unaliasedFieldsNames = CalciteSources.getUnaliasedFields(wayangRelNode);
-        final String[] unaliasedTableNames  = CalciteSources.getOriginalTableFromColumn(wayangRelNode);
-        final String[] aliasedFieldNames    = new String[wayangRelNode.getRowType().getFieldCount()];
+        final String[] unaliasedTableNames = CalciteSources.getOriginalTableFromColumn(wayangRelNode);
+        final String[] aliasedFieldNames = new String[wayangRelNode.getRowType().getFieldCount()];
 
         for (int i = 0; i < aliasedFieldNames.length; i++) {
             final String originalName = unaliasedFieldsNames[i];
@@ -88,68 +85,41 @@ public final class CalciteSources {
         return aliasedFieldNames;
     }
 
-    public static String[] getUnaliasedFields(final WayangRel wayangRelNode){
+    public static String[] getUnaliasedFields(final WayangRel wayangRelNode) {
         final RelOptCluster cluster = wayangRelNode.getCluster();
         final RelMetadataQuery metadata = cluster.getMetadataQuery();
 
         System.out.println("[CalciteSources.getUnaliasedFields().node]: " + wayangRelNode);
 
-        System.out.println("[CalciteSources.getUnaliasedFields().node.FieldList]: " + wayangRelNode.getRowType().getFieldList());
-        
+        System.out.println(
+                "[CalciteSources.getUnaliasedFields().node.FieldList]: " + wayangRelNode.getRowType().getFieldList());
+
         final List<RelColumnOrigin> origins = wayangRelNode.getRowType().getFieldList().stream()
-            .map(field -> metadata.getColumnOrigin(wayangRelNode, field.getIndex()))
-            .collect(Collectors.toList());
+                .map(field -> metadata.getColumnOrigin(wayangRelNode, field.getIndex()))
+                .collect(Collectors.toList());
 
         System.out.println("[CalciteSources.getUnaliasedFields().origins]: " + origins);
 
         final String[] originalNames = origins.stream()
-            .map(origin -> origin.getOriginTable().getRowType().getFieldList().get(origin.getOriginColumnOrdinal()))
-            .map(RelDataTypeField::getName)
-            .toArray(String[]::new);
+                .map(origin -> origin.getOriginTable().getRowType().getFieldList().get(origin.getOriginColumnOrdinal()))
+                .map(RelDataTypeField::getName)
+                .toArray(String[]::new);
 
         return originalNames;
     }
 
-    public static String[] getOriginalTableFromColumn(final WayangRel wayangRelNode){
+    public static String[] getOriginalTableFromColumn(final WayangRel wayangRelNode) {
         final RelOptCluster cluster = wayangRelNode.getCluster();
         final RelMetadataQuery metadata = cluster.getMetadataQuery();
 
         final Stream<RelColumnOrigin> origins = wayangRelNode.getRowType().getFieldList().stream()
-            .map(field -> metadata.getColumnOrigin(wayangRelNode, field.getIndex()));
-            
+                .map(field -> metadata.getColumnOrigin(wayangRelNode, field.getIndex()));
+
         final String[] originalNames = origins
-            .map(origin -> origin.getOriginTable().getQualifiedName().get(1))
-            .toArray(String[]::new);
+                .map(origin -> origin.getOriginTable().getQualifiedName().get(1))
+                .toArray(String[]::new);
 
         return originalNames;
-    }
-
-    /**
-     * Generates SQL select statements for fields in {@link WayangProjectVisitor}s
-     * and {@link WayangAggregateVisitor}s.
-     *
-     * @param wayangRelNode current relnode, either projection or aggregate
-     * @param columnIndexes
-     * @param aliasFinder
-     * @return an array containing sql strings in a {@code table.column AS alias}
-     *         manner.
-     */
-    public static String[] getSelectStmntFieldNames(final WayangRel wayangRelNode, final List<Integer> columnIndexes,
-            final AliasFinder aliasFinder) {
-        // calcite's projections and aggregates use aliased fields this fetches the
-        // dealiased fields, from global catalog
-        final List<RelDataTypeField> dealiasedFields = CalciteSources.getColumnsFromGlobalCatalog(wayangRelNode,
-                columnIndexes);
-        
-        // Local catalog for removing calcite's column identifier
-        final List<String> dealiasedCatalog = CalciteSources.getSqlColumnNames(wayangRelNode);
-
-        // we specify the dealised fields with their table name in a table.column manner
-        return dealiasedFields.stream()
-                .map(field -> CalciteSources.findSqlName(
-                        aliasFinder.columnToTableNameMap.get(field) + "." + field.getName(), dealiasedCatalog) + " AS "
-                        + aliasFinder.columnIndexToTableName.get(field.getIndex()))
-                .toArray(String[]::new);
     }
 
     /**
@@ -169,29 +139,6 @@ public final class CalciteSources {
                         .getFieldList()
                         .stream()
                         .map(column -> table.getQualifiedName().get(1) + "." + column.getName())
-                        .collect(Collectors.toList()))
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Calcite uses integers as identifiers to preserve uniqueness in their column
-     * names, however, when this is converted to sql it will produce an error, this
-     * method allows you to fetch the pure SQL names of a table's columns.
-     *
-     * @param wayangRelNode the {@link RelNode} whose SQL column names you want to
-     *                      fetch
-     * @param aliasFinder   the aliasFinder of each {@link WayangRelNodeVisitor}
-     *                      node
-     * @return list of names as {@code String}s specified in a table.column manner
-     */
-    public static List<String> getSqlColumnNames(final RelNode wayangRelNode, final AliasFinder aliasFinder) {
-        return wayangRelNode.getCluster().getMetadataQuery().getTableReferences(wayangRelNode).stream()
-                .map(RelTableRef::getTable)
-                .map(table -> table.getRowType()
-                        .getFieldList()
-                        .stream()
-                        .map(column -> aliasFinder.columnIndexToTableName.get(column.getIndex()) + "." + column.getName())
                         .collect(Collectors.toList()))
                 .flatMap(List::stream)
                 .collect(Collectors.toList());

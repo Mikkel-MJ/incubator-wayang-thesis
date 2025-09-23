@@ -19,14 +19,14 @@
 package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.RelNode;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
 abstract class WayangRelNodeVisitor<T extends RelNode> {
-    final AliasFinder aliasFinder;
+    final Configuration configuration;
 
-    WayangRelNodeVisitor(final AliasFinder aliasFinder) {
-        this.aliasFinder = aliasFinder;
+    WayangRelNodeVisitor(final Configuration configuration) {
+        this.configuration = configuration;
     }
 
     abstract Operator visit(T wayangRelNode);

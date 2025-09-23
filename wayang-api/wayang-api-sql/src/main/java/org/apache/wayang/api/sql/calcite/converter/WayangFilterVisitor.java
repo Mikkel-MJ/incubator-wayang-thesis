@@ -18,32 +18,26 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
+import java.io.Serializable;
+import java.util.EnumSet;
+
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.wayang.api.sql.calcite.converter.filterhelpers.ColumnIndexExtractor;
+
 import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FilterPredicateImpl;
-import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FunctionExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
-import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.FilterOperator;
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.function.PredicateDescriptor;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 
-import java.io.Serializable;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> implements Serializable {
-    WayangFilterVisitor(final AliasFinder aliasFinder) {
-        super(aliasFinder);
+    WayangFilterVisitor(final Configuration configuration) {
+        super(configuration);
     }
 
     @Override
@@ -55,45 +49,16 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
                 .getSql()
                 .replace("`", "");
 
-        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(0), super.configuration);
         final RexNode condition = wayangRelNode.getCondition();
 
-        final List<Integer> affectedColumnIndexes = condition.accept(new ColumnIndexExtractor(true));
-
-        final List<RelDataTypeField> affectedColumns = affectedColumnIndexes.stream()
-                .map(index -> wayangRelNode.getRowType().getFieldList().get(index))
-                .collect(Collectors.toList());
-
-        final Map<RelDataTypeField, String> columnToTableOrigin = CalciteSources
-                .createColumnToTableOriginMap(wayangRelNode);
-
-        final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
-
-        final String[] tableSpecifiedColumns = affectedColumns.stream() // get affected filter columns
-                .map(col -> {
-                    final String dirtyName = columnToTableOrigin.get(col) + "." + col.getName();
-                    final String cleanedName = CalciteSources.findSqlName(dirtyName, catalog);
-                    final String aliasedName = aliasFinder.columnIndexToTableName
-                            .get(col.getIndex()) + "."
-                            + cleanedName.split("\\.")[1];
-                    return aliasedName;
-                }) // map to table.col name
-                .toArray(String[]::new);
-
-        // System.out.println("table speced cols: " +
-        // Arrays.toString(tableSpecifiedColumns) + " for node: " + wayangRelNode);
-
-        final PredicateDescriptor<Record> pd = new PredicateDescriptor<>(new FilterPredicateImpl(condition),
+        final PredicateDescriptor<Record> pd = new PredicateDescriptor<>(
+                new FilterPredicateImpl(condition),
                 Record.class);
-
-
-        final String extractedFilterFunctions = condition
-                .accept(new FunctionExtractor(true, affectedColumnIndexes, tableSpecifiedColumns));
-
 
         // TODO: migrate over to something like this, however in the current version of
         // Calcite it is broken.
-        // pd.withSqlImplementation(aliasFinder.context.toSql(null,condition).toString().replace("`",
+        // pd.withSqlImplementation(configuration.context.toSql(null,condition).toString().replace("`",
         // ""));
 
         pd.withSqlImplementation(sqlCondition);
