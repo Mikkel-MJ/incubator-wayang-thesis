@@ -85,7 +85,7 @@ public class JavaFilterOperator<Type>
         final Predicate<Type> filterFunction = javaExecutor.getCompiler().compile(this.predicateDescriptor);
         JavaExecutor.openFunction(this, filterFunction, inputs, operatorContext);
 
-        final Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream();
+        final Stream<Type> inputStream = ((JavaChannelInstance) inputs[0]).<Type>provideStream().filter(filterFunction);
 
         ((StreamChannel.Instance) outputs[0]).accept(inputStream);
 
