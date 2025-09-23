@@ -18,12 +18,10 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.wayang.api.sql.calcite.converter.filterhelpers.ColumnIndexExtractor;
@@ -44,8 +42,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> implements Serializable {
-    WayangFilterVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangFilterVisitor(final AliasFinder aliasFinder) {
+        super(aliasFinder);
     }
 
     @Override
@@ -57,8 +55,8 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
                 .getSql()
                 .replace("`", "");
 
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
-        final RexNode condition = ((Filter) wayangRelNode).getCondition();
+        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final RexNode condition = wayangRelNode.getCondition();
 
         final List<Integer> affectedColumnIndexes = condition.accept(new ColumnIndexExtractor(true));
 

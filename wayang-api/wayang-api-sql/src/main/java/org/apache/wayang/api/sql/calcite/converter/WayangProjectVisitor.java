@@ -114,8 +114,8 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         }
     }
 
-    WayangProjectVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangProjectVisitor(final AliasFinder aliasFinder) {
+        super(aliasFinder);
     }
 
     @Override
@@ -171,7 +171,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
         System.out.println("[WayangProjectVisitor.columns]: " + wayangRelNode.getRowType().getFieldList());
 
 
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
         // projections on fields:
         System.out.println("[WayangProjectVisitor.dealiasedFields]: " + List.of(CalciteSources.getUnaliasedFields(wayangRelNode)));

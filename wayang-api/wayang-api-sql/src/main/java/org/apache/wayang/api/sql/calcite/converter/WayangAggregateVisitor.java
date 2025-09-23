@@ -45,13 +45,13 @@ import org.apache.wayang.core.types.DataUnitType;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
-    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangAggregateVisitor(final AliasFinder aliasFinder) {
+        super(aliasFinder);
     }
 
     @Override
     Operator visit(final WayangAggregate wayangRelNode) {
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(), super.aliasFinder);
+        final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(), super.aliasFinder);
 
         // fetch the indexes of colmuns affected, in calcite aggregates and projections
         // have their own catalog, we need to find the column indexes in the global

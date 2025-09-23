@@ -24,11 +24,9 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 
 abstract class WayangRelNodeVisitor<T extends RelNode> {
     final AliasFinder aliasFinder;
-    final WayangRelConverter wayangRelConverter;
 
-    WayangRelNodeVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
+    WayangRelNodeVisitor(final AliasFinder aliasFinder) {
         this.aliasFinder = aliasFinder;
-        this.wayangRelConverter = wayangRelConverter;
     }
 
     abstract Operator visit(T wayangRelNode);

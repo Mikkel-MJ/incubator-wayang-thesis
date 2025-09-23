@@ -49,14 +49,14 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
      *
      * @param wayangRelConverter
      */
-    WayangMultiConditionJoinVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangMultiConditionJoinVisitor(final AliasFinder aliasFinder) {
+        super(aliasFinder);
     }
 
     @Override
     Operator visit(WayangJoin wayangRelNode) {
-        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), this.aliasFinder);
-        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), this.aliasFinder);
+        final Operator childOpLeft = WayangRelConverter.convert(wayangRelNode.getInput(0), this.aliasFinder);
+        final Operator childOpRight = WayangRelConverter.convert(wayangRelNode.getInput(1), this.aliasFinder);
         final RexNode condition = ((Join) wayangRelNode).getCondition();
         final RexCall call = (RexCall) condition;
 

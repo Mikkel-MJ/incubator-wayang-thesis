@@ -23,21 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
-import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlUtil;
+import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoiningTableExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyIndex;
-import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
-import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.api.sql.calcite.utils.SqlField;
@@ -47,23 +42,103 @@ import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.core.function.TransformationDescriptor;
-import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.util.ReflectionUtils;
-import org.apache.wayang.postgres.Postgres;
-
-import java.util.Set;
 
 public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
 
-    WayangJoinVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    // Helpers
+    public static enum Child {
+        LEFT, RIGHT
+    }
+
+    WayangJoinVisitor(final AliasFinder aliasFinder) {
+        super(aliasFinder);
+    }
+
+    /**
+     * This method determines how key extraction works due to cases where the right
+     * table in a join might have a larger table index
+     * than the left.
+     *
+     * @param leftKeyIndex  key index of left table
+     * @param rightKeyIndex key index of right table
+     * @return a {@link JoinOperator} with {@link KeyExtractors} set
+     * @throws UnsupportedOperationException in cases where both table indexes are
+     *                                       the same,
+     *                                       in practice I am not sure if this
+     *                                       should be supported
+     */
+    protected static scala.Tuple2<Integer, Integer> determineKeyExtractionDirection(final Integer leftKeyIndex,
+            final Integer rightKeyIndex, final WayangJoin wayangRelNode) {
+        switch (leftKeyIndex.compareTo(rightKeyIndex)) {
+            case 1: // left greater than
+            {
+                final int newLeftKeyIndex = leftKeyIndex
+                        - wayangRelNode.getInput(0).getRowType().getFieldCount();
+                return new scala.Tuple2<>(rightKeyIndex, newLeftKeyIndex);
+            }
+            case -1: // left lesser than
+            {
+                final int newRightKeyIndex = rightKeyIndex
+                        - wayangRelNode.getInput(0).getRowType().getFieldCount();
+                return new scala.Tuple2<>(leftKeyIndex, newRightKeyIndex);
+
+            }
+            default: // both equal
+                throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * This method handles the {@link JoinOperator} creation, used in conjunction
+     * with:
+     * {@link #determineKeyExtractionDirection(Integer, Integer, WayangJoin)}
+     *
+     * @param wayangRelNode
+     * @param leftKeyIndex
+     * @param rightKeyIndex
+     * @return a {@link JoinOperator} with {@link KeyExtractors} set
+     */
+    protected static JoinOperator<Record, Record, SqlField> getJoinOperator(final Integer leftKeyIndex,
+            final Integer rightKeyIndex,
+            final WayangJoin wayangRelNode, final String leftTableName, final String leftFieldName,
+            final String rightTableName, final String rightFieldName) {
+        if (wayangRelNode.getInputs().size() != 2)
+            throw new UnsupportedOperationException("Join had an unexpected amount of inputs, found: "
+                    + wayangRelNode.getInputs().size() + ", expected: 2");
+
+        final TransformationDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
+                new KeyExtractor<>(leftKeyIndex)
+                        .withRowType(
+                                wayangRelNode.getLeft().getRowType().toString(),
+                                wayangRelNode.toString(),
+                                wayangRelNode.getLeft().toString(),
+                                wayangRelNode.getRight().toString()),
+                Record.class, SqlField.class, leftFieldName)
+                .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName);
+
+        final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
+                new KeyExtractor<>(rightKeyIndex)
+                        .withRowType(
+                                wayangRelNode.getRight().getRowType().toString(),
+                                wayangRelNode.toString(),
+                                wayangRelNode.getLeft().toString(),
+                                wayangRelNode.getRight().toString()),
+                Record.class, SqlField.class, rightFieldName)
+                .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName);
+
+        final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
+                leftProjectionDescriptor,
+                righProjectionDescriptor);
+
+        return join;
     }
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
-        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), super.aliasFinder);
+        final Operator childOpLeft = WayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final Operator childOpRight = WayangRelConverter.convert(wayangRelNode.getInput(1), super.aliasFinder);
 
         final RexNode condition = wayangRelNode.getCondition();
 
@@ -121,33 +196,19 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String cleanedRightFieldName = CalciteSources
                 .findSqlName(rightTableName + "." + rightFieldName, catalog).split("\\.")[1];
 
-        // find the sql table alias for the left and right table, so it can be used in
-        // the transform descriptor, this depends when each statement shows up in the
-        // condition if the leftKeyIndex is less than the right key index this is the normal case,
-        // where JOIN x AS x' ON x'.x* = y'.y*, else we need to switch
-
-        /*
-        final String leftTableAlias = leftKeyIndex < rightKeyIndex
-                ? aliasFinder.columnIndexToTableName.get(leftKeyIndex)
-                : aliasFinder.columnIndexToTableName.get(rightKeyIndex);
-        final String rightTableAlias = leftKeyIndex < rightKeyIndex
-                ? aliasFinder.columnIndexToTableName.get(rightKeyIndex)
-                : aliasFinder.columnIndexToTableName.get(leftKeyIndex);
-        */
-
-        Map<RelDataTypeField, String> tablesMap = CalciteSources.createColumnToTableOriginMap(wayangRelNode);
-
-        RelMetadataQuery mq = wayangRelNode.getCluster().getMetadataQuery();
-        RelColumnOrigin leftOrigin = mq.getColumnOrigins(wayangRelNode, leftKeyIndex).stream().findFirst().get();
-        RelColumnOrigin rightOrigin = mq.getColumnOrigins(wayangRelNode, rightKeyIndex).stream().findFirst().get();
+        final RelMetadataQuery mq = wayangRelNode.getCluster().getMetadataQuery();
+        final RelColumnOrigin leftOrigin = mq.getColumnOrigins(wayangRelNode, leftKeyIndex).stream().findFirst()
+                .get();
+        final RelColumnOrigin rightOrigin = mq.getColumnOrigins(wayangRelNode, rightKeyIndex).stream()
+                .findFirst().get();
 
         final String leftTableAlias = leftKeyIndex < rightKeyIndex
-            ? leftOrigin.getOriginTable().getQualifiedName().get(1)
-            : rightOrigin.getOriginTable().getQualifiedName().get(1);
+                ? leftOrigin.getOriginTable().getQualifiedName().get(1)
+                : rightOrigin.getOriginTable().getQualifiedName().get(1);
 
         final String rightTableAlias = leftKeyIndex < rightKeyIndex
-            ? rightOrigin.getOriginTable().getQualifiedName().get(1)
-            : leftOrigin.getOriginTable().getQualifiedName().get(1);
+                ? rightOrigin.getOriginTable().getQualifiedName().get(1)
+                : leftOrigin.getOriginTable().getQualifiedName().get(1);
 
         // if join is joining the LHS of a join condition "JOIN left ON left = right"
         // then we pick the first case, otherwise the 2nd "JOIN right ON left = right"
@@ -164,107 +225,17 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
-        // jdbc usage move l8r
-        final String[] joinTableNames = { leftTableName + "." + leftFieldName,
-                rightTableName + "." + rightFieldName };
-
-        ProjectionDescriptor<Tuple2<Record, Record>, Record> projectionDescriptor = new ProjectionDescriptor(
-            new JoinFlattenResult(),
-            ReflectionUtils.specify(Tuple2.class),
-            Record.class
-        );
+        final ProjectionDescriptor<Tuple2<Record, Record>, Record> projectionDescriptor = new ProjectionDescriptor<Tuple2<Record, Record>, Record>(
+                new JoinFlattenResult(),
+                ReflectionUtils.specify(Tuple2.class),
+                Record.class);
 
         // Join returns Tuple2 - map to a Record
-        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<Tuple2<Record, Record>, Record>(projectionDescriptor);
+        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<Tuple2<Record, Record>, Record>(
+                projectionDescriptor);
 
         join.connectTo(0, mapOperator, 0);
 
         return mapOperator;
-    }
-
-    /**
-     * This method determines how key extraction works due to cases where the right
-     * table in a join might have a larger table index
-     * than the left.
-     *
-     * @param leftKeyIndex  key index of left table
-     * @param rightKeyIndex key index of right table
-     * @return a {@link JoinOperator} with {@link KeyExtractors} set
-     * @throws UnsupportedOperationException in cases where both table indexes are
-     *                                       the same,
-     *                                       in practice I am not sure if this
-     *                                       should be supported
-     */
-    protected scala.Tuple2<Integer, Integer> determineKeyExtractionDirection(final Integer leftKeyIndex,
-            final Integer rightKeyIndex, final WayangJoin wayangRelNode) {
-        switch (leftKeyIndex.compareTo(rightKeyIndex)) {
-            case 1: // left greater than
-            {
-                final int newLeftKeyIndex = leftKeyIndex
-                        - wayangRelNode.getInput(0).getRowType().getFieldCount();
-                return new scala.Tuple2<>(rightKeyIndex, newLeftKeyIndex);
-            }
-            case -1: // left lesser than
-            {
-                final int newRightKeyIndex = rightKeyIndex
-                        - wayangRelNode.getInput(0).getRowType().getFieldCount();
-                return new scala.Tuple2<>(leftKeyIndex, newRightKeyIndex);
-
-            }
-            default: // both equal
-                throw new UnsupportedOperationException();
-        }
-    }
-
-    /**
-     * This method handles the {@link JoinOperator} creation, used in conjunction
-     * with:
-     * {@link #determineKeyExtractionDirection(Integer, Integer, WayangJoin)}
-     *
-     * @param wayangRelNode
-     * @param leftKeyIndex
-     * @param rightKeyIndex
-     * @return a {@link JoinOperator} with {@link KeyExtractors} set
-     */
-    protected JoinOperator<Record, Record, SqlField> getJoinOperator(final Integer leftKeyIndex,
-            final Integer rightKeyIndex,
-            final WayangJoin wayangRelNode, final String leftTableName, final String leftFieldName,
-            final String rightTableName, final String rightFieldName) {
-        if (wayangRelNode.getInputs().size() != 2)
-            throw new UnsupportedOperationException("Join had an unexpected amount of inputs, found: "
-                    + wayangRelNode.getInputs().size() + ", expected: 2");
-
-        final TransformationDescriptor<Record, SqlField> leftProjectionDescriptor = new ProjectionDescriptor<>(
-                new KeyExtractor<>(leftKeyIndex)
-                .withRowType(
-                    wayangRelNode.getLeft().getRowType().toString(),
-                    wayangRelNode.toString(),
-                    wayangRelNode.getLeft().toString(),
-                    wayangRelNode.getRight().toString()
-                ),
-                Record.class, SqlField.class, leftFieldName)
-                .withSqlImplementation(Optional.ofNullable(leftTableName).orElse(""), leftFieldName);
-
-        final TransformationDescriptor<Record, SqlField> righProjectionDescriptor = new ProjectionDescriptor<>(
-                new KeyExtractor<>(rightKeyIndex)
-                .withRowType(
-                    wayangRelNode.getRight().getRowType().toString(),
-                    wayangRelNode.toString(),
-                    wayangRelNode.getLeft().toString(),
-                    wayangRelNode.getRight().toString()
-                ),
-                Record.class, SqlField.class, rightFieldName)
-                .withSqlImplementation(Optional.ofNullable(rightTableName).orElse(""), rightFieldName);
-
-        final JoinOperator<Record, Record, SqlField> join = new JoinOperator<>(
-                leftProjectionDescriptor,
-                righProjectionDescriptor);
-
-        return join;
-    }
-
-    // Helpers
-    public static enum Child {
-        LEFT, RIGHT
     }
 }

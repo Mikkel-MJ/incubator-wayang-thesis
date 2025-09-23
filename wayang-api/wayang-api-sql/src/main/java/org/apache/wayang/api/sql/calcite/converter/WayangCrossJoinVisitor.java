@@ -33,14 +33,14 @@ import org.apache.wayang.core.util.ReflectionUtils;
 
 public class WayangCrossJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
 
-    WayangCrossJoinVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangCrossJoinVisitor(AliasFinder aliasFinder) {
+        super(aliasFinder);
     }
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), aliasFinder);
-        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), aliasFinder);
+        final Operator childOpLeft = WayangRelConverter.convert(wayangRelNode.getInput(0), aliasFinder);
+        final Operator childOpRight = WayangRelConverter.convert(wayangRelNode.getInput(1), aliasFinder);
 
         final CartesianOperator<Record, Record> join = new CartesianOperator<>(
                 Record.class,
@@ -60,5 +60,4 @@ public class WayangCrossJoinVisitor extends WayangRelNodeVisitor<WayangJoin> imp
 
         return mapOperator;
     }
-
 }
