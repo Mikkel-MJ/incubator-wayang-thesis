@@ -262,8 +262,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 leftProjectionDescriptor,
                 righProjectionDescriptor);
 
-            join.addTargetPlatform(Spark.platform());
-
         return join;
     }
 
