@@ -88,17 +88,17 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
         Configuration config = flinkExecutor.getConfiguration();
 
         TypeSerializerOutputFormat<Type> out = new TypeSerializerOutputFormat<>();
-        out.setOutputFilePath(new Path("file:///tmp/flink-data"));
+        String filePath = flinkExecutor.getConfiguration().getStringProperty("wayang.flink.collect.path");
+        out.setOutputFilePath(new Path(filePath));
         out.setWriteMode(WriteMode.OVERWRITE);
 
         dataSetInput.output(out);
 
-        //dataSetInput.writeAsText("file:///tmp/flink-data", WriteMode.OVERWRITE);
         flinkExecutor.fee.execute();
 
         System.out.println("Finished writing to file");
 
-        DataStream<Type> stream = flinkExecutor.sEnv.readFile(in, "file:///tmp/flink-data");
+        DataStream<Type> stream = flinkExecutor.sEnv.readFile(in, filePath);
 
         System.out.println("Finished reading from file");
 

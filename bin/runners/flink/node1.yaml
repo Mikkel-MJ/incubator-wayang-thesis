@@ -22,7 +22,7 @@ taskmanager:
   cpu:
     cores: 8
   bind-host: 0.0.0.0
-  numberOfTaskSlots: 1
+  numberOfTaskSlots: 4
 classloader:
   check-leaked-classloader: 'false'
   resolve-order: parent-first
@@ -53,7 +53,7 @@ pekko:
   ask:
     timeout: 100s
 parallelism:
-  default: 1
+  default: 8
 env:
   java:
     opts:
