@@ -219,10 +219,10 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                 boundaryOperator instanceof JoinOperator);
         //final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
         final Iterable<Output> resultSetIterable = () -> resultSetIterator;
-        final List<Output> resultSetStream = StreamSupport.stream(resultSetIterable.spliterator(), false)
-                .onClose(resultSetIterator::close).collect(Collectors.toList());
+        final Stream<Output> resultSetStream = StreamSupport.stream(resultSetIterable.spliterator(), false)
+                .onClose(resultSetIterator::close);
 
-        System.out.println("SqlToStream: " + resultSetStream.size());
+                //.collect(Collectors.toList());
 
         output.accept(resultSetStream);
 

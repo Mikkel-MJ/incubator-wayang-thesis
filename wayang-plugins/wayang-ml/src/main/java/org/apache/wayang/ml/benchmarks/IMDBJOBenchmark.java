@@ -24,7 +24,7 @@ import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.types.DataUnitType;
 import org.apache.wayang.apps.imdb.data.*;
 import java.util.Comparator;
-
+import java.util.HashSet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +33,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
@@ -126,45 +127,16 @@ public class IMDBJOBenchmark {
             final Collection<Record> result = sqlContext.executeSql(
                     query);
 
-            System.out.println(result.stream().limit(50).collect(Collectors.toList()));
-            System.out.println("\nResults: " + " amount of records: " + result.size());
+            //System.out.println(result.stream().limit(50).collect(Collectors.toList()));
+            //System.out.println("\nResults: " + " amount of records: " + result.size());
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(5);
         }
     }
 
-    /*
-    public static void replaceSources(WayangPlan, String dataPath) {
-        final List<Operator> sources = plan.collectReachableTopLevelSources()
-            .stream()
-            .map(op -> (TableSource) op)
-            .sorted(Comparator.comparing(op -> op.getTableName()))
-            .collect(Collectors.toList());
-
-        for (Operator op : sources) {
-            if (op instanceof TableSource) {
-                String tableName = ((TableSource) op).getTableName();
-                String filePath = dataPath + tableName + ".csv";
-                TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
-
-                MapOperator<String, JVMRecord> parser;
-            }
-        }
-    }*/
-
     // Only source in postgres, compute elsewhere
     public static void setSources(WayangPlan plan, String dataPath) {
-        /*
-        final Collection<Operator> operators = PlanTraversal.upstream().traverse(plan.getSinks()).getTraversedNodes();
-
-        operators.forEach(o -> {
-            if (!(o.isSource() || o.isSink())) {
-                o.addTargetPlatform(Spark.platform());
-                o.addTargetPlatform(Flink.platform());
-                o.addTargetPlatform(Java.platform());
-            }
-        });*/
 
         final List<Operator> sources = plan.collectReachableTopLevelSources()
             .stream()
@@ -172,199 +144,174 @@ public class IMDBJOBenchmark {
             .sorted(Comparator.comparing(op -> op.getTableName()))
             .collect(Collectors.toList());
 
+        Set<String> replacedSources = new HashSet<>();
         boolean isSet = false;
 
         for (Operator op : sources) {
-        //sources.stream().forEach(op -> {
-            //if (op instanceof TableSource && !isSet) {
             if (op instanceof TableSource) {
                 String tableName = ((TableSource) op).getTableName();
                 String filePath = dataPath + tableName + ".csv";
-                TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
+                if (!replacedSources.contains(tableName)) {
+                //if (!isSet) {
+                    TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
 
-                MapOperator<String, JVMRecord> parser;
+                    MapOperator<String, JVMRecord> parser;
 
-                /*
-                if (tableName.equals("movie_companies")) {
-                    parser = new MapOperator<String, JVMRecord>(
-                        new TransformationDescriptor<>(
-                            line -> {
-                                //System.out.println(line);
-                                //System.out.println(line.replaceAll("\"", "\\\""));
-                                //Object[] values = new Object[]{25010,104018,6,1,"(2008) (USA) (TV)"};
-                                //JVMRecord comp = new JVMRecord(values);
-                                Object[] parsed = MovieCompanies.toArray(MovieCompanies.parseCsv(line));
-                                JVMRecord record = new JVMRecord(parsed);
+                    switch (tableName) {
+                        case "movie_companies": parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
+                            //System.out.println("Setting to file: " + tableName);
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
 
-                                return record;
-                            },
-                            DataUnitType.createBasic(String.class),
-                            DataUnitType.createBasicUnchecked(JVMRecord.class)
-                        ),
-                        DataSetType.createDefault(String.class),
-                        DataSetType.createDefault(new JVMRecordType(MovieCompanies.getFields()))
-                    );
+                            break;
+                        case "aka_name":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(AkaName.toArray(AkaName.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
+                            //System.out.println("Setting to file: " + tableName);
+                            replacedSources.add(tableName);
+                            replacement.connectTo(0, parser, 0);
+                            isSet = true;
 
-                    MapOperator<JVMRecord, JVMRecord> projection = MapOperator.createProjection(
-                            (JVMRecordType) ((TableSource) op).getType().getDataUnitType(),
-                            MovieCompanies.getFields()
-                    );
+                            break;
+                        case "comp_cast_type":
+                            parser = new MapOperator<>(
+                                (line) -> { return new JVMRecord(CompCastType.toArray(CompCastType.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
 
-                    assert projection.getOutputType().getDataUnitType().equals(((TableSource) op).getType().getDataUnitType());
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
+                            break;
+                        case "company_name":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(CompanyName.toArray(CompanyName.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
 
-                    replacement.connectTo(0, parser, 0);
-                    parser.connectTo(0, projection, 0);
-                    System.out.println("Replacing: " + op);
-                    System.out.println("Type: " + ((TableSource) op).getType().getDataUnitType());
-                    System.out.println("Replacement Type: " + parser.getOutputType().getDataUnitType());
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
+                            break;
+                        case "info_type":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(InfoType.toArray(InfoType.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
 
-                    OutputSlot.stealConnections(op, projection);
-                }*/
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
+                            break;
+                        case "movie_info":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(MovieInfo.toArray(MovieInfo.parseCsv(line)));
+                                },
 
-                switch (tableName) {
-                    case "movie_companies": parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(MovieCompanies.toArray(MovieCompanies.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
-                        System.out.println("Setting to file: " + tableName);
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
 
-                        break;
-                    case "aka_name":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(AkaName.toArray(AkaName.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
-                        System.out.println("Setting to file: " + tableName);
-                        isSet = true;
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
+                            break;
+                        case "person_info":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(PersonInfo.toArray(PersonInfo.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
 
-                        replacement.connectTo(0, parser, 0);
-                        break;
-                    case "comp_cast_type":
-                        parser = new MapOperator<>(
-                            (line) -> { return new JVMRecord(CompCastType.toArray(CompCastType.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
+                            break;
+                        case "movie_keyword":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(MovieKeyword.toArray(MovieKeyword.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
 
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-                        break;
-                    case "company_name":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(CompanyName.toArray(CompanyName.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
+                            OutputSlot.stealConnections(op, parser);
 
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-                        break;
-                    case "info_type":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(InfoType.toArray(InfoType.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
 
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-                        break;
-                    case "movie_info":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(MovieInfo.toArray(MovieInfo.parseCsv(line)));
-                            },
+                            break;
+                        case "cast_info":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(CastInfo.toArray(CastInfo.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
 
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
+                            break;
+                        case "movie_link":
+                            parser = new MapOperator<>(
+                                (line) -> {
+                                    return new JVMRecord(MovieLink.toArray(MovieLink.parseCsv(line)));
+                                },
+                                String.class,
+                                JVMRecord.class
+                            );
+                            OutputSlot.stealConnections(op, parser);
 
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-                        break;
-                    case "person_info":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(PersonInfo.toArray(PersonInfo.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
-
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-                        break;
-                    case "movie_keyword":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(MovieKeyword.toArray(MovieKeyword.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-
-                        replacement.connectTo(0, parser, 0);
-
-                        OutputSlot.stealConnections(op, parser);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-
-                        break;
-                    case "cast_info":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(CastInfo.toArray(CastInfo.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
-
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-                        break;
-                    case "movie_link":
-                        parser = new MapOperator<>(
-                            (line) -> {
-                                return new JVMRecord(MovieLink.toArray(MovieLink.parseCsv(line)));
-                            },
-                            String.class,
-                            JVMRecord.class
-                        );
-                        OutputSlot.stealConnections(op, parser);
-
-                        replacement.connectTo(0, parser, 0);
-                        isSet = true;
-                        System.out.println("Setting to file: " + tableName);
-                        break;
-                    default:
-                        break;
+                            replacement.connectTo(0, parser, 0);
+                            replacedSources.add(tableName);
+                            isSet = true;
+                            //System.out.println("Setting to file: " + tableName);
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
         }

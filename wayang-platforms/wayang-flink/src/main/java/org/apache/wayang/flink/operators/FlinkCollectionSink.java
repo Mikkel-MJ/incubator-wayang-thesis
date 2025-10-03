@@ -68,7 +68,7 @@ public class FlinkCollectionSink<Type> extends UnaryToUnaryOperator<Type, Type>
 
     @Override
     public boolean isSink() {
-        return true;
+        return false;
     }
 
     @Override

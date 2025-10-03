@@ -275,6 +275,9 @@ public class OrtMLModel {
         long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
         long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
 
+        System.out.println("Feature dims: " + Arrays.toString(input1Dims));
+        System.out.println("Index dims: " + Arrays.toString(input2Dims));
+
         int indexDims = encoded.size();
         long featureDims = input1Dims[1];
         Instant start = Instant.now();
@@ -350,10 +353,10 @@ public class OrtMLModel {
             long[][] platformChoices = PlatformChoiceValidator.validate(
                 resultTensor,
                 inputIndexStructure,
-                encoded,
+                encoded/*,
                 new BitmaskValidationRule(),
                 new OperatorValidationRule(),
-                new PostgresSourceValidationRule()
+                new PostgresSourceValidationRule()*/
             );
 
             int valueDim = resultTensor[0][0].length;

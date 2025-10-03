@@ -33,9 +33,6 @@ public class AliasFinder {
         this.tableOccurenceCounter = new HashMap<>();
         this.tableSourceMap = new HashMap<>();
 
-        System.out.println("TableScans: " + visitor.tableScans);
-        System.out.println("TableScans: " + visitor.tableScans.size());
-        visitor.tableScans.stream().map(scan -> (scan.hashCode())).forEach(System.out::println);
         for (RelNode tableScan : visitor.tableScans) {
             tableSourceMap.put(tableScan, tableSourceMap.size());
         }

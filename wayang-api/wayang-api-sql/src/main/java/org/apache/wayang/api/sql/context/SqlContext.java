@@ -150,8 +150,6 @@ public class SqlContext extends WayangContext {
             transformationRules
         );
 
-        System.out.println(optimized.explain());
-
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(optimized, 0, null);
 

@@ -140,12 +140,11 @@ public class Training {
                 config.setProperty("wayang.flink.port", "7071");
                 config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
                 config.setProperty("wayang.ml.experience.enabled", "false");
-                /*
                 config.setProperty(
                     "wayang.core.optimizer.pruning.strategies",
                     "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
                 );
-                config.setProperty("wayang.core.optimizer.pruning.topk", "1000");*/
+                config.setProperty("wayang.core.optimizer.pruning.topk", "1000");
 
                 final MLContext wayangContext = new MLContext(config);
                 plugins.stream().forEach(plug -> wayangContext.register(plug));

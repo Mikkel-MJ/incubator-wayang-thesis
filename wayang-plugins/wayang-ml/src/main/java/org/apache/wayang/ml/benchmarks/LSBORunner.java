@@ -133,6 +133,8 @@ public class LSBORunner {
         config.setProperty("wayang.flink.master", "flink-cluster");
         config.setProperty("wayang.flink.port", "7071");
         config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
+        config.setProperty("wayang.flink.collect.path", "file:///work/lsbo-paper/data/flink-data");
+        //config.setProperty("wayang.flink.collect.path", "file:///tmp/flink-data");
         config.setProperty("wayang.ml.experience.enabled", "false");
         /*
         config.setProperty(

@@ -297,9 +297,6 @@ public class Job extends OneTimeExecutable {
             // Estimate cardinalities and execution times for the #wayangPlan.
             this.estimateKeyFigures();
 
-            System.out.println(this.wayangPlan);
-            System.out.println(this.optimizationContext);
-
             // Get an execution plan.
             int executionId = 0;
             ExecutionPlan executionPlan = this.createInitialExecutionPlan();
