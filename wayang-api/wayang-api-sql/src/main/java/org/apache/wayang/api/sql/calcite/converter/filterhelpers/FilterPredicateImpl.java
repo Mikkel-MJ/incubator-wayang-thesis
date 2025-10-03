@@ -92,14 +92,22 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         }
 
         private boolean isGreaterThan(final Object o1, final Object o2) {
+            if (o1 == null && o2 == null) return false;
+            if (o1 == null) return false;
+            if (o2 == null) return true;  
+            //System.out.println("[FilterPred.gt]: o1 " + o1 + " and o2, " + o2);
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) > 0;
         }
 
         private boolean isLessThan(final Object o1, final Object o2) {
+            if (o1 == null && o2 == null) return false;
+            if (o1 == null) return true;  
+            if (o2 == null) return false; 
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) < 0;
         }
 
         private boolean isEqualTo(final Object o1, final Object o2) {
+            if (o1 == null || o2 == null) return o1 == o2; 
             return Objects.equals(ensureComparable.apply(o1), ensureComparable.apply(o2));
         }
     }
@@ -153,6 +161,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
 
     @Override
     public boolean test(final Record rec) {
+        //System.out.println("[FilterPred.rec]: " + rec);
         return (boolean) callTree.evaluate(rec);
     }
 }
