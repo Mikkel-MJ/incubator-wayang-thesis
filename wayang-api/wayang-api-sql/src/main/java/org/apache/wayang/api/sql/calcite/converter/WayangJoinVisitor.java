@@ -79,55 +79,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         }
     }
 
-    /**
-     * This method handles the {@link JoinOperator} creation, used in conjunction
-     * with:
-     * {@link #determineKeyExtractionDirection(Integer, Integer, WayangJoin)}
-     *
-     * @param wayangRelNode
-     * @param leftKeyIndex
-     * @param rightKeyIndex
-     * @return a {@link JoinOperator} with {@link KeyExtractors} set
-     */
-    protected static JoinOperator<Record, Record, Record> getJoinOperator(final Integer leftKeyIndex,
-            final Integer rightKeyIndex,
-            final WayangJoin wayangRelNode, final String leftFieldName, final String rightFieldName,
-            final String[] leftColumns, final String[] leftColumnAliases, final String[] rightColumns,
-            final String[] rightColumnAliases) {
-        if (wayangRelNode.getInputs().size() != 2)
-            throw new UnsupportedOperationException("Join had an unexpected amount of inputs, found: "
-                    + wayangRelNode.getInputs().size() + ", expected: 2");
-
-        final JoinKeyDescriptor<Record, Record> jkd0 = new JoinKeyDescriptor<>(new KeyExtractor<>(leftKeyIndex)
-                .withRowType(
-                        wayangRelNode.getLeft().getRowType().toString(),
-                        wayangRelNode.toString(),
-                        wayangRelNode.getLeft().toString(),
-                        wayangRelNode.getRight().toString()),
-                Record.class,
-                Record.class,
-                leftColumns, leftColumnAliases, leftKeyIndex);
-
-        final JoinKeyDescriptor<Record, Record> jkd1 = new JoinKeyDescriptor<>(new KeyExtractor<>(leftKeyIndex)
-                .withRowType(
-                        wayangRelNode.getLeft().getRowType().toString(),
-                        wayangRelNode.toString(),
-                        wayangRelNode.getLeft().toString(),
-                        wayangRelNode.getRight().toString()),
-                Record.class,
-                Record.class,
-                rightColumns, rightColumnAliases, rightKeyIndex);
-
-        final TransformationDescriptor<Record, Record> leftProjectionDescriptor = jkd0
-                .withSqlImplementation(leftFieldName);
-        final TransformationDescriptor<Record, Record> righProjectionDescriptor = jkd1
-                .withSqlImplementation(rightFieldName);
-
-        return new JoinOperator<>(
-                leftProjectionDescriptor,
-                righProjectionDescriptor);
-    }
-
     WayangJoinVisitor(final Configuration configuration) {
         super(configuration);
     }
@@ -175,16 +126,44 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String[] rightProjectionAliases = wayangRelNode.getRowType().getFieldList().stream()
                 .map(RelDataTypeField::getName).skip(leftProjection.length).toArray(String[]::new);
 
-        final JoinOperator<Record, Record, Record> join = WayangJoinVisitor.getJoinOperator(
-                keyExtractor._1(),
-                keyExtractor._2(),
-                wayangRelNode,
-                leftFieldName,
-                rightFieldName,
-                leftProjection,
-                leftProjectionAliases,
-                rightProjection,
-                rightProjectionAliases);
+        final JoinKeyDescriptor<Record, Record> jkd0 = new JoinKeyDescriptor<>(new KeyExtractor<>(keyExtractor._1())
+                .withRowType(
+                        wayangRelNode.getLeft().getRowType().toString(),
+                        wayangRelNode.toString(),
+                        wayangRelNode.getLeft().toString(),
+                        wayangRelNode.getRight().toString()),
+                Record.class,
+                Record.class,
+                leftProjection, leftProjectionAliases, leftKeyIndex);
+
+        final JoinKeyDescriptor<Record, Record> jkd1 = new JoinKeyDescriptor<>(new KeyExtractor<>(keyExtractor._2())
+                .withRowType(
+                        wayangRelNode.getRight().getRowType().toString(),
+                        wayangRelNode.toString(),
+                        wayangRelNode.getLeft().toString(),
+                        wayangRelNode.getRight().toString()),
+                Record.class,
+                Record.class,
+                rightProjection, rightProjectionAliases, rightKeyIndex);
+
+        System.out.println("[WayangJoinVisitor.left]: " + wayangRelNode.getLeft());
+        System.out.println("[WayangJoinVisitor.right]: " + wayangRelNode.getRight());
+        System.out.println("[WayangJoinVisitor.filter]: " + condition);
+        System.out.println("[WayangJoinVisitor.keyextractor1]: " + keyExtractor._1);
+        System.out.println("[WayangJoinVisitor.keyextractor2]: " + keyExtractor._2);
+        System.out.println("[WayangJoinVisitor.lki]: " + leftKeyIndex);
+        System.out.println("[WayangJoinVisitor.rki1]: " + rightKeyIndex);
+        System.out.println("[WayangJoinVisitor.leftprojcol]: " + leftProjectionAliases[keyExtractor._1()]);
+        System.out.println("[WayangJoinVisitor.rightprojcol]: " + rightProjectionAliases[keyExtractor._2()]);
+
+        final TransformationDescriptor<Record, Record> leftProjectionDescriptor = jkd0
+                .withSqlImplementation(leftFieldName);
+        final TransformationDescriptor<Record, Record> righProjectionDescriptor = jkd1
+                .withSqlImplementation(rightFieldName);
+
+        final JoinOperator<Record, Record, Record> join = new JoinOperator<>(
+                leftProjectionDescriptor,
+                righProjectionDescriptor);
 
         System.out.println("[WayangJoinVisitor.kd0]: " + join.getKeyDescriptor0().getSqlImplementation());
         System.out.println("[WayangJoinVisitor.kd1]: " + join.getKeyDescriptor1().getSqlImplementation());

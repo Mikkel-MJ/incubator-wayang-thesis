@@ -18,31 +18,18 @@
 
 package org.apache.wayang.jdbc.execution;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.UncheckedIOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import org.apache.wayang.basic.channels.FileChannel;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.function.JoinKeyDescriptor;
@@ -54,12 +41,8 @@ import org.apache.wayang.core.platform.ExecutionState;
 import org.apache.wayang.core.platform.Executor;
 import org.apache.wayang.core.platform.ExecutorTemplate;
 import org.apache.wayang.core.platform.Platform;
-import org.apache.wayang.core.util.fs.FileSystem;
-import org.apache.wayang.core.util.fs.FileSystems;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel;
 import org.apache.wayang.jdbc.channels.SqlQueryChannel.Instance;
-import org.apache.wayang.jdbc.compiler.FunctionCompiler;
-import org.apache.wayang.jdbc.operators.JdbcExecutionOperator;
 import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
 import org.apache.wayang.jdbc.operators.JdbcGlobalReduceOperator;
 import org.apache.wayang.jdbc.operators.JdbcJoinOperator;
@@ -78,10 +61,6 @@ public class JdbcExecutor extends ExecutorTemplate {
     private final JdbcPlatformTemplate platform;
 
     private final Connection connection;
-
-    private final Logger logger = LogManager.getLogger(this.getClass());
-
-    private final FunctionCompiler functionCompiler = new FunctionCompiler();
 
     public JdbcExecutor(final JdbcPlatformTemplate platform, final Job job) {
         super(job.getCrossPlatformExecutor());
@@ -136,19 +115,12 @@ public class JdbcExecutor extends ExecutorTemplate {
             // join
             // likewise with the right key descriptor. So we need to make sure that
             // leftAlias + rightAlias match this expectation
-            final String[] projections = isLeftFirst
-                    ? Stream.concat(
-                            Arrays.stream(joinKeyDescriptor.getProjectedFields())
-                                    .map(field -> leftAlias + "." + field),
-                            Arrays.stream(joinKeyDescriptor2.getProjectedFields())
-                                    .map(field -> rightAlias + "." + field))
-                            .toArray(String[]::new)
-                    : Stream.concat(
-                            Arrays.stream(joinKeyDescriptor2.getProjectedFields())
-                                    .map(field -> rightAlias + "." + field),
-                            Arrays.stream(joinKeyDescriptor.getProjectedFields())
-                                    .map(field -> leftAlias + "." + field))
-                            .toArray(String[]::new);
+            final String[] projections = Stream.concat(
+                    Arrays.stream(joinKeyDescriptor.getProjectedFields())
+                            .map(field -> leftAlias + "." + field),
+                    Arrays.stream(joinKeyDescriptor2.getProjectedFields())
+                            .map(field -> rightAlias + "." + field))
+                    .toArray(String[]::new);
 
             final String[] aliases = Stream.concat(
                     Arrays.stream(joinKeyDescriptor.getAliases()),
@@ -172,9 +144,12 @@ public class JdbcExecutor extends ExecutorTemplate {
             assert leftField != null : "Left join field in filter was null.";
             assert rightField != null : "Right join field in filter was null.";
 
-            final String filter = String.format("%s.%s = %s.%s",
-                    !isLeftFirst ? leftAlias : rightAlias, leftField,
-                    !isLeftFirst ? rightAlias : leftAlias, rightField);
+            final String filter = isLeftFirst ? String.format("%s.%s = %s.%s",
+                    leftAlias, leftField,
+                    rightAlias, rightField)
+                    : String.format("%s.%s = %s.%s",
+                            rightAlias, rightField,
+                            leftAlias, leftField);
 
             System.out.println("[visitTask.Join.leftOp]: " + nextTasks.get(0));
             System.out.println("[visitTask.Join.rightOp]: " + nextTasks.get(1));
@@ -314,27 +289,6 @@ public class JdbcExecutor extends ExecutorTemplate {
     }
 
     /**
-     * Searches depth-first through all projections, reduces connnected to a
-     * boundary operator
-     *
-     * @param task  execution task at the boundary
-     * @param stage current execution stage
-     * @return an arraylist pipeline containing all projection & reductions from the
-     *         boundary operator
-     */
-    private ArrayList<ExecutionTask> dfsProjectionPipeline(final ExecutionTask task, final ExecutionStage stage) {
-        final ArrayList<ExecutionTask> pipeline = new ArrayList<>();
-        ExecutionTask current = task;
-        while (current.getOperator() instanceof JdbcGlobalReduceOperator
-                || current.getOperator() instanceof JdbcProjectionOperator) {
-            pipeline.add(current);
-            current = stage.getPreceedingTask(current).iterator().next(); // should only be one task in practice
-        }
-
-        return pipeline;
-    }
-
-    /**
      * Instantiates the outbound {@link SqlQueryChannel} of an
      * {@link ExecutionTask}.
      *
@@ -355,133 +309,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         return outputChannel.createInstance(this, operatorContext, 0);
     }
 
-    /**
-     * Instantiates the outbound {@link SqlQueryChannel} of an
-     * {@link ExecutionTask}.
-     *
-     * @param task                       whose outbound {@link SqlQueryChannel}
-     *                                   should be instantiated
-     * @param optimizationContext        provides information about the
-     *                                   {@link ExecutionTask}
-     * @param predecessorChannelInstance preceeding {@link SqlQueryChannel.Instance}
-     *                                   to keep track of lineage
-     * @return the {@link SqlQueryChannel.Instance}
-     */
-    private SqlQueryChannel.Instance instantiateOutboundChannel(final ExecutionTask task,
-            final OptimizationContext optimizationContext,
-            final SqlQueryChannel.Instance predecessorChannelInstance) {
-        final SqlQueryChannel.Instance newInstance = this.instantiateOutboundChannel(task, optimizationContext);
-        newInstance.getLineage().addPredecessor(predecessorChannelInstance.getLineage());
-        return newInstance;
-    }
-
-    /**
-     * Creates a SQL query.
-     *
-     * @param tableName  the table to be queried
-     * @param conditions conditions for the {@code WHERE} clause
-     * @param projection projection for the {@code SELECT} clause
-     * @param joins      join clauses for multiple {@code JOIN} clauses
-     * @return the SQL query
-     */
-    protected String createSqlQuery(final String tableName, final Collection<String> conditions,
-            final String projection,
-            final Collection<String> joins, final String selectStatement) {
-        final StringBuilder sb = new StringBuilder(1000);
-
-        final Set<String> projectionTableNames = Arrays.stream(projection.split(","))
-                .map(name -> name.split("\\.")[0])
-                .map(String::trim)
-                .collect(Collectors.toSet());
-        final Set<String> joinTableNames = joins.stream()
-                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[0])
-                .collect(Collectors.toSet());
-        final Set<String> joinTableAliases = joins.stream()
-                .map(query -> query.split(" ON ")[0].replace("JOIN ", "").split(" AS ")[1])
-                .collect(Collectors.toSet());
-        final Set<String> leftJoinTableNames = joins.stream()
-                .map(query -> query.split(" ON ")[1].split("=")[0].split("\\.")[0])
-                .collect(Collectors.toSet());
-        final Set<String> rightJoinTableNames = joins.stream()
-                .map(query -> query.split(" ON ")[1].split("=")[1].split("\\.")[0])
-                .collect(Collectors.toSet());
-
-        // Union of projectionTableNames, leftJoinTableNames, and rightJoinTableNames
-        final Set<String> unionSet = new HashSet<>();
-        unionSet.addAll(projectionTableNames);
-
-        /*
-         * unionSet.addAll(leftJoinTableNames);
-         * unionSet.addAll(rightJoinTableNames);
-         */
-
-        // Remove tables that will be joined on, from the from clause
-        unionSet.removeAll(joinTableNames);
-        // Remove aliases from the from statement:
-        unionSet.removeAll(joinTableAliases);
-
-        // match JOIN x AS x* ON x*.col = y.col
-        // group1: x
-        // group2: x*
-        // group3: x*.col
-        // group4: y.col
-        if (joins.size() > 0) {
-            final String regex = "JOIN\\s+(?<joiningTable>\\w+)(?:\\s+AS\\s+(?<alias>\\w+))?\\s+ON\\s+(?<left>\\w+\\.\\w+)\\s*=\\s*(?<right>\\w+\\.\\w+)";
-            final Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
-
-            final String joinClause = joins.stream().findFirst().orElse("");
-            final Matcher matcher = pattern.matcher(joinClause);
-
-            if (matcher.find()) {
-                final String joiningTable = matcher.group("joiningTable");
-                final String left = matcher.group("left");
-                final String right = matcher.group("right");
-
-                if (joiningTable != null && left != null && right != null) {
-                    final String leftTable = left.split("\\.")[0];
-                    final String rightTable = right.split("\\.")[0];
-
-                    final String nonUsedTable = joiningTable.equals(leftTable) ? right : left;
-                    unionSet.add(nonUsedTable.split("\\.")[0]);
-                }
-            }
-        }
-
-        final String requiredFromTableNames = unionSet.stream().collect(Collectors.joining(", "));
-
-        sb.append("SELECT ").append(selectStatement).append(" FROM ").append(requiredFromTableNames);
-        // build joins in sql query
-        if (!joins.isEmpty()) {
-            final String separator = " ";
-            for (final String join : joins) {
-                sb.append(separator).append(join);
-            }
-        }
-
-        // build filters
-        if (!conditions.isEmpty()) {
-            sb.append(" WHERE ");
-            String separator = "";
-            for (final String condition : conditions) {
-                sb.append(separator).append(condition);
-                separator = " AND ";
-            }
-        }
-        sb.append(';');
-
-        return sb.toString();
-    }
-
-    /**
-     * Creates a SQL clause that corresponds to the given {@link Operator}.
-     *
-     * @param operator for that the SQL clause should be generated
-     * @return the SQL clause
-     */
-    private String getSqlClause(final Operator operator) {
-        return ((JdbcExecutionOperator) operator).createSqlClause(this.connection, this.functionCompiler);
-    }
-
     @Override
     public void dispose() {
         try {
@@ -494,28 +321,5 @@ public class JdbcExecutor extends ExecutorTemplate {
     @Override
     public Platform getPlatform() {
         return this.platform;
-    }
-
-    private void saveResult(final FileChannel.Instance outputFileChannelInstance, final ResultSet rs)
-            throws IOException, SQLException {
-        // Output results.
-        final FileSystem outFs = FileSystems.getFileSystem(outputFileChannelInstance.getSinglePath()).get();
-        try (final OutputStreamWriter writer = new OutputStreamWriter(
-                outFs.create(outputFileChannelInstance.getSinglePath()))) {
-            while (rs.next()) {
-                final ResultSetMetaData rsmd = rs.getMetaData();
-                for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-                    writer.write(rs.getString(i));
-                    if (i < rsmd.getColumnCount()) {
-                        writer.write('\t');
-                    }
-                }
-                if (!rs.isLast()) {
-                    writer.write('\n');
-                }
-            }
-        } catch (final UncheckedIOException e) {
-            throw e.getCause();
-        }
     }
 }
