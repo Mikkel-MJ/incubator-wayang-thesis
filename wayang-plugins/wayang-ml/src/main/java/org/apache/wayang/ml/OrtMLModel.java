@@ -272,8 +272,11 @@ public class OrtMLModel {
     ) throws OrtException {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input = OrtTensorEncoder.encode(encoded);
         Map<String, NodeInfo> inputInfoList = this.session.getInputInfo();
-        long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
-        long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+        //long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
+        //long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+        //
+        long[] input1Dims = new long[]{1, input.field0.get(0).length, input.field0.get(0)[0].length};
+        long[] input2Dims = new long[]{1, input.field1.get(0).length, input.field1.get(0)[0].length};
 
         System.out.println("Feature dims: " + Arrays.toString(input1Dims));
         System.out.println("Index dims: " + Arrays.toString(input2Dims));
@@ -313,6 +316,8 @@ public class OrtMLModel {
         for (int i = 0; i < input.field1.get(0).length; i++) {
             inputIndexStructure[0][i]  = input.field1.get(0)[i];
         }
+
+        System.out.println("Values: " + Arrays.deepToString(inputValueStructure));
 
         OnnxTensor tensorValues = OnnxTensor.createTensor(env, new float[][][]{inputValueStructure});
         OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);
@@ -358,6 +363,8 @@ public class OrtMLModel {
                 new OperatorValidationRule(),
                 new PostgresSourceValidationRule()*/
             );
+
+            System.out.println("Choices: " + Arrays.deepToString(platformChoices));
 
             int valueDim = resultTensor[0][0].length;
             int indexDim = input.field1.get(0).length;

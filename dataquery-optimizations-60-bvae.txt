@@ -1,0 +1,5 @@
+Encoding: 3
+Inference: 8
+Unpacking: 1
+Decoding: 0
+Conversion: 32
