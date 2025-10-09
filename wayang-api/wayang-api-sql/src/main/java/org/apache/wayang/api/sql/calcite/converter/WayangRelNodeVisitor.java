@@ -29,5 +29,9 @@ abstract class WayangRelNodeVisitor<T extends RelNode> {
         this.configuration = configuration;
     }
 
+    WayangRelNodeVisitor() {
+        this.configuration = Configuration.getDefaultConfiguration();
+    }
+
     abstract Operator visit(T wayangRelNode);
 }

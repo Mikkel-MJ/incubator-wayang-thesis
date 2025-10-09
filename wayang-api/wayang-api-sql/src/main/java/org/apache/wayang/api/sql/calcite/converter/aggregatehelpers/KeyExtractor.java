@@ -14,10 +14,10 @@ public class KeyExtractor implements FunctionDescriptor.SerializableFunction<Rec
         this.indexSet = indexSet; //force serialisable
     }
 
-    public Object apply(final Record record) {
+    public Object apply(final Record rec) {
         final List<Object> keys = new ArrayList<>();
         for (final Integer index : indexSet) {
-            keys.add(record.getField(index));
+            keys.add(rec.getField(index));
         }
         return keys;
     }

@@ -20,27 +20,20 @@
 package org.apache.wayang.api.sql.calcite.converter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.DoubleBinaryOperator;
 import java.util.stream.Collectors;
 
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.metadata.RelColumnOrigin;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexTableInputRef.RelTableRef;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 
-import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
+import org.apache.wayang.api.sql.calcite.converter.projecthelpers.ProjectMapFuncImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
-import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
@@ -120,84 +113,27 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
     @Override
     Operator visit(final WayangProject wayangRelNode) {
-        /*
-        System.out.println("is an identity mapping:" + RexUtil.isIdentity(wayangRelNode.getProjects(), wayangRelNode.getInput().getRowType()));
-
-        final RelToSqlConverter converter = new RelToSqlConverter(PostgresqlSqlDialect.DEFAULT);
-        final String sampleSql = converter.visitRoot(wayangRelNode).asSelect().toSqlString(PostgresqlSqlDialect.DEFAULT).getSql();
-
-        final RelToSqlConverter converter2 = new RelToSqlConverter(PostgresqlSqlDialect.DEFAULT);
-        final String sampleSql2 = converter2.visitRoot(wayangRelNode.getInput()).asSelect().toSqlString(PostgresqlSqlDialect.DEFAULT).getSql();
-
-        System.out.println("[WayangProjectVisitor.queryDiff]: " + sampleSql.replace(sampleSql2, ""));
-        System.out.println("[WayangProjectVisitor.sqlInput]: " + sampleSql2);
-        System.out.println("[WayangProjectVisitor.sqlSample]: " + sampleSql);
-
-        System.out.println("[WayangProjectVisitor.table]: " + wayangRelNode.getTable());
-        System.out.println("[WayangProjectVisitor.inputTableRefs]: " + wayangRelNode.getInput().getCluster().getMetadataQuery().getTableReferences(wayangRelNode.getInput()));
-        System.out.println("[WayangProjectVisitor.projections]: " + wayangRelNode.getNamedProjects());
-        System.out.println("[WayangProjectVisitor.mapping]: " + wayangRelNode.getMapping());
-        System.out.println("[WayangProjectVisitor.permutation]: " + wayangRelNode.getPermutation());
-
-        final List<Integer> originIndexes = wayangRelNode.getRowType().getFieldList().stream().map(
-            field -> wayangRelNode.getCluster().getMetadataQuery().getColumnOrigin(wayangRelNode, field.getIndex())
-        ).map(RelColumnOrigin::getOriginColumnOrdinal).collect(Collectors.toList());
-
-        final List<RelOptTable> originTables = wayangRelNode.getRowType().getFieldList().stream().map(
-            field -> wayangRelNode.getCluster().getMetadataQuery().getColumnOrigin(wayangRelNode, field.getIndex())
-        ).map(RelColumnOrigin::getOriginTable).collect(Collectors.toList());
-
-        final List<List<String>> originSetTableNames = wayangRelNode.getRowType().getFieldList().stream().map(
-            field -> wayangRelNode.getCluster().getMetadataQuery().getColumnOrigins(wayangRelNode, field.getIndex())
-        ).map(set -> set.stream().map(RelColumnOrigin::getOriginTable).map(RelOptTable::getQualifiedName).map(list -> list.get(1)).collect(Collectors.toList())).collect(Collectors.toList());
-
-        final List<String> originTableNames = wayangRelNode.getRowType().getFieldList().stream().map(
-            field -> wayangRelNode.getCluster().getMetadataQuery().getColumnOrigin(wayangRelNode, field.getIndex())
-        ).map(RelColumnOrigin::getOriginTable).map(RelOptTable::getQualifiedName).map(list -> list.get(1)).collect(Collectors.toList());
-
-        System.out.println("[WayangProjectVisitor.tablerefs]: " + wayangRelNode.getCluster().getMetadataQuery().getTableReferences(wayangRelNode));
-        System.out.println("[WayangProjectVisitor.tablerefs indexes]: " + wayangRelNode.getCluster().getMetadataQuery().getTableReferences(wayangRelNode).stream().map(RelTableRef::getEntityNumber).collect(Collectors.toList()));
-        System.out.println("[WayangProjectVisitor.originSetTableNames]: " + originSetTableNames);
-        System.out.println("[WayangProjectVisitor.originTableNames]: " + originTableNames);
-
-        final ArrayList<RelDataTypeField> originColumns = new ArrayList<>();
-        for (int i = 0; i < originIndexes.size(); i++) {
-            int index = originIndexes.get(i);
-            RelOptTable table = originTables.get(i);
-
-            originColumns.add(table.getRowType().getFieldList().get(index));
-        }
-
-        System.out.println("[WayangProjectVisitor.originColumns]: " + originColumns);
-        System.out.println("[WayangProjectVisitor.columns]: " + wayangRelNode.getRowType().getFieldList());
-        */
-
         final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(0), super.configuration);
-
-        // projections on fields:
-        System.out.println("[WayangProjectVisitor.dealiasedFields]: " + List.of(CalciteSources.getUnaliasedFields(wayangRelNode)));
-
-        final String[] unaliasedFieldsNames = CalciteSources.getUnaliasedFields(wayangRelNode);
-        final String[] unaliasedTableNames  = CalciteSources.getOriginalTableFromColumn(wayangRelNode);
-        final String[] aliasedFieldNames    = new String[wayangRelNode.getRowType().getFieldCount()];
-
-        for (int i = 0; i < aliasedFieldNames.length; i++) {
-            final String originalName = unaliasedFieldsNames[i];
-            final String alias = wayangRelNode.getRowType().getFieldNames().get(i);
-            final String originalTableName = unaliasedTableNames[i];
-
-            aliasedFieldNames[i] = originalTableName + "." + originalName + " AS " + alias;
-        }
 
         // list of projects passed to the serializable function, for java & others usage
         final List<RexNode> projects = wayangRelNode.getProjects();
+        final ProjectMapFuncImpl impl = new ProjectMapFuncImpl(projects);
 
         final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
-                new MapFunctionImpl(projects),
+                impl,
                 Record.class,
-                Record.class,
-                aliasedFieldNames // names of projected columns
-        );
+                Record.class);
+
+        final List<String> fields = impl.getCallTrees().stream().map(node -> node.toString(wayangRelNode.getInput().getRowType().getFieldList())).collect(Collectors.toList());
+        final List<String> aliases = wayangRelNode.getRowType().getFieldNames();
+
+        final String[] aliasedFields = new String[fields.size()];
+
+        for (int i = 0; i < aliasedFields.length; i++) {
+            aliasedFields[i] = fields.get(i) + " AS " + aliases.get(i);
+        }
+
+        pd.withSqlImplementation(Arrays.stream(aliasedFields).collect(Collectors.joining(",")));
 
         final MapOperator<Record, Record> projection = new MapOperator<>(pd);
 

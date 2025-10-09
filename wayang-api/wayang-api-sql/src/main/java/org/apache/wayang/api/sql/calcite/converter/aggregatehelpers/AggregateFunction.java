@@ -17,9 +17,7 @@
  */
 package org.apache.wayang.api.sql.calcite.converter.aggregatehelpers;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -31,12 +29,12 @@ import org.apache.wayang.core.function.FunctionDescriptor;
 
 public class AggregateFunction
         implements FunctionDescriptor.SerializableBinaryOperator<Record> {
-    final List<SqlKind> aggregateKinds;
+    private final List<SqlKind> aggregateKinds;
 
     public AggregateFunction(final List<AggregateCall> aggregateCalls) {
         this.aggregateKinds = aggregateCalls.stream()
-            .map(call -> call.getAggregation().getKind())
-            .collect(Collectors.toList());
+                .map(call -> call.getAggregation().getKind())
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -18,20 +18,19 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
-import org.apache.wayang.api.sql.calcite.rel.WayangRel;
-import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.GlobalReduceOperator;
@@ -53,27 +52,16 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
     Operator visit(final WayangAggregate wayangRelNode) {
         final Operator childOp = WayangRelConverter.convert(wayangRelNode.getInput(), super.configuration);
 
-        // fetch the indexes of colmuns affected, in calcite aggregates and projections
-        // have their own catalog, we need to find the column indexes in the global
-        // catalog
-
-        final String[] aliasedFields;
-
-        System.out.println("[WayangAggregateVisitor.rowType]: " + wayangRelNode.getRowType());
-
-        if (wayangRelNode.getAggCallList().get(0).getAggregation().getSqlIdentifier() == null) {
-            aliasedFields = CalciteSources.getAliasedFields((WayangRel) wayangRelNode.getInput());
-        } else {
-            aliasedFields = CalciteSources.getAliasedFields(wayangRelNode);
-        }
-
         final List<AggregateCall> aggregateCalls = wayangRelNode.getAggCallList();
         final int groupCount = wayangRelNode.getGroupCount();
         final HashSet<Integer> groupingFields = new HashSet<>(wayangRelNode.getGroupSet().asSet());
 
         final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
                 new AddAggCols(aggregateCalls),
-                Record.class, Record.class, aliasedFields);
+                Record.class, Record.class);
+
+        // we create a null descriptor since postgres handles this internally
+        pd.withSqlImplementation(null);
 
         final MapOperator<Record, Record> mapOperator = new MapOperator<>(pd);
 
@@ -97,27 +85,21 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
             final List<String> reductionFunctions = wayangRelNode.getNamedAggCalls().stream()
                     .map(agg -> agg.left.getAggregation().getName()).collect(Collectors.toList());
 
-            final List<String> reductionStatements = new ArrayList<>();
+            // may need to make the projection on the map operator above.
+            final List<String> fields = wayangRelNode.getInput().getRowType().getFieldList().stream()
+                    .map(RelDataTypeField::getName).collect(Collectors.toList());
 
-            assert reductionFunctions.size() == aliasedFields.length
-                    : "Expected that the amount of reduction functions in reduce statement was equal to the amount of used tables";
+            final List<String> aliases = wayangRelNode.getRowType().getFieldList().stream()
+                    .map(RelDataTypeField::getName).collect(Collectors.toList());
 
-            // we have an assumption that the ordering is maintained between each list
-            for (int i = 0; i < reductionFunctions.size(); i++) {
-                // unpacking alias
-                final String[] unpackedAlias = aliasedFields[i].split(" AS ");
+            final String[] reductionStatements = new String[reductionFunctions.size()];
 
-                if (aliasedFields.length == 2) {
-                    reductionStatements.add(
-                            reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")" + " AS " + unpackedAlias[1]);
-                } else {
-                    reductionStatements.add(
-                            reductionFunctions.get(i) + "(" + unpackedAlias[0] + ")");
-                }
+            for (int i = 0; i < reductionStatements.length; i++) {
+                reductionStatements[i] = reductionFunctions.get(i) + "(." + fields.get(i) + ") AS " + aliases.get(i);
             }
 
             reduceDescriptor.withSqlImplementation(
-                    reductionStatements.stream().collect(Collectors.joining(",")));
+                    Arrays.stream(reductionStatements).collect(Collectors.joining(",")));
 
             aggregateOperator = new GlobalReduceOperator<Record>(reduceDescriptor);
         }
@@ -131,7 +113,10 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
 
         final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(
                 new GetResult(aggregateCalls, orderedGroupingFields),
-                Record.class, Record.class, aliasedFields);
+                Record.class, Record.class);
+
+        // we create a null descriptor since postgres handles this internally
+        pd.withSqlImplementation(null);
 
         final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);
 

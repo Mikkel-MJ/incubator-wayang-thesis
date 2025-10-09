@@ -83,6 +83,10 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         super(configuration);
     }
 
+    WayangJoinVisitor() {
+        super(Configuration.getDefaultConfiguration());
+    }
+
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
         final Operator childOpLeft = WayangRelConverter.convert(wayangRelNode.getInput(0), configuration);
@@ -126,7 +130,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
         final String[] rightProjectionAliases = wayangRelNode.getRowType().getFieldList().stream()
                 .map(RelDataTypeField::getName).skip(leftProjection.length).toArray(String[]::new);
 
-        final JoinKeyDescriptor<Record, Record> jkd0 = new JoinKeyDescriptor<>(new KeyExtractor<>(keyExtractor._1())
+        final JoinKeyDescriptor<Record, Record> jkd0 = new JoinKeyDescriptor<>(new KeyExtractor<Record>(keyExtractor._1())
                 .withRowType(
                         wayangRelNode.getLeft().getRowType().toString(),
                         wayangRelNode.toString(),
@@ -136,7 +140,7 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 Record.class,
                 leftProjection, leftProjectionAliases, leftKeyIndex);
 
-        final JoinKeyDescriptor<Record, Record> jkd1 = new JoinKeyDescriptor<>(new KeyExtractor<>(keyExtractor._2())
+        final JoinKeyDescriptor<Record, Record> jkd1 = new JoinKeyDescriptor<>(new KeyExtractor<Record>(keyExtractor._2())
                 .withRowType(
                         wayangRelNode.getRight().getRowType().toString(),
                         wayangRelNode.toString(),
@@ -145,16 +149,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 Record.class,
                 Record.class,
                 rightProjection, rightProjectionAliases, rightKeyIndex);
-
-        System.out.println("[WayangJoinVisitor.left]: " + wayangRelNode.getLeft());
-        System.out.println("[WayangJoinVisitor.right]: " + wayangRelNode.getRight());
-        System.out.println("[WayangJoinVisitor.filter]: " + condition);
-        System.out.println("[WayangJoinVisitor.keyextractor1]: " + keyExtractor._1);
-        System.out.println("[WayangJoinVisitor.keyextractor2]: " + keyExtractor._2);
-        System.out.println("[WayangJoinVisitor.lki]: " + leftKeyIndex);
-        System.out.println("[WayangJoinVisitor.rki1]: " + rightKeyIndex);
-        System.out.println("[WayangJoinVisitor.leftprojcol]: " + leftProjectionAliases[keyExtractor._1()]);
-        System.out.println("[WayangJoinVisitor.rightprojcol]: " + rightProjectionAliases[keyExtractor._2()]);
 
         final TransformationDescriptor<Record, Record> leftProjectionDescriptor = jkd0
                 .withSqlImplementation(leftFieldName);
@@ -165,29 +159,20 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implemen
                 leftProjectionDescriptor,
                 righProjectionDescriptor);
 
-        System.out.println("[WayangJoinVisitor.kd0]: " + join.getKeyDescriptor0().getSqlImplementation());
-        System.out.println("[WayangJoinVisitor.kd1]: " + join.getKeyDescriptor1().getSqlImplementation());
-
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
-        final ProjectionDescriptor<Tuple2<Record, Record>, Record> projectionDescriptor = new ProjectionDescriptor<Tuple2<Record, Record>, Record>(
+        final ProjectionDescriptor<Tuple2<Record, Record>, Record> projectionDescriptor = new ProjectionDescriptor<>(
                 new JoinFlattenResult(),
                 ReflectionUtils.specify(Tuple2.class),
                 Record.class);
-
-        System.out.println("[WayangJoinVisitor.rowType]: " + wayangRelNode.getRowType());
-        System.out.println("[WayangJoinVisitor.rowTypeL]: " + wayangRelNode.getLeft().getRowType());
-        System.out.println("[WayangJoinVisitor.rowTypeR]: " + wayangRelNode.getRight().getRowType());
 
         // explicitly set sql impl to null since flattening operators happen
         // automatically in joins
         projectionDescriptor.withSqlImplementation(null);
 
-        System.out.println("[WayangJoinVisitor.projectionDescriptor]: " + projectionDescriptor.getSqlImplementation());
-
         // Join returns Tuple2 - map to a Record
-        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<Tuple2<Record, Record>, Record>(
+        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<>(
                 projectionDescriptor);
 
         join.connectTo(0, mapOperator, 0);

@@ -22,14 +22,14 @@ public class KeyExtractor<T> implements FunctionDescriptor.SerializableFunction<
         this.index = index;
     }
 
-    public KeyExtractor withRowType(String... rowTypes) {
+    public KeyExtractor<T> withRowType(final String... rowTypes) {
         this.rowTypes = rowTypes;
 
         return this;
     }
 
-    public T apply(final Record record) {
-        return (T) record.getField(index);
+    public T apply(final Record rec) {
+        return (T) rec.getField(index);
     }
 
     @Override

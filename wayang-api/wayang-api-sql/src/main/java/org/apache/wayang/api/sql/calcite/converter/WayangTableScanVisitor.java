@@ -59,8 +59,6 @@ public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan
                 modelParser = this.configuration == null
                         ? new ModelParser()
                         : new ModelParser(this.configuration);
-
-                System.out.println("[WayangTableScanVisitor.path]: " + modelParser.getFsPath());
             } catch (final Exception e) {
                 e.printStackTrace();
                 throw new IllegalArgumentException(
