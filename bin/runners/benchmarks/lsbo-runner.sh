@@ -29,7 +29,7 @@ fi
 
 #queries=(901 950 999)
 
-bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-1.onnx
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-t.onnx
 bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-5.onnx
 bvae_10_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-10.onnx
 
@@ -45,7 +45,7 @@ query="$test_path"/30.sql
 #for query in "$test_path"/*a.sql; do
 #for query in $(ls -1 "$train_path"/*.sql | tail -n 50); do
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --stats="./src/Data/splits/imdb/training/stats-test.txt" --trainset="./src/Data/splits/imdb/training/retrain-1.txt" --zdim 116 --steps 4000 --improvement 90
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/imdb/BVAE-T.json" --stats="./src/Data/splits/imdb/training/stats-test.txt" --trainset="./src/Data/splits/imdb/training/retrain-1.txt" --zdim 99 --steps 4000 --improvement 90
     #./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_5_path --stats="./src/Data/splits/imdb/training/stats-test.txt" --trainset="./src/Data/splits/imdb/training/retrain-1.txt" --zdim 124 --steps 4000 --improvement 90
     #./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_10_path --stats="./src/Data/splits/imdb/training/stats-test.txt" --trainset="./src/Data/splits/imdb/training/retrain-1.txt" --zdim 124 --steps 4000 --improvement 90
 

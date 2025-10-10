@@ -56,7 +56,6 @@ public class PostgresSourceValidationRule extends ValidationRule {
                              * choices later will take care of the rest
                              */
                             choices[i][j] = -Float.MAX_VALUE;
-                            System.out.println("Nulling psql choice at index " + i + ": " + Arrays.toString(choices[i]));
                             break;
                         }
                     }
