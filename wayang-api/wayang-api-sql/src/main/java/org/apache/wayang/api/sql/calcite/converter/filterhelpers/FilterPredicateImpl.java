@@ -64,14 +64,15 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                                 Range<Comparable> newRange = Range.closed(left, right);
                                 return newRange.contains(field);
                             } else if (input.get(1) instanceof ImmutableRangeSet) {
-                                ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(1);
-                                if (!(input.get(0) instanceof Comparable)) {
-                                    throw new AssertionError("field is not comparable: " + input.get(0).getClass());
-                                }
-                                Comparable field = ensureComparable.apply(input.get(0));
-                                Comparable left = ensureComparable.apply(range.span().lowerEndpoint());
-                                Comparable right = ensureComparable.apply(range.span().upperEndpoint());
-                                Range<Comparable> newRange = Range.closed(left, right);
+                                final ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(1);
+                                assert input.get(0) == null || input.get(0) instanceof Comparable : "left input should be null or comparable.";
+
+                                final Comparable field = ensureComparable.apply(input.get(0));
+                                final Comparable left = ensureComparable.apply(range.span().lowerEndpoint());
+                                final Comparable right = ensureComparable.apply(range.span().upperEndpoint());
+                                final Range<Comparable> newRange = Range.closed(left, right);
+
+                                if (field == null) return false;
                                 return newRange.contains(field);
                             } else {
                                 throw new UnsupportedOperationException("No range set found in SARG, input1: "
@@ -94,20 +95,20 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         private boolean isGreaterThan(final Object o1, final Object o2) {
             if (o1 == null && o2 == null) return false;
             if (o1 == null) return false;
-            if (o2 == null) return true;  
+            if (o2 == null) return true;
             //System.out.println("[FilterPred.gt]: o1 " + o1 + " and o2, " + o2);
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) > 0;
         }
 
         private boolean isLessThan(final Object o1, final Object o2) {
             if (o1 == null && o2 == null) return false;
-            if (o1 == null) return true;  
-            if (o2 == null) return false; 
+            if (o1 == null) return true;
+            if (o2 == null) return false;
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) < 0;
         }
 
         private boolean isEqualTo(final Object o1, final Object o2) {
-            if (o1 == null || o2 == null) return o1 == o2; 
+            if (o1 == null || o2 == null) return o1 == o2;
             return Objects.equals(ensureComparable.apply(o1), ensureComparable.apply(o2));
         }
     }

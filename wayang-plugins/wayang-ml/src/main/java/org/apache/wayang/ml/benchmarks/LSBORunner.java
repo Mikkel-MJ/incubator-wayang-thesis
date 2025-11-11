@@ -159,8 +159,8 @@ public class LSBORunner {
         WayangPlan plan = plans.get("query" + args[2]);*/
 
         try {
-            //WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
-            WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
+            WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
+            //WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
 
             //Set sink to be on Java
             /*

@@ -11,7 +11,7 @@ SHELL_PROFILE="$HOME/.bashrc"
 export WORKDIR=/work/lsbo-paper
 
 echo "Installing Spark"
-export SPARK_VERSION=3.5.6
+export SPARK_VERSION=3.5.7
 export SPARK_HOME=/opt/spark
 export SPARK_WORKER_CORES=8
 export SPARK_WORKER_MEMORY=32G

@@ -14,7 +14,7 @@ export PATH="$PATH:${GIRAPH_HOME}/bin"
 cd ${WORKDIR}
 cd wayang-0.7.1
 
-bvae_1_path=/work/lsbo-paper/python-ml/src/Models/tpch/rebalanced/bvae-1.onnx
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-test.onnx
 bvae_5_path=/work/lsbo-paper/python-ml/src/Models/tpch/rebalanced/bvae-5.onnx
 bvae_10_path=/work/lsbo-paper/python-ml/src/Models/tpch/rebalanced/bvae-10.onnx
 
@@ -27,26 +27,12 @@ cost_path=/work/lsbo-paper/data/models/cost.onnx
 data_path=/work/lsbo-paper/data
 experience_path=/work/lsbo-paper/data/experience/
 
-for query in {801..900}; do
-    for i in {0..2}; do
+for query in {900..999}; do
         echo "Benchmarking Test data with native optimizer"
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/ $query
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ $data_path/benchmarks/generatables/ $query
 
         echo "Benchmarking Test data with bvae-b-1"
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/b1/ $query bvae $bvae_1_path $experience_path
-
-        echo "Benchmarking Test data with bvae-b-5"
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/b5/ $query bvae $bvae_5_path $experience_path
-
-        echo "Benchmarking Test data with bvae-b-10"
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/b10/ $query bvae $bvae_10_path $experience_path
-        #echo "Benchmarking Test data with Cost model"
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/ $query cost $cost_path $experience_path
-
-        #echo "Benchmarking Test data with retrained bvaes"
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/retrained/b1/ $query bvae $retrained_bvae_1_path $experience_path
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/retrained/b5/ $query bvae $retrained_bvae_5_path $experience_path
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,giraph file://$data_path/ $data_path/benchmarks/generatables/bvae/retrained/b10/ $query bvae $retrained_bvae_10_path $experience_path
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ $data_path/benchmarks/generatables/bvae/ $query bvae $bvae_1_path $experience_path
 
         # Lord forgive me - for Flink has sinned
         sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh

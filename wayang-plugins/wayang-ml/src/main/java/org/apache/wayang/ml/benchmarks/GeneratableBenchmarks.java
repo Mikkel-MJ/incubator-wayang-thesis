@@ -79,18 +79,29 @@ public class GeneratableBenchmarks {
             String modelType = "";
 
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
+            config.setProperty("spark.app.name", "JOB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
-            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("spark.executor.memory", "32g");
+            config.setProperty("spark.executor.cores", "4");
+            config.setProperty("spark.executor.instances", "1");
+            config.setProperty("spark.default.parallelism", "8");
+            config.setProperty("spark.driver.maxResultSize", "16g");
+            config.setProperty("spark.driver.memory", "32g");
+            config.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+            config.setProperty("spark.dynamicAllocation.enabled", "true");
             config.setProperty("wayang.flink.mode.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "8");
+            config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "7071");
-            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + args[3]);
-            config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("spark.driver.maxResultSize", "4G");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
+            config.setProperty("wayang.flink.collect.path", "file:///work/lsbo-paper/data/flink-data");
+            //config.setProperty("wayang.flink.collect.path", "file:///tmp/flink-data");
             config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty(
+                "wayang.core.optimizer.pruning.strategies",
+                "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
+            );
+            config.setProperty("wayang.core.optimizer.pruning.topk", "1000");
 
             if (args.length > 4) {
                 modelType = args[4];
@@ -140,9 +151,6 @@ public class GeneratableBenchmarks {
                 jars,
                 ReflectionUtils.getAllJars(DataQuanta.class)
             );
-
-            System.out.println("Jars:" + Arrays.toString(jars));
-
 
             /*
             FileWriter fw = new FileWriter(

@@ -358,10 +358,10 @@ public class OrtMLModel {
             long[][] platformChoices = PlatformChoiceValidator.validate(
                 resultTensor,
                 inputIndexStructure,
-                encoded/*,
+                encoded,
                 new BitmaskValidationRule(),
                 new OperatorValidationRule(),
-                new PostgresSourceValidationRule()*/
+                new PostgresSourceValidationRule()
             );
 
             System.out.println("Choices: " + Arrays.deepToString(platformChoices));
