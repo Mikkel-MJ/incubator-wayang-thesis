@@ -70,7 +70,10 @@ public class TreeEncoder implements Encoder {
             return null;
         }
 
-        return result.get(0);
+        TreeNode resultNode = result.get(0);
+        resultNode.rebalance();
+
+        return resultNode;
     }
 
     public static TreeNode encode(WayangPlan plan) {

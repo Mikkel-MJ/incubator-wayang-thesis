@@ -118,10 +118,11 @@ public class OrtMLModel {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input1
     ) throws OrtException {
         double costPrediction;
-
-        Map<String, NodeInfo> inputInfoList = this.session.getInputInfo();
-        long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
-        long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+        //long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
+        //long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+        //
+        long[] input1Dims = new long[]{1, input1.field0.get(0).length, input1.field0.get(0)[0].length};
+        long[] input2Dims = new long[]{1, input1.field1.get(0).length, input1.field1.get(0)[0].length};
 
         Instant start = Instant.now();
         float[][][] inputValueStructure = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
@@ -281,6 +282,8 @@ public class OrtMLModel {
         System.out.println("Feature dims: " + Arrays.toString(input1Dims));
         System.out.println("Index dims: " + Arrays.toString(input2Dims));
 
+        System.out.println("Tree size: " + encoded.size());
+
         int indexDims = encoded.size();
         long featureDims = input1Dims[1];
         Instant start = Instant.now();
@@ -316,8 +319,6 @@ public class OrtMLModel {
         for (int i = 0; i < input.field1.get(0).length; i++) {
             inputIndexStructure[0][i]  = input.field1.get(0)[i];
         }
-
-        System.out.println("Values: " + Arrays.deepToString(inputValueStructure));
 
         OnnxTensor tensorValues = OnnxTensor.createTensor(env, new float[][][]{inputValueStructure});
         OnnxTensor tensorIndexes = OnnxTensor.createTensor(env, inputIndexStructure);

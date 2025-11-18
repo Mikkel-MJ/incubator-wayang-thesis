@@ -137,11 +137,6 @@ public class MLContext extends WayangContext {
 
             WayangPlan platformPlan = resultTuple.field0;
 
-            /*Logging.writeToFile(
-                String.format("Optimization: %d", execTime),
-                this.getConfiguration().getStringProperty("wayang.ml.optimizations.file")
-            )*/;
-
             this.getConfiguration().setProperty(
                 "wayang.ml.experience.original",
                 wayangNode.toStringEncoding()
@@ -153,6 +148,25 @@ public class MLContext extends WayangContext {
             );
 
             this.execute(platformPlan, udfJars);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new WayangException("Executing WayangPlan with VAE model failed");
+        }
+    }
+
+    public ExecutionPlan buildWithVAE(WayangPlan wayangPlan, String ...udfJars) {
+        try {
+            Job job = this.createJob("", wayangPlan, udfJars);
+            job.estimateKeyFigures();
+            OneHotMappings.setOptimizationContext(job.getOptimizationContext());
+            OneHotMappings.encodeIds = true;
+
+            TreeNode wayangNode = TreeEncoder.encode(wayangPlan);
+            OrtMLModel model = OrtMLModel.getInstance(job.getConfiguration());
+            Tuple<WayangPlan, TreeNode> resultTuple = model.runVAE(wayangPlan, wayangNode);
+            WayangPlan platformPlan = resultTuple.field0;
+
+            return this.buildInitialExecutionPlan("", platformPlan, udfJars);
         } catch (Exception e) {
             e.printStackTrace();
             throw new WayangException("Executing WayangPlan with VAE model failed");

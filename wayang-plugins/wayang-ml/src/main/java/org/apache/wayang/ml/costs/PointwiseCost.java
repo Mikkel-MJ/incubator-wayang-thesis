@@ -130,8 +130,8 @@ public class PointwiseCost implements EstimatableCost {
                         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> tuple1 = OrtTensorEncoder.encode(encodedOne);
                         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> tuple2 = OrtTensorEncoder.encode(encodedTwo);
 
-                        final double leftCost = model.runModel(tuple1);
-                        final double rightCost = model.runModel(tuple2);
+                        final double leftCost = Math.exp(model.runModel(tuple1)) - 1;
+                        final double rightCost = Math.exp(model.runModel(tuple2)) - 1;
 
                         System.out.println("[ML] left cost: " + leftCost);
                         System.out.println("[ML] right cost: " + rightCost);

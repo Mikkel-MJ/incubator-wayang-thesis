@@ -122,10 +122,10 @@ public class LSBORunner {
         config.setProperty("spark.master", "spark://spark-cluster:7077");
         config.setProperty("spark.app.name", "JOB Query");
         config.setProperty("spark.rpc.message.maxSize", "2047");
-        config.setProperty("spark.executor.memory", "32g");
-        config.setProperty("spark.executor.cores", "6");
+        config.setProperty("spark.executor.memory", "42g");
+        config.setProperty("spark.executor.cores", "8");
         config.setProperty("spark.executor.instances", "1");
-        config.setProperty("spark.default.parallelism", "8");
+        config.setProperty("spark.default.parallelism", "2");
         config.setProperty("spark.driver.maxResultSize", "16g");
         config.setProperty("spark.dynamicAllocation.enabled", "true");
         config.setProperty("wayang.flink.mode.run", "distribution");
@@ -159,8 +159,8 @@ public class LSBORunner {
         WayangPlan plan = plans.get("query" + args[2]);*/
 
         try {
-            WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
-            //WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
+            //WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
+            WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
 
             //Set sink to be on Java
             /*

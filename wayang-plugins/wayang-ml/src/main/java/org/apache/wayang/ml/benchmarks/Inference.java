@@ -21,6 +21,7 @@ package org.apache.wayang.ml.benchmarks;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
+import org.apache.wayang.core.plan.executionplan.ExecutionPlan;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.basic.operators.JoinOperator;
@@ -38,6 +39,7 @@ import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
+import org.apache.wayang.ml.encoding.TreeEncoder;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
@@ -53,6 +55,8 @@ import org.apache.wayang.apps.tpch.queries.Query1Wayang;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.wayang.core.api.Job;
+import org.apache.wayang.ml.encoding.OneHotMappings;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -66,7 +70,7 @@ import java.util.Collection;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
-public class JOBenchmark {
+public class Inference {
 
     /**
      * 0: platforms
@@ -107,7 +111,7 @@ public class JOBenchmark {
                 "wayang.core.optimizer.pruning.strategies",
                 "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
             );
-            config.setProperty("wayang.core.optimizer.pruning.topk", "100");
+            config.setProperty("wayang.core.optimizer.pruning.topk", "1000");
 
             final String calciteModel = "{\n" +
                     "    \"version\": \"1.0\",\n" +
@@ -138,7 +142,7 @@ public class JOBenchmark {
             }
 
             if (args.length > 6) {
-                JOBenchmark.setMLModel(config, modelType, args[5], args[6]);
+                Inference.setMLModel(config, modelType, args[5], args[6]);
             }
 
             // Take the query name
@@ -181,37 +185,25 @@ public class JOBenchmark {
 
                 IMDBJOBenchmark.setSources(plan, args[1]);
 
-                //ExplainUtils.parsePlan(plan, true);
-
-                //Set sink to be on Java
-                //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
-                //
-                /*
-                FileWriter fw = new FileWriter(
-                    "/var/www/html/data/benchmarks/operators.txt",
-                    true
-                );
-                BufferedWriter writer = new BufferedWriter(fw);
-
-
-                System.out.println("Operators: " + operators.size());
-
-                writer.write(args[3] + ": " + operators.size());
-                writer.newLine();
-                writer.flush();
-                writer.close();&*/
-                wayangContext.setLogLevel(Level.DEBUG);
+                ExecutionPlan executionPlan;
 
                 if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
-                    System.out.println("Executing query " + args[3]);
-                    wayangContext.execute(plan, jars);
-                    System.out.println("Finished execution");
+                    executionPlan = wayangContext.buildInitialExecutionPlan("", plan, jars);
+
+                    Job job = wayangContext.createJob("", plan, jars);
+                    Configuration jobConfig = job.getConfiguration();
+                    job.estimateKeyFigures();
+                    OneHotMappings.setOptimizationContext(job.getOptimizationContext());
+                    OneHotMappings.encodeIds = false;
                 } else {
-                    System.out.println("Using vae cost model");
-                    System.out.println("Executing query " + args[3]);
-                    wayangContext.executeVAE(plan, jars);
-                    System.out.println("Finished execution");
+                    OneHotMappings.encodeIds = true;
+                    executionPlan = wayangContext.buildWithVAE(plan, jars);
+                    OneHotMappings.encodeIds = false;
                 }
+
+                ExplainUtils.parsePlan(executionPlan, true);
+                //System.out.println(TreeEncoder.encode(executionPlan, true).toStringEncoding());
+                System.out.println("DONE");
             } catch (SqlParseException sqlE) {
                 sqlE.printStackTrace();
             }
@@ -232,7 +224,6 @@ public class JOBenchmark {
                 config.setProperty("wayang.ml.experience.file", experiencePath + "experience-cost.txt");
 
                 config.setCostModel(new PointwiseCost());
-                System.out.println("Using cost ML Model");
 
                 break;
             case "pairwise":
@@ -240,22 +231,18 @@ public class JOBenchmark {
                 config.setProperty("wayang.ml.experience.file", experiencePath + "experience-pairwise.txt");
                 config.setCostModel(new PairwiseCost());
 
-                System.out.println("Using pairwise ML Model");
                 break;
             case "bvae":
                 config.setProperty("wayang.ml.experience.enabled", "true");
                 config.setProperty("wayang.ml.experience.file", experiencePath + "experience-bvae.txt");
 
-                System.out.println("Using bvae ML Model");
                 break;
             case "vae":
                 config.setProperty("wayang.ml.experience.enabled", "true");
                 config.setProperty("wayang.ml.experience.file", experiencePath + "experience-vae.txt");
 
-                System.out.println("Using vae ML Model");
                 break;
             default:
-                System.out.println("Using default cost Model");
                 break;
         }
 

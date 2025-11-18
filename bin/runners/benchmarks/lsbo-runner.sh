@@ -27,7 +27,7 @@ if [ ! -d venv ]; then
     ./venv/bin/python3.11 -m pip install -r requirements.txt
 fi
 
-#queries=(901 950 999)
+queries=(64 61 60)
 
 bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-test.onnx
 bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-5.onnx
@@ -42,9 +42,10 @@ test_path=/work/lsbo-paper/data/JOBenchmark/queries/light
 #for query in {949..999}; do
 #for query in "$test_path"/*.sql; do
 #for query in $(ls -1 "$train_path"/*.sql | tail -n 50); do
-for ((query=900; query<=999; query+=4)); do
+#for ((query=900; query<=999; query+=4)); do
+for query in ${queries[@]}; do
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/imdb/BVAE-TEST.json" --stats="./src/Data/splits/tpch/bvae/stats.txt" --trainset="./src/Data/splits/tpch/bvae/retrain.txt" --zdim 128 --steps 2000 --improvement 60
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query="$test_path/$query.sql" --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/imdb/BVAE-TEST.json" --stats="./src/Data/splits/imdb/training/stats-1.txt" --trainset="./src/Data/splits/imdb/training/retrain-1.txt" --zdim 128 --steps 1000 --improvement 60
     #./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_5_path --stats="./src/Data/splits/imdb/training/stats-test.txt" --trainset="./src/Data/splits/imdb/training/retrain-1.txt" --zdim 124 --steps 4000 --improvement 90
     #./venv/bin/python3.11 ./src/init_lsbo.py --model bvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_10_path --stats="./src/Data/splits/imdb/training/stats-test.txt" --trainset="./src/Data/splits/imdb/training/retrain-1.txt" --zdim 124 --steps 4000 --improvement 90
 
