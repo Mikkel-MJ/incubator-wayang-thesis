@@ -27,7 +27,7 @@ if [ ! -d venv ]; then
     ./venv/bin/python3.11 -m pip install -r requirements.txt
 fi
 
-queries=(64 61 60)
+queries=(26 27 34 36 43 44 45 47 48 49 55 65 68 69)
 
 bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-test.onnx
 bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-5.onnx

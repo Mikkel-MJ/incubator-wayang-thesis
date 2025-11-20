@@ -112,8 +112,6 @@ public class PointwiseCost implements EstimatableCost {
             Set<ExecutionStage> executedStages) {
 
         final PlanImplementation bestPlanImplementation = executionPlans.stream()
-                //.filter(plan -> plan.getOperators().stream().filter(Operator::isSink).count() > 0 && plan.getOperators().stream().filter(Operator::isSource).count() > 0)
-                .sorted((p1, p2) -> p1.toString().compareTo(p2.toString()))
                 .reduce((p1, p2) -> {
                     try {
                         Configuration config = p1
