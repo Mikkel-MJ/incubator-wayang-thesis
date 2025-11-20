@@ -20,6 +20,7 @@ test_path=/work/lsbo-paper/data/JOBenchmark/queries/light
 model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
 bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-d.onnx
+cost_path=/work/lsbo-paper/python-ml/src/Models/imdb/pointwise.onnx
 retrained_bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-d.onnx
 retrained_bvae_2_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-2.onnx
 retrained_bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-5.onnx
@@ -28,18 +29,21 @@ echo "Running JOBenchmark"
 
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
     for query in "$test_path"/*.sql; do
+        for i in {0..4}; do
     #for query in $(ls "$test_path"/*.sql | tail -n +14); do
     #for query_name in "${selected_queries[@]}"; do
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/ $query bvae $bvae_1_path $data_path/experience/
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/ $query bvae $retrained_bvae_1_path $data_path/experience/
-        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/2/ $query bvae $retrained_bvae_2_path $data_path/experience/
-        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/5/ $query bvae $retrained_bvae_5_path $data_path/experience/
+            #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
+            #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/ $query bvae $bvae_1_path $data_path/experience/
+            #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/ $query bvae $retrained_bvae_1_path $data_path/experience/
+            ./bin/wayang-submit -Xmx33g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $data_path/experience/cost/
+            #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/2/ $query bvae $retrained_bvae_2_path $data_path/experience/
+            #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/5/ $query bvae $retrained_bvae_5_path $data_path/experience/
 
 
-        # Lord forgive me - for Flink has sinned
-        sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
-        sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
-        sleep 1s
+            # Lord forgive me - for Flink has sinned
+            sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
+            sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
+            sleep 1s
+        done
     done
 

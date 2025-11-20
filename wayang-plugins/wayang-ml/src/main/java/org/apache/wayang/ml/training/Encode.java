@@ -217,7 +217,7 @@ public class Encode {
         for (PlanImplementation planImplementation : planImplementations) {
             try {
                 TreeNode planImplNode = TreeEncoder.encode(planImplementation).withIdsFrom(wayangNode);
-                writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), planImplNode.toStringEncoding(), planImplementation.getTimeEstimate().getUpperEstimate()));
+                writer.write(String.format("%s:%s:%.0f", wayangNode.toStringEncoding(), planImplNode.toStringEncoding(), planImplementation.getSquashedCostEstimate()));
                 writer.newLine();
                 writer.flush();
             } catch(Exception e) {

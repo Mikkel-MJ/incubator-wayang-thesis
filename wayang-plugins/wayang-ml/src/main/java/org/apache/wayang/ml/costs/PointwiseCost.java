@@ -35,6 +35,7 @@ import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.plan.executionplan.Channel;
 import org.apache.wayang.core.optimizer.enumeration.StageAssignmentTraversal;
+import org.apache.wayang.core.optimizer.costs.DefaultEstimatableCost;
 import org.apache.wayang.ml.OrtMLModel;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.ml.encoding.TreeEncoder;
@@ -54,19 +55,7 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class PointwiseCost implements EstimatableCost {
-
-    /**
-     * <i>Currently not used.</i>
-     */
-    protected final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
-            (producerTask, channel, consumerTask) -> false;
-
-    private ExecutorService executor = Executors.newFixedThreadPool(1);
-
-    public EstimatableCostFactory getFactory() {
-        return new Factory();
-    }
+public class PointwiseCost extends DefaultEstimatableCost {
 
     public static class Factory implements EstimatableCostFactory {
         @Override public EstimatableCost makeCost() {
@@ -74,37 +63,7 @@ public class PointwiseCost implements EstimatableCost {
         }
     }
 
-    @Override public ProbabilisticDoubleInterval getEstimate(PlanImplementation plan, boolean isOverheadIncluded) {
-        return ProbabilisticDoubleInterval.zero;
-    }
-
-    @Override public ProbabilisticDoubleInterval getParallelEstimate(PlanImplementation plan, boolean isOverheadIncluded) {
-        return ProbabilisticDoubleInterval.zero;
-    }
-
-    /** Returns a squashed cost estimate. */
-    @Override public double getSquashedEstimate(PlanImplementation plan, boolean isOverheadIncluded) {
-        return 0;
-    }
-
-    @Override public double getSquashedParallelEstimate(PlanImplementation plan, boolean isOverheadIncluded) {
-        return 0;
-    }
-
-    private ExecutionPlan createExecutionPlan(PlanImplementation plan) {
-        ExecutionTaskFlow etfOne = ExecutionTaskFlow.createFrom(plan);
-        return ExecutionPlan.createFrom(etfOne, this.stageSplittingCriterion);
-    }
-
-    @Override public Tuple<List<ProbabilisticDoubleInterval>, List<Double>> getParallelOperatorJunctionAllCostEstimate(PlanImplementation plan, Operator operator) {
-        List<ProbabilisticDoubleInterval> intervalList = new ArrayList<ProbabilisticDoubleInterval>();
-        List<Double> doubleList = new ArrayList<Double>();
-        intervalList.add(this.getEstimate(plan, true));
-        doubleList.add(this.getSquashedEstimate(plan, true));
-
-        return new Tuple<>(intervalList, doubleList);
-    }
-
+    @Override
     public PlanImplementation pickBestExecutionPlan(
             Collection<PlanImplementation> executionPlans,
             ExecutionPlan existingPlan,
@@ -119,8 +78,10 @@ public class PointwiseCost implements EstimatableCost {
                             .getConfiguration();
                         OrtMLModel model = OrtMLModel.getInstance(config);
 
+                        /*
                         System.out.println(p1.getUtilizedPlatforms());
                         System.out.println(p2.getUtilizedPlatforms());
+                        */
 
                         TreeNode encodedOne = TreeEncoder.encode(p1);
                         TreeNode encodedTwo = TreeEncoder.encode(p2);
@@ -131,8 +92,10 @@ public class PointwiseCost implements EstimatableCost {
                         final double leftCost = Math.exp(model.runModel(tuple1)) - 1;
                         final double rightCost = Math.exp(model.runModel(tuple2)) - 1;
 
+                        /*
                         System.out.println("[ML] left cost: " + leftCost);
                         System.out.println("[ML] right cost: " + rightCost);
+                        */
 
                         return leftCost < rightCost ? p1 : p2;
                     } catch(Exception e) {

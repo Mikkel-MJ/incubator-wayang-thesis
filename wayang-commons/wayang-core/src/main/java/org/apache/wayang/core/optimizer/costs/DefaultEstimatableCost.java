@@ -67,6 +67,8 @@ public class DefaultEstimatableCost implements EstimatableCost {
     ) {
         final PlanImplementation bestPlanImplementation = executionPlans.stream()
                 .reduce((p1, p2) -> {
+                    System.out.println(p1.getUtilizedPlatforms());
+                    System.out.println(p2.getUtilizedPlatforms());
                     final double t1 = p1.getSquashedCostEstimate();
                     final double t2 = p2.getSquashedCostEstimate();
                     return t1 < t2 ? p1 : p2;
