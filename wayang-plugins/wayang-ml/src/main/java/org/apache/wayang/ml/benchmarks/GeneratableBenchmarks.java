@@ -81,14 +81,15 @@ public class GeneratableBenchmarks {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "JOB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
-            config.setProperty("spark.executor.memory", "32g");
-            config.setProperty("spark.executor.cores", "4");
-            config.setProperty("spark.executor.instances", "1");
+            config.setProperty("spark.executor.memory", "42g");
+            config.setProperty("spark.driver.memory", "32g");
+            config.setProperty("spark.executor.cores", "8");
+            config.setProperty("spark.executor.instances", "2");
             config.setProperty("spark.default.parallelism", "8");
             config.setProperty("spark.driver.maxResultSize", "16g");
-            config.setProperty("spark.driver.memory", "32g");
-            config.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+            config.setProperty("spark.shuffle.service.enabled", "true");
             config.setProperty("spark.dynamicAllocation.enabled", "true");
+            config.setProperty("spark.dynamicAllocation.minExecutors", "2");
             config.setProperty("wayang.flink.mode.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
@@ -101,7 +102,7 @@ public class GeneratableBenchmarks {
                 "wayang.core.optimizer.pruning.strategies",
                 "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
             );
-            config.setProperty("wayang.core.optimizer.pruning.topk", "1000");
+            config.setProperty("wayang.core.optimizer.pruning.topk", "100");
 
             if (args.length > 4) {
                 modelType = args[4];
