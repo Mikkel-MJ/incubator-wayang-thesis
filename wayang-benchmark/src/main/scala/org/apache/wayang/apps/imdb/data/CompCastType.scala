@@ -23,6 +23,7 @@ import org.apache.commons.csv._
 import java.io.StringReader;
 import scala.util.matching.Regex
 import scala.collection.JavaConverters._
+import scala.collection.mutable.Buffer
 
 /**
   * Represents elements from the IMDB `comp_cast_type` table.

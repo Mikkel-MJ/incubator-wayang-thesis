@@ -29,13 +29,13 @@ echo "Running JOBenchmark"
 
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
     for query in "$test_path"/*.sql; do
-        for i in {0..4}; do
+        for i in {0..2}; do
     #for query in $(ls "$test_path"/*.sql | tail -n +14); do
     #for query_name in "${selected_queries[@]}"; do
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/ $query
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/ $query bvae $bvae_1_path $data_path/experience/
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/ $query bvae $retrained_bvae_1_path $data_path/experience/
-            ./bin/wayang-submit -Xmx33g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $data_path/experience/cost/
+            ./bin/wayang-submit -Xmx33g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
             #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/2/ $query bvae $retrained_bvae_2_path $data_path/experience/
             #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/5/ $query bvae $retrained_bvae_5_path $data_path/experience/
 

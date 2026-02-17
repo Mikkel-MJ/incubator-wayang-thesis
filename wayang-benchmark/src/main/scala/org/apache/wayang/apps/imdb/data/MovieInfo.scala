@@ -22,16 +22,17 @@ import org.apache.commons.csv._
 import java.io.StringReader;
 import scala.util.matching.Regex
 import scala.collection.JavaConverters._
+import scala.collection.mutable.Buffer
 
 /**
   * Represents elements from the IMDB `movie_info` table.
   */
 case class MovieInfo(
-    id: Integer,
-    movieId: Integer,
-    infoTypeId: Integer,
-    info: String,
-    note: String
+    val id: Integer,
+    val movieId: Integer,
+    val infoTypeId: Integer,
+    val info: String,
+    val note: String
 ) extends Serializable
 
 object MovieInfo extends Serializable {

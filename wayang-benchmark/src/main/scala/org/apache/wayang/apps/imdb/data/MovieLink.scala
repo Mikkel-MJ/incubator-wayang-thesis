@@ -4,6 +4,7 @@ import java.util.Optional;
 import org.apache.commons.csv._
 import java.io.StringReader;
 import scala.collection.JavaConverters._
+import scala.collection.mutable.Buffer
 
 /**
   * Represents elements from the IMDB `movie_link` table.

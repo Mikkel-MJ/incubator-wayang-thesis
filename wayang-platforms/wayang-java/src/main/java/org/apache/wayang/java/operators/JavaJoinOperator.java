@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -148,7 +149,12 @@ public class JavaJoinOperator<InputType0, InputType1, KeyType>
             probingExecutionLineageNode.addPredecessor(inputs[0].getLineage());
         }
 
-        ((StreamChannel.Instance) outputs[0]).accept(joinStream);
+        List<Tuple2<InputType0, InputType1>> intermediate = joinStream.collect(Collectors.toList());
+
+        System.out.println("[JOIN] Intermediate: " + intermediate.size());
+
+        //((StreamChannel.Instance) outputs[0]).accept(joinStream);
+        ((StreamChannel.Instance) outputs[0]).accept(intermediate.stream());
         outputs[0].getLineage().addPredecessor(probingExecutionLineageNode);
 
         return new Tuple<>(executionLineageNodes, producedChannelInstances);
