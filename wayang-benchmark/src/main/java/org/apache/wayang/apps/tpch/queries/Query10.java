@@ -133,6 +133,7 @@ public class Query10 {
             Integer.class
         );
 
+
         customerParser.connectTo(0, coJoin, 0);
         orderParser.connectTo(0, coJoin, 1);
 

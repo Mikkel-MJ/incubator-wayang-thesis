@@ -75,7 +75,7 @@ import java.util.List;
  *   AND ml.movie_id = mi.movie_id
  *   AND mc.movie_id = mi.movie_id
  *   AND cn.name_pcode_nf = cn.name_pcode_sf
- *   ANe mi.movie_id = t.id
+ *   AND mi.movie_id = t.id
  *   AND ml.movie_id = mc.movie_id
  *   AND mk.movie_id = mi.movie_id;
  */
@@ -134,6 +134,8 @@ public class Query1 {
             MovieKeyword.class
         );
 
+        MapOperator<String, MovieKeyword> mkParserTwo = new MapOperator<String, MovieKeyword>(mkParser);
+
         MapOperator<String, MovieLink> mlParser = new MapOperator<String, MovieLink>(
             (line) -> MovieLink.parseCsv(line),
             String.class,
@@ -156,6 +158,8 @@ public class Query1 {
             CompanyName.class
         );
 
+        FilterOperator<CompanyName> cnFilterThree = new FilterOperator<CompanyName>(cnFilterTwo);
+
         FilterOperator<CompanyType> ctFilter = new FilterOperator<CompanyType>(
             (ct) -> ct.kind().equals("production companies"),
             CompanyType.class
@@ -176,15 +180,23 @@ public class Query1 {
             MovieCompanies.class
         );
 
+        FilterOperator<MovieCompanies> mcFilterTwo = new FilterOperator<MovieCompanies>(mcFilter);
+        FilterOperator<MovieCompanies> mcFilterThree = new FilterOperator<MovieCompanies>(mcFilter);
+
         FilterOperator<MovieInfo> miFilter = new FilterOperator<MovieInfo>(
             (mi) -> Arrays.asList(new String[] {"Sweden", "Norway", "Germany", "Denmark"}).contains(mi.info()),
             MovieInfo.class
         );
 
+        FilterOperator<MovieInfo> miFilterTwo = new FilterOperator<MovieInfo>(miFilter);
+        FilterOperator<MovieInfo> miFilterThree = new FilterOperator<MovieInfo>(miFilter);
+
         FilterOperator<Title> tFilter = new FilterOperator<Title>(
             (t) -> t.productionYear() >= 1950 && t.productionYear() <= 2000,
             Title.class
         );
+
+        FilterOperator<Title> tFilterTwo = new FilterOperator<Title>(tFilter);
 
         JoinOperator<LinkType, MovieLink, Integer> ltMlJoin = new JoinOperator<LinkType, MovieLink, Integer>(
             (lt) -> lt.id(),
@@ -341,7 +353,75 @@ public class Query1 {
                 DataSetType.createDefaultUnchecked(LtMlTMkKMcCtCnMkMcMiMiCnTMcMi.class)
         );
 
-        //TODO: Connect all the operators
+        //Connect all the operators
+        companyNameText.connectTo(0, cnParser, 0);
+        companyTypeText.connectTo(0, ctParser, 0);
+        keywordText.connectTo(0, kParser, 0);
+        linkTypeText.connectTo(0, ltParser, 0);
+        movieCompaniesText.connectTo(0, mcParser, 0);
+        movieInfoText.connectTo(0, miParser, 0);
+        movieKeywordText.connectTo(0, mkParser, 0);
+        movieLinkText.connectTo(0, mlParser, 0);
+        titleText.connectTo(0, tParser, 0);
+
+        cnParser.connectTo(0, cnFilter, 0);
+        cnFilter.connectTo(0, cnFilterTwo, 0);
+        kParser.connectTo(0, kFilter, 0);
+        ltParser.connectTo(0, ltFilter, 0);
+        mcParser.connectTo(0, mcFilter, 0);
+        tParser.connectTo(0, tFilter, 0);
+        miParser.connectTo(0, miFilter, 0);
+
+        ltFilter.connectTo(0, ltMlJoin, 0);
+        mlParser.connectTo(0, ltMlJoin, 1);
+
+        ltMlJoin.connectTo(0, ltMlTJoin, 0);
+        tFilter.connectTo(0, ltMlTJoin, 1);
+
+        ltMlTJoin.connectTo(0, ltMlTMkJoin, 0);
+        mkParser.connectTo(0, ltMlTMkJoin, 1);
+
+        ltMlTMkJoin.connectTo(0, ltMlTMkKJoin, 0);
+        kFilter.connectTo(0, ltMlTMkKJoin, 1);
+
+        ltMlTMkKJoin.connectTo(0, ltMlTMkKMcJoin, 0);
+        mcFilter.connectTo(0, ltMlTMkKMcJoin, 1);
+
+        ltMlTMkKMcJoin.connectTo(0, ltMlTMkKMcCtJoin, 0);
+        ctFilter.connectTo(0, ltMlTMkKMcCtJoin, 1);
+
+        ltMlTMkKMcCtJoin.connectTo(0, ltMlTMkKMcCtCnJoin, 0);
+        cnFilterTwo.connectTo(0, ltMlTMkKMcCtCnJoin, 1);
+
+        ltMlTMkKMcCtCnJoin.connectTo(0, ltMlTMkKMcCtCnMkJoin, 0);
+        mkParserTwo.connectTo(0, ltMlTMkKMcCtCnMkJoin, 1);
+
+        ltMlTMkKMcCtCnMkJoin.connectTo(0, ltMlTMkKMcCtCnMkMcJoin, 0);
+        mcFilterTwo.connectTo(0, ltMlTMkKMcCtCnMkMcJoin, 1);
+
+        ltMlTMkKMcCtCnMkMcJoin.connectTo(0, ltMlTMkKMcCtCnMkMcMiJoin, 0);
+        miFilter.connectTo(0, ltMlTMkKMcCtCnMkMcMiJoin, 1);
+
+        ltMlTMkKMcCtCnMkMcMiJoin.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiJoin, 0);
+        miFilterTwo.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiJoin, 1);
+
+        ltMlTMkKMcCtCnMkMcMiMiJoin.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnJoin, 0);
+        cnFilterThree.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnJoin, 1);
+
+        ltMlTMkKMcCtCnMkMcMiMiCnJoin.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnTJoin, 0);
+        tFilterTwo.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnTJoin, 1);
+
+        ltMlTMkKMcCtCnMkMcMiMiCnTJoin.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnTMcJoin, 0);
+        mcFilterThree.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnTMcJoin, 1);
+
+        ltMlTMkKMcCtCnMkMcMiMiCnTMcJoin.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnTMcMiJoin, 0);
+        miFilterThree.connectTo(0, ltMlTMkKMcCtCnMkMcMiMiCnTMcMiJoin, 1);
+
+        ltMlTMkKMcCtCnMkMcMiMiCnTMcMiJoin.connectTo(0, cnMin, 0);
+        cnMin.connectTo(0, ltMin, 0);
+        ltMin.connectTo(0, tMin , 0);
+        tMin.connectTo(0, sink, 0);
+
 
         return new WayangPlan(sink);
     }
