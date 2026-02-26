@@ -107,16 +107,8 @@ public class IMDBJOBenchmark {
 
             configuration.setProperty("wayang.ml.experience.enabled", "false");
 
-            final SqlContext sqlContext = new SqlContext(configuration, Spark.basicPlugin(), Postgres.plugin(),
-                    Java.basicPlugin(), Flink.basicPlugin());
-            // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
-            // Flink.basicPlugin(), Flink.conversionPlugin(),
-            // Java.channelConversionPlugin());
-            // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
-            // Spark.basicPlugin(), Spark.conversionPlugin(), Flink.conversionPlugin(),
-            // Java.channelConversionPlugin());
-            // SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
-            // Java.channelConversionPlugin());
+            final SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
+                    Java.channelConversionPlugin(), Java.testSuitePlugin());
 
             final Path pathToQuery = Paths.get(args[0]);
             final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off

@@ -73,7 +73,7 @@ public class ProjectionDescriptor<Input, Output> extends TransformationDescripto
      * @param inputType          input {@link BasicDataUnitType}
      * @param outputType         output {@link BasicDataUnitType}
      */
-    private ProjectionDescriptor(SerializableFunction<Input, Output> javaImplementation,
+    public ProjectionDescriptor(SerializableFunction<Input, Output> javaImplementation,
                                  List<String> fieldNames,
                                  BasicDataUnitType<Input> inputType,
                                  BasicDataUnitType<Output> outputType) {
@@ -81,7 +81,7 @@ public class ProjectionDescriptor<Input, Output> extends TransformationDescripto
         this.fieldNames = fieldNames;
     }
 
-        /**
+    /**
      * Basic constructor.
      *
      * @param javaImplementation Java-based implementation of the projection

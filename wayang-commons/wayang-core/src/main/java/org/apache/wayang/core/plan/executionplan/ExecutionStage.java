@@ -531,6 +531,20 @@ public class ExecutionStage {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * Retrieves the preceding {@link ExecutionTask} of the given {@code task}, in
+     * this stage.
+     * 
+     * @param task ExecutionTask whose preceeding task you want to find.
+     */
+    public List<ExecutionTask> getPreceedingTasks(final ExecutionTask task) {
+        assert task.getStage() == this;
+        return Arrays.stream(task.getInputChannels())
+                .map(Channel::getProducer)
+                .filter(consumer -> consumer.getStage() == this)
+                .collect(Collectors.toList());
+    }
+
     public void retainSuccessors(Set<ExecutionStage> retainableStages) {
         for (Iterator<ExecutionStage> i = this.successors.iterator(); i.hasNext();) {
             final ExecutionStage successor = i.next();

@@ -22,7 +22,6 @@ import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.core.function.FunctionDescriptor;
 
-import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
 
 /**

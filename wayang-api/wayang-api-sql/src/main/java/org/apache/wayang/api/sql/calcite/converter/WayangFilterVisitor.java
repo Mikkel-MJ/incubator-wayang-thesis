@@ -18,20 +18,12 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.wayang.api.sql.calcite.converter.filterhelpers.ColumnIndexExtractor;
+
 import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FilterPredicateImpl;
-import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FunctionExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
-import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.core.function.PredicateDescriptor;
@@ -39,9 +31,6 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 
 import java.io.Serializable;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> implements Serializable {
     WayangFilterVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
@@ -50,56 +39,16 @@ public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> impl
 
     @Override
     Operator visit(final WayangFilter wayangRelNode) {
-        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
-        final SqlImplementor.Context relContext = decompiler.visitInput(wayangRelNode, 0).qualifiedContext();
-        final String sqlCondition = relContext.toSql(null, wayangRelNode.getCondition())
-                .toSqlString(AnsiSqlDialect.DEFAULT)
-                .getSql()
-                .replace("`", "");
-
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
-        final RexNode condition = ((Filter) wayangRelNode).getCondition();
+        final RexNode condition = wayangRelNode.getCondition();
 
-        final List<Integer> affectedColumnIndexes = condition.accept(new ColumnIndexExtractor(true));
-
-        final List<RelDataTypeField> affectedColumns = affectedColumnIndexes.stream()
-                .map(index -> wayangRelNode.getRowType().getFieldList().get(index))
-                .collect(Collectors.toList());
-
-        final Map<RelDataTypeField, String> columnToTableOrigin = CalciteSources
-                .createColumnToTableOriginMap(wayangRelNode);
-
-        final List<String> catalog = CalciteSources.getSqlColumnNames(wayangRelNode);
-
-        final String[] tableSpecifiedColumns = affectedColumns.stream() // get affected filter columns
-                .map(col -> {
-                    final String dirtyName = columnToTableOrigin.get(col) + "." + col.getName();
-                    final String cleanedName = CalciteSources.findSqlName(dirtyName, catalog);
-                    final String aliasedName = aliasFinder.columnIndexToTableName
-                            .get(col.getIndex()) + "."
-                            + cleanedName.split("\\.")[1];
-                    return aliasedName;
-                }) // map to table.col name
-                .toArray(String[]::new);
-
-        // System.out.println("table speced cols: " +
-        // Arrays.toString(tableSpecifiedColumns) + " for node: " + wayangRelNode);
-
-        final PredicateDescriptor<Record> pd = new PredicateDescriptor<>(new FilterPredicateImpl(condition),
+        final FilterPredicateImpl javaImpl = new FilterPredicateImpl(condition);
+        final PredicateDescriptor<Record> pd = new PredicateDescriptor<>(javaImpl,
                 Record.class);
 
-
-        final String extractedFilterFunctions = condition
-                .accept(new FunctionExtractor(true, affectedColumnIndexes, tableSpecifiedColumns));
-
-
-        // TODO: migrate over to something like this, however in the current version of
-        // Calcite it is broken.
-        // pd.withSqlImplementation(aliasFinder.context.toSql(null,condition).toString().replace("`",
-        // ""));
-
-        pd.withSqlImplementation(sqlCondition);
         final FilterOperator<Record> filter = new FilterOperator<>(pd);
+        pd.createSqlString = javaImpl::createSqlString;
+        pd.fieldNames = wayangRelNode.getRowType().getFieldNames();
 
         childOp.connectTo(0, filter, 0);
 

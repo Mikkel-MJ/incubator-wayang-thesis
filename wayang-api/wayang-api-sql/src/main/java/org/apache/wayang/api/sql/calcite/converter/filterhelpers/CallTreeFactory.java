@@ -24,13 +24,13 @@ import com.google.common.collect.ImmutableRangeSet;
 interface CallTreeFactory extends Serializable {
     public default Node fromRexNode(final RexNode node) {
         if (node instanceof RexCall) {
-            RexCall call = (RexCall) node;
+            final RexCall call = (RexCall) node;
             return new Call(call, this);
         } else if (node instanceof RexInputRef) {
-            RexInputRef inputRef = (RexInputRef) node;
+            final RexInputRef inputRef = (RexInputRef) node;
             return new InputRef(inputRef);
         } else if (node instanceof RexLiteral) {
-            RexLiteral literal = (RexLiteral) node;
+            final RexLiteral literal = (RexLiteral) node;
             return new Literal(literal);
         } else {
             throw new UnsupportedOperationException("Unsupported RexNode in filter condition: " + node);
@@ -50,15 +50,26 @@ interface CallTreeFactory extends Serializable {
 
 interface Node extends Serializable {
     public Object evaluate(final Record rec);
+
+    public String createSqlString(final List<String> fieldNames);
 }
 
 class Call implements Node {
     private final List<Node> operands;
+    final List<SqlKind> operandTypes;
     final SerializableFunction<List<Object>, Object> operation;
+    final SqlKind kind;
 
     protected Call(final RexCall call, final CallTreeFactory tree) {
         operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
-        operation = tree.deriveOperation(call.getKind());
+        operandTypes = call.getOperands().stream().map(op -> op.getKind()).collect(Collectors.toList());
+        kind = call.getKind();
+        System.out.println("call: " + kind);
+        System.out.println("operandTypes: " + operandTypes
+        );
+
+        System.out.println(call.getOperands().stream().map(op -> op.getType().getSqlTypeName().getName()).collect(Collectors.toList()));
+        operation = tree.deriveOperation(kind);
     }
 
     @Override
@@ -67,6 +78,17 @@ class Call implements Node {
                 operands.stream()
                         .map(op -> op.evaluate(rec))
                         .collect(Collectors.toList()));
+    }
+
+    @Override
+    public String createSqlString(final List<String> fieldNames) {
+        if (operands.size() == 1) {
+            return kind.sql + "(" + operands.get(0).createSqlString(fieldNames) + ")";
+        } else if (operands.size() == 2) {
+            return operands.get(0).createSqlString(fieldNames) + " " + kind.sql + " "
+                    + operands.get(1).createSqlString(fieldNames);
+        }
+        return kind.sql;
     }
 }
 
@@ -99,11 +121,17 @@ class Literal implements Node {
                 throw new UnsupportedOperationException(
                         "Literal conversion to Java not implemented, type: " + literal.getTypeName());
         }
+
     }
 
     @Override
     public Object evaluate(final Record rec) {
         return value;
+    }
+
+    @Override
+    public String createSqlString(final List<String> fieldNames) {
+        return value instanceof String ? "\'" + ((String) value) + "\'" : value.toString();
     }
 }
 
@@ -118,5 +146,9 @@ class InputRef implements Node {
     public Object evaluate(final Record rec) {
         return rec.getField(key);
     }
-}
 
+    @Override
+    public String createSqlString(final List<String> fieldNames) {
+        return fieldNames.get(key);
+    }
+}

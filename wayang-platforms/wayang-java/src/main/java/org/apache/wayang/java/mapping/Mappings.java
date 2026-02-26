@@ -56,11 +56,17 @@ public class Mappings {
             new DoWhileMapping(),
             new RepeatMapping(),
             new SampleMapping(),
-            new ZipWithIdMapping()
-    );
+            new ZipWithIdMapping());
+
+    public static Collection<Mapping> SOURCE_AND_SINK_MAPPINGS = Arrays.asList(
+            new TextFileSourceMapping(),
+            new TextFileSinkMapping(),
+            new ObjectFileSourceMapping(),
+            new ObjectFileSinkMapping(),
+            new CollectionSourceMapping(),
+            new LocalCallbackSinkMapping());
 
     public static Collection<Mapping> GRAPH_MAPPINGS = Arrays.asList(
-            new PageRankMapping()
-    );
+            new PageRankMapping());
 
 }

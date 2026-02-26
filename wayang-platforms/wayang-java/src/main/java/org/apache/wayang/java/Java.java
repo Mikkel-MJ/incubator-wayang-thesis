@@ -22,11 +22,14 @@ import org.apache.wayang.java.platform.JavaPlatform;
 import org.apache.wayang.java.plugin.JavaBasicPlugin;
 import org.apache.wayang.java.plugin.JavaChannelConversionPlugin;
 import org.apache.wayang.java.plugin.JavaGraphPlugin;
+import org.apache.wayang.java.plugin.JavaTestSuitePlugin;
 
 /**
  * Register for relevant components of this module.
  */
 public class Java {
+
+    private final static JavaTestSuitePlugin TEST_SUITE_PLUGIN = new JavaTestSuitePlugin();
 
     private final static JavaBasicPlugin PLUGIN = new JavaBasicPlugin();
 
@@ -50,6 +53,15 @@ public class Java {
      */
     public static JavaGraphPlugin graphPlugin() {
         return GRAPH_PLUGIN;
+    }
+
+    /**
+     * Retrieve the {@link JavaGraphPlugin}.
+     *
+     * @return the {@link JavaGraphPlugin}
+     */
+    public static JavaTestSuitePlugin testSuitePlugin() {
+        return TEST_SUITE_PLUGIN;
     }
 
     /**

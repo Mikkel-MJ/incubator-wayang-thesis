@@ -165,5 +165,9 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         //System.out.println("[FilterPred.rec]: " + rec);
         return (boolean) callTree.evaluate(rec);
     }
+
+    public String createSqlString(final List<String> fieldNames) {
+        return callTree.createSqlString(fieldNames);
+    }
 }
 

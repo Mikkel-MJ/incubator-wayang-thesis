@@ -22,6 +22,7 @@ import org.apache.wayang.core.optimizer.ProbabilisticDoubleInterval;
 import org.apache.wayang.core.optimizer.costs.LoadProfileEstimator;
 import org.apache.wayang.core.types.BasicDataUnitType;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -106,6 +107,9 @@ public class PredicateDescriptor<Input> extends FunctionDescriptor {
         this.sqlImplementation = sqlImplementation;
         return this;
     }
+
+    public List<String> fieldNames;
+    public SerializableFunction<List<String>, String> createSqlString;
 
     /**
      * In generic code, we do not have the type parameter values of operators, functions etc. This method avoids casting issues.
