@@ -1,9 +1,10 @@
-package org.apache.wayang.api.sql.calcite.converter.filterhelpers;
+package org.apache.wayang.api.sql.calcite.converter.calltrees;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.rex.RexCall;
@@ -11,17 +12,20 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.Sarg;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 
 import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Range;
 
 /**
  * AST of the {@link RexCall} arithmetic, composed into serializable nodes;
  * {@link Call}, {@link InputRef}, {@link Literal}
  */
-interface CallTreeFactory extends Serializable {
+public interface CallTreeFactory extends Serializable {
     public default Node fromRexNode(final RexNode node) {
         if (node instanceof RexCall) {
             final RexCall call = (RexCall) node;
@@ -48,12 +52,6 @@ interface CallTreeFactory extends Serializable {
     public SerializableFunction<List<Object>, Object> deriveOperation(SqlKind kind);
 }
 
-interface Node extends Serializable {
-    public Object evaluate(final Record rec);
-
-    public String createSqlString(final List<String> fieldNames);
-}
-
 class Call implements Node {
     private final List<Node> operands;
     final List<SqlKind> operandTypes;
@@ -62,13 +60,9 @@ class Call implements Node {
 
     protected Call(final RexCall call, final CallTreeFactory tree) {
         operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
-        operandTypes = call.getOperands().stream().map(op -> op.getKind()).collect(Collectors.toList());
+        operandTypes = call.getOperands().stream().map(RexNode::getKind).collect(Collectors.toList());
         kind = call.getKind();
-        System.out.println("call: " + kind);
-        System.out.println("operandTypes: " + operandTypes
-        );
 
-        System.out.println(call.getOperands().stream().map(op -> op.getType().getSqlTypeName().getName()).collect(Collectors.toList()));
         operation = tree.deriveOperation(kind);
     }
 
@@ -83,12 +77,50 @@ class Call implements Node {
     @Override
     public String createSqlString(final List<String> fieldNames) {
         if (operands.size() == 1) {
-            return kind.sql + "(" + operands.get(0).createSqlString(fieldNames) + ")";
+            if (kind == SqlKind.IS_NULL) {
+                return operands.get(0).createSqlString(fieldNames) + " IS NULL";
+            } else {
+                return kind.sql + "(" + operands.get(0).createSqlString(fieldNames) + ")";
+            }
         } else if (operands.size() == 2) {
+            if (kind == SqlKind.SEARCH) {
+                final String columnSql = operands.get(0).createSqlString(fieldNames);
+
+                final Object value = ((Literal) operands.get(1)).value;
+                if (value instanceof ImmutableRangeSet) {
+                    final ImmutableRangeSet<?> rangeSet = (ImmutableRangeSet<?>) value;
+
+                    final Range<?> span = rangeSet.span();
+                    final Object lower = span.lowerEndpoint();
+                    final Object upper = span.upperEndpoint();
+
+                    return columnSql + " BETWEEN " + sqlObjToString(lower) + " AND " + sqlObjToString(upper);
+                } else if (value instanceof ImmutableSortedSet) {
+                    ImmutableSortedSet<Range> ranges = (ImmutableSortedSet<Range>) value;
+                    String points = ranges.stream().map(
+                            span -> sqlObjToString("'" + sqlObjToString(span.lowerEndpoint())) + "','" + sqlObjToString(span.upperEndpoint()) + "'")
+                            .collect(Collectors.joining(","));
+                    String clause = columnSql + " IN (" + points + ")";
+                    System.out.println("span points clasue sorted set: " + clause);
+                    return clause;
+                } else {
+                    throw new UnsupportedOperationException("type not supported: " + value.getClass());
+                }
+            }
             return operands.get(0).createSqlString(fieldNames) + " " + kind.sql + " "
                     + operands.get(1).createSqlString(fieldNames);
+        } else if (operands.size() > 2) {
+            return operands.stream().map(op -> op.createSqlString(fieldNames))
+                    .collect(Collectors.joining(" " + kind.sql + " "));
         }
+
         return kind.sql;
+    }
+
+    private static String sqlObjToString(Object obj) {
+        if (obj instanceof NlsString)
+            return ((NlsString) obj).getValue();
+        return obj.toString();
     }
 }
 
@@ -115,7 +147,14 @@ class Literal implements Node {
             case SARG:
                 final Sarg<?> sarg = literal.getValueAs(Sarg.class);
                 assert sarg.rangeSet instanceof Serializable : "Sarg RangeSet was not serializable.";
-                value = (ImmutableRangeSet<?>) sarg.rangeSet;
+                if (sarg.isPoints()) {
+                    // point based ranged like 'IN ('x', 'y', 'z')''
+                    value = (Serializable) sarg.rangeSet.asRanges();
+                } else {
+                    // range based queries like 'BETWEEN x AND y'
+                    value = (ImmutableRangeSet<?>) sarg.rangeSet;
+                }
+                System.out.println("sarg literal: " + sarg);
                 break;
             default:
                 throw new UnsupportedOperationException(
@@ -131,7 +170,11 @@ class Literal implements Node {
 
     @Override
     public String createSqlString(final List<String> fieldNames) {
-        return value instanceof String ? "\'" + ((String) value) + "\'" : value.toString();
+        if (value instanceof String) {
+            return "\'" + ((String) value) + "\'";
+        } else {
+            return value.toString();
+        }
     }
 }
 

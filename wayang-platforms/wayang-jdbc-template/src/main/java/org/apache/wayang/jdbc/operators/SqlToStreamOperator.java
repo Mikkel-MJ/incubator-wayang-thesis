@@ -28,9 +28,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -40,7 +37,6 @@ import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.basic.types.RecordType;
-import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.optimizer.costs.LoadProfileEstimators;
@@ -209,20 +205,20 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         final JdbcPlatformTemplate producerPlatform = (JdbcPlatformTemplate) input.getChannel().getProducer()
                 .getPlatform();
+
         final Connection connection = producerPlatform
                 .createDatabaseDescriptor(executor.getConfiguration())
                 .createJdbcConnection();
 
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
+        System.out.println("[SqlToStreamOperator] ID: " + this + ", executing sql: " + input.getSqlQuery());
         final ResultSetIterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(),
                 boundaryOperator instanceof JoinOperator);
-        //final Spliterator<Output> resultSetSpliterator = Spliterators.spliteratorUnknownSize(resultSetIterator, 0);
+
         final Iterable<Output> resultSetIterable = () -> resultSetIterator;
         final Stream<Output> resultSetStream = StreamSupport.stream(resultSetIterable.spliterator(), false)
                 .onClose(resultSetIterator::close);
-
-                //.collect(Collectors.toList());
 
         output.accept(resultSetStream);
 

@@ -19,12 +19,13 @@
 package org.apache.wayang.basic.function;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.TransformationDescriptor;
 
-public class JoinKeyDescriptor extends TransformationDescriptor<Record, Object> {
-    private static class RecordImplementation implements SerializableFunction<Record, Object> {
+public class JoinKeyDescriptor extends TransformationDescriptor<Record, Record> {
+    private static class RecordImplementation implements SerializableFunction<Record, Record> {
         final List<Integer> keys;
 
         RecordImplementation(final List<Integer> keys) {
@@ -42,6 +43,8 @@ public class JoinKeyDescriptor extends TransformationDescriptor<Record, Object> 
 
     private final List<String> fieldNames;
 
+    private final Function<List<String>, String> createSqlFunc;
+
     /**
      * Descriptor for the extractor that gets the column from the left or right input of a join.
      * @param keys 
@@ -54,9 +57,33 @@ public class JoinKeyDescriptor extends TransformationDescriptor<Record, Object> 
 
     private JoinKeyDescriptor(final RecordImplementation impl, final List<String> aliases,
             final List<String> fieldNames) {
-        super(impl, Record.class, Object.class);
+        super(impl, Record.class, Record.class);
         this.aliases = aliases;
         this.fieldNames = fieldNames;
+        this.createSqlFunc = null;
+    }
+
+    public JoinKeyDescriptor(final SerializableFunction<Record, Record> impl, final SerializableFunction<List<String>, String> createSqlFunction) {
+        super(impl, Record.class, Record.class);
+        this.aliases = null;
+        this.fieldNames = null;
+        this.createSqlFunc = createSqlFunction;
+    }
+
+    
+    public JoinKeyDescriptor(final SerializableFunction<Record, Record> impl, final List<String> aliases, final List<String> fieldNames, final SerializableFunction<List<String>, String> createSqlFunction) {
+        super(impl, Record.class, Record.class);
+        this.aliases = aliases;
+        this.fieldNames = fieldNames;
+        this.createSqlFunc = createSqlFunction;
+    }
+
+    public boolean hasSqlImpl (){
+        return createSqlFunc != null;        
+    }
+
+    public String createSqlString(final List<String> fieldNames){
+        return this.createSqlFunc.apply(fieldNames);
     }
 
     public List<String> getAliases() {

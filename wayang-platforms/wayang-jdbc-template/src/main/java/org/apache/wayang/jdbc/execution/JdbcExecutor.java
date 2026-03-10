@@ -109,15 +109,6 @@ public class JdbcExecutor extends ExecutorTemplate {
                     joinKeyDescriptor1.getAliases().stream())
                     .toArray(String[]::new);
 
-            System.out.println("aliases: " + Arrays.toString(aliases) + " len: " + aliases.length);
-            System.out.println("projections:" + Arrays.toString(projections) + " len " + projections.length);
-
-            System.out.println("jkd");
-            System.out.println(joinKeyDescriptor0.getFieldNames().size());
-            System.out.println(joinKeyDescriptor0.getAliases().size());
-            System.out.println(joinKeyDescriptor1.getFieldNames().size());
-            System.out.println(joinKeyDescriptor1.getAliases().size());
-
             assert projections.length == aliases.length
                     : "Amount of projections did not match the amount of aliases.";
 
@@ -130,29 +121,45 @@ public class JdbcExecutor extends ExecutorTemplate {
             final String selectStatement = Arrays.stream(aliasedProjections)
                     .collect(Collectors.joining(","));
 
-            // setup join condition
-            final String leftField = joinKeyDescriptor0.getFieldNames().get(joinKeyDescriptor0.getkeys().get(0));
-            final String rightField = joinKeyDescriptor1.getFieldNames().get(joinKeyDescriptor1.getkeys().get(0));
+            final String condition;
 
-            assert leftField != null : "Left join field in filter was null.";
-            assert rightField != null : "Right join field in filter was null.";
+            if (joinKeyDescriptor0.hasSqlImpl()) {
+                final List<String> aliasedLeft = joinKeyDescriptor0.getFieldNames().stream()
+                        .map(name -> leftAlias + "." + name).collect(Collectors.toList());
+                final List<String> aliasedRight = joinKeyDescriptor1.getFieldNames().stream()
+                        .map(name -> rightAlias + "." + name).collect(Collectors.toList());
+                final List<String> aliasedFields = Stream.concat(aliasedLeft.stream(), aliasedRight.stream())
+                        .collect(Collectors.toList());
 
-            final String condition = String.format("%s.%s = %s.%s",
-                    leftAlias, leftField,
-                    rightAlias, rightField);
+                condition = joinKeyDescriptor0.createSqlString(aliasedFields);
+            } else {
+                // setup join condition
+                final String leftField = joinKeyDescriptor0.getFieldNames().get(joinKeyDescriptor0.getkeys().get(0));
+                final String rightField = joinKeyDescriptor1.getFieldNames().get(joinKeyDescriptor1.getkeys().get(0));
 
+                assert leftField != null : "Left join field in filter was null.";
+                assert rightField != null : "Right join field in filter was null.";
+
+                condition = String.format("%s.%s = %s.%s",
+                        leftAlias, leftField,
+                        rightAlias, rightField);
+
+                System.out.println("[visitTask(Join) condition]: " + condition);
+            }
+
+            System.out.println("[visitTask(Join)] condition: " + condition);
             return "SELECT " + selectStatement + " FROM (" + left + ") AS left" + alias +
                     " INNER JOIN (" + right
                     + ") AS right"
                     + alias + "  ON " + condition;
         } else if (operator instanceof JdbcProjectionOperator) {
-            final JdbcProjectionOperator<?,?> projection = (JdbcProjectionOperator<?,?>) operator;
+            final JdbcProjectionOperator<?, ?> projection = (JdbcProjectionOperator<?, ?>) operator;
 
             System.out.println("on project: " + operator);
             assert nextOperators.size() == 1
                     : "amount of next operators of projection operator was not one, got: "
                             + nextOperators.size();
-            final String columns = (String) projection.getFunctionDescriptor().getFieldNames().stream()
+            final String columns = projection.getFunctionDescriptor().getFieldNames().stream()
                     .collect(Collectors.joining(", "));
 
             final String input = visitTask(nextOperators.get(0), edgeMap, subqueryCount + 1, aliasMap);
@@ -160,7 +167,6 @@ public class JdbcExecutor extends ExecutorTemplate {
             // handle aliases
             final String alias = aliasMap.computeIfAbsent(operator);
 
-            System.out.println("column size: " + columns.length());
             System.out.println("columns: " + columns);
             final String returnStmnt = columns.length() == 0
                     ? input
@@ -176,10 +182,11 @@ public class JdbcExecutor extends ExecutorTemplate {
             final String input = visitTask(nextOperators.get(0), edgeMap, subqueryCount + 1, aliasMap);
             final String alias = aliasMap.computeIfAbsent(operator);
             final List<String> fields = filter.getPredicateDescriptor().fieldNames;
-            final String test = filter.getPredicateDescriptor().createSqlString.apply(fields);
+            final String condition = filter.getPredicateDescriptor().createSqlString.apply(fields);
 
+            System.out.println("[visitTask(filter)] condition: " + condition);
             return "SELECT * FROM (" + input + ") AS " + alias + " WHERE "
-                    + test;
+                    + condition;
         } else if (operator instanceof JdbcGlobalReduceOperator) {
             final JdbcGlobalReduceOperator<?> reduce = (JdbcGlobalReduceOperator<?>) operator;
 
@@ -189,7 +196,9 @@ public class JdbcExecutor extends ExecutorTemplate {
             final String input = visitTask(nextOperators.get(0), edgeMap, subqueryCount + 1, aliasMap);
             final String alias = aliasMap.computeIfAbsent(operator);
 
-            return "SELECT " + reduce.getReduceDescriptor().getSqlImplementation()  + " FROM (" + input + ") AS " + alias;
+            System.out.println("[visitTask(reduce)] condition: " + reduce.getReduceDescriptor().getSqlImplementation() );
+            return "SELECT " + reduce.getReduceDescriptor().getSqlImplementation() + " FROM (" + input + ") AS "
+                    + alias;
         } else if (operator instanceof JdbcTableSource) {
             final JdbcTableSource table = (JdbcTableSource) operator;
 
