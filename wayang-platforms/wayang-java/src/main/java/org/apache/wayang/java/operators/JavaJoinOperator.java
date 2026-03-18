@@ -149,12 +149,7 @@ public class JavaJoinOperator<InputType0, InputType1, KeyType>
             probingExecutionLineageNode.addPredecessor(inputs[0].getLineage());
         }
 
-        List<Tuple2<InputType0, InputType1>> intermediate = joinStream.collect(Collectors.toList());
-
-        System.out.println("[JOIN] Intermediate: " + intermediate.size());
-
-        //((StreamChannel.Instance) outputs[0]).accept(joinStream);
-        ((StreamChannel.Instance) outputs[0]).accept(intermediate.stream());
+        ((StreamChannel.Instance) outputs[0]).accept(joinStream);
         outputs[0].getLineage().addPredecessor(probingExecutionLineageNode);
 
         return new Tuple<>(executionLineageNodes, producedChannelInstances);

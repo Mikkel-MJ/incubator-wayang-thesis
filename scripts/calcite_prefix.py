@@ -59,51 +59,56 @@ def add_postgres_prefix_to_tables(query):
     """Prefixes 'postgres.' to all table names in the FROM clause, trims whitespace, and renames aliases."""
     from_clause_regex = r'FROM\s+([\w, \(\)\s]+)'
 
-    match = re.search(from_clause_regex, query, re.IGNORECASE)
+    for match in re.finditer(from_clause_regex, query, re.IGNORECASE):
+        if match:
+            print(match)
+            from_clause = match.group(1)
+            tables = re.split(r'\s*,\s*', from_clause)  # Split tables by commas
+            prefixed_tables = [f"postgres.{table.strip()}" for table in tables]
+            new_from_clause = 'FROM ' + ', '.join(prefixed_tables)
+            query = query.replace(match.group(0), new_from_clause)
+            print(new_from_clause)
 
-    if match:
-        from_clause = match.group(1)
-        tables = re.split(r'\s*,\s*', from_clause)  # Split tables by commas
-        prefixed_tables = [f"postgres.{table.strip()}" for table in tables]
-        new_from_clause = 'FROM ' + ', '.join(prefixed_tables)
-        query = query.replace(match.group(0), new_from_clause)
+            # Rename reserved keywords used as aliases
+            query = rename_reserved_aliases(query)
 
-    # Rename reserved keywords used as aliases
-    query = rename_reserved_aliases(query)
+            # Replace '!=' with '<>'
+            query = replace_not_equal_operator(query)
 
-    # Replace '!=' with '<>'
-    query = replace_not_equal_operator(query)
-
-    # Trim excess whitespace
-    query = re.sub(r'\s+', ' ', query).strip()
+            # Trim excess whitespace
+            query = re.sub(r'\s+', ' ', query).strip()
 
     return query
 
 def process_queries(file_path, output_dir):
     """Reads queries from a file, modifies them, and saves each to its own file."""
     with open(file_path, 'r') as file:
-        queries = file.readlines()
+        #queries = file.readlines()
 
-    for query in queries:
-        match = re.match(r'q(\d+)#####(SELECT.*)', query, re.IGNORECASE)
-        if match:
-            query_number = match.group(1)
-            sql_query = match.group(2).strip()
+    #for query in queries:
+        #match = re.match(r'q(\d+)#####(SELECT.*)', query, re.IGNORECASE)
+        #if match:
+        #    query_number = match.group(1)
+        #    sql_query = match.group(2).strip()
+        sql_query = file.read()
 
-            modified_query = add_postgres_prefix_to_tables(sql_query)
+        modified_query = add_postgres_prefix_to_tables(sql_query)
 
-            output_file = f"{output_dir}/g_{query_number}.sql"
-            with open(output_file, 'w') as f:
-                f.write(modified_query)
+        output_file = f"{output_dir}/{os.path.basename(file.name)}"
+        with open(output_file, 'w') as f:
+            f.write(modified_query)
 
-            print(f"Processed and saved: {output_file}")
+        print(f"Processed and saved: {output_file}")
 
 # Example usage
-input_file = "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/calcite-ready-job-queries/training/job.txt"  # Change this to your actual file
-output_directory = "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/calcite-ready-job-queries/training"  # Directory where queries will be saved
+input_directory = "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/benchmarks/dsb/queries"  # Change this to your actual file
+output_directory = "/var/www/html/wayang-plugins/wayang-ml/src/main/resources/benchmarks/dsb"  # Directory where queries will be saved
 
 import os
 os.makedirs(output_directory, exist_ok=True)  # Ensure output directory exists
 
-process_queries(input_file, output_directory)
+from pathlib import Path
+
+for input_file in Path(input_directory).glob("*.sql"):
+    process_queries(input_file, output_directory)
 
