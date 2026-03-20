@@ -64,6 +64,7 @@ public class OneHotMappings {
 
         // add a null operator for encoding
         mappings.put(null, mappings.size());
+        mappings.forEach((k,v) -> System.out.println(k + ": " + v));
 
         return mappings;
     }
