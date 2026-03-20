@@ -29,7 +29,7 @@ fi
 
 queries=(916 964 988)
 
-bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/cvae.onnx
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/carbvae.onnx
 bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-5.onnx
 bvae_10_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-10.onnx
 
@@ -46,7 +46,7 @@ test_path=/work/lsbo-paper/data/JOBenchmark/queries/light
 #for query in ${queries[@]}; do
     query="$test_path"/10.sql
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/imdb/CarbVAE.json" --stats="./src/Data/splits/imdb/training/stats-1.txt" --trainset="./src/Data/splits/tpch/bvae/retrain-random.txt" --zdim 128 --steps 1000
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/imdb/CarbVAE.json" --stats="./src/Data/splits/imdb/training/carbvae/stats.10.sql.txt" --trainset="./src/Data/splits/tpch/bvae/retrain-random.txt" --zdim 32 --steps 4000 --initialization="./src/Data/splits/imdb/training/carbvae/initialization/10.sql.txt"
     # Lord forgive me - for Flink has sinned
     sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
     sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh

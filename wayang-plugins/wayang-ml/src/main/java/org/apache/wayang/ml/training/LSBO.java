@@ -150,15 +150,15 @@ public class LSBO {
             long execTime = -1;
 
             try {
-                /*
                 Instant start = Instant.now();
                 context.execute(sampledPlan, udfJars);
                 Instant end = Instant.now();
                 execTime = Duration.between(start, end).toMillis();
-                */
 
+                /*
                 // REMOVE THIS FOR LIVE, ONLY HERE FOR TESTING
                 ExecutionPlan execPlan = context.buildInitialExecutionPlan("Test", sampledPlan, udfJars);
+                */
 
                 execTime = (long) new Random().ints(10_000, 100_000).findFirst().getAsInt();
 
