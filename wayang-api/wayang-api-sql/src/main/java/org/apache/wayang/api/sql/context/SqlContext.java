@@ -19,8 +19,6 @@ package org.apache.wayang.api.sql.context;
 
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -31,12 +29,9 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
-import org.apache.wayang.api.sql.calcite.converter.RelNodeVisitor;
-import org.apache.wayang.api.sql.calcite.converter.SqlNodeVisitor;
 import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
-import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
@@ -44,22 +39,16 @@ import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.core.api.WayangContext;
-import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.spark.Spark;
-import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.rel.rules.*;
 import org.apache.calcite.rel.logical.*;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.util.Optionality;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
@@ -150,6 +139,9 @@ public class SqlContext extends WayangContext {
             transformationRules
         );
 
+        System.out.println("wayang rel " + relNode);
+
+        PrintUtils.print("wayang rel 2: ", optimized);
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(optimized, 0, null);
 
@@ -157,7 +149,7 @@ public class SqlContext extends WayangContext {
 
         final AliasFinder aliasFinder = new AliasFinder(visitor);
         //aliasFinder.context = relContext;
-
+        
         final Collection<Record> collector = new ArrayList<>();
         return optimizer.convert(optimized, collector, aliasFinder);
     }
@@ -202,18 +194,22 @@ public class SqlContext extends WayangContext {
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
                 WayangRules.WAYANG_AGGREGATE_RULE);
+    
+
 
         final RelNode wayangRel = optimizer.optimize(
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
 
+
+        PrintUtils.print("wayang rel 2: ", wayangRel);
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
 
+        PrintUtils.print("wayang plan 2: ", wayangPlan);
+
         if (udfJars.length == 0) {
-             PlanTraversal.upstream().traverse(wayangPlan.getSinks()).getTraversedNodes().forEach(node
-             -> {if (!node.isSink()) node.addTargetPlatform(Postgres.platform());});
             this.execute(getJobName(), wayangPlan);
         } else {
             this.execute(getJobName(), wayangPlan, udfJars);

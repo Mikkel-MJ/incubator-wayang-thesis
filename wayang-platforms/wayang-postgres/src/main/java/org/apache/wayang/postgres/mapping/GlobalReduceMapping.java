@@ -20,7 +20,6 @@ import java.util.Collections;
 /**
  * Mapping from {@link GlobalReduceOperator} to {@link PostgresGlobalReduceOperator}.
  */
-@SuppressWarnings("unchecked")
 public class GlobalReduceMapping implements Mapping {
 
     @Override
@@ -34,15 +33,12 @@ public class GlobalReduceMapping implements Mapping {
 
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern<GlobalReduceOperator<Record>> operatorPattern = new OperatorPattern<>(
-                "reduce", new GlobalReduceOperator<Record>(null, DataSetType.createDefault(Record.class)), false)
-                .withAdditionalTest(op -> {
-                    return Mappings.isValidPostgres(op);
-                });
+                "reduce", new GlobalReduceOperator<Record>(null, DataSetType.createDefault(Record.class)), false);
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
-        return new ReplacementSubplanFactory.OfSingleOperators<GlobalReduceOperator>(
+        return new ReplacementSubplanFactory.OfSingleOperators<GlobalReduceOperator<Record>>(
                 (matchedOperator, epoch) -> new PostgresGlobalReduceOperator<>(matchedOperator).at(epoch)
         );
     }

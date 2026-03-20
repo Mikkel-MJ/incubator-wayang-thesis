@@ -10,9 +10,11 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
+import org.apache.wayang.api.sql.calcite.converter.calltrees.CallTreeFactory;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
+import org.apache.wayang.api.sql.calcite.converter.calltrees.Node;
 
 import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.Range;
@@ -164,6 +166,10 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
     public boolean test(final Record rec) {
         //System.out.println("[FilterPred.rec]: " + rec);
         return (boolean) callTree.evaluate(rec);
+    }
+
+    public String createSqlString(final List<String> fieldNames) {
+        return callTree.createSqlString(fieldNames);
     }
 }
 

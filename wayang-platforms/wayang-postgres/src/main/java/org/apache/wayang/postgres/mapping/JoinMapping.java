@@ -19,7 +19,6 @@
 package org.apache.wayang.postgres.mapping;
 
 import org.apache.wayang.basic.data.Record;
-import org.apache.wayang.basic.data.JVMRecord;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.mapping.Mapping;
@@ -37,7 +36,6 @@ import java.util.Collections;
 /**
  * Mapping from {@link JoinOperator} to {@link PostgresJoinOperator}.
  */
-@SuppressWarnings("unchecked")
 public class JoinMapping implements Mapping {
 
     @Override
@@ -50,7 +48,7 @@ public class JoinMapping implements Mapping {
     }
 
     private SubplanPattern createSubplanPattern() {
-        OperatorPattern<JoinOperator<Record, Record, Object>> operatorPattern = new OperatorPattern<>(
+        final OperatorPattern<JoinOperator<Record, Record, Object>> operatorPattern = new OperatorPattern<>(
                 "join",
                 new JoinOperator<Record, Record, Object>(
                         null,
@@ -61,10 +59,7 @@ public class JoinMapping implements Mapping {
                 false
         )
         .withAdditionalTest(op -> op.getKeyDescriptor0() instanceof TransformationDescriptor)
-        .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor)
-        .withAdditionalTest(op -> {
-            return Mappings.isValidPostgres(op);
-        });
+        .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor);
         return SubplanPattern.createSingleton(operatorPattern);
     }
 

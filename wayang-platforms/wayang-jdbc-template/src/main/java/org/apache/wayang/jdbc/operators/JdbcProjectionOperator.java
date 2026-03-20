@@ -24,7 +24,6 @@ import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.optimizer.costs.LoadProfileEstimator;
 import org.apache.wayang.core.optimizer.costs.LoadProfileEstimators;
-import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.jdbc.compiler.FunctionCompiler;
 
 import java.sql.Connection;

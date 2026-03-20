@@ -22,31 +22,22 @@ package org.apache.wayang.api.sql.calcite.converter;
 import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
-import org.apache.wayang.api.sql.calcite.utils.CalciteSources;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.types.BasicDataUnitType;
 
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.SqlNode;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BinaryOperator;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
     WayangProjectVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
@@ -56,28 +47,27 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
     @Override
     Operator visit(final WayangProject wayangRelNode) {
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final List<RexNode> projects = wayangRelNode.getProjects();
 
-        // fetch the indexes of colmuns affected, in calcite aggregates and projections
-        // have their own catalog, we need to find the column indexes in the global
-        // catalog
-        final List<Integer> columnIndexes = wayangRelNode.getProjects().stream().map(proj -> proj.hashCode())
-                .collect(Collectors.toList());
+        final List<String> fields = wayangRelNode.getInput().getRowType().getFieldNames();
+        final List<String> aliases = wayangRelNode.getRowType().getFieldNames();
+        final List<String> aliasedFields = new ArrayList<>();
 
-        final String[] aliasedFields = CalciteSources.getSelectStmntFieldNames(wayangRelNode, columnIndexes, aliasFinder);
+        for (int i = 0; i < projects.size(); i++) {
+            final String field = fields.get(projects.get(i).hashCode());
+            final String alias = aliases.get(i);
 
+            aliasedFields.add(field + " AS " + alias);
+        }
 
-        // list of projects passed to the serializable function, for java & others usage
-        final List<RexNode> projects = ((Project) wayangRelNode).getProjects();
-
-        final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
+        final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<Record, Record>(
                 new MapFunctionImpl(projects),
-                Record.class,
-                Record.class,
-                aliasedFields // names of projected columns
+                aliasedFields,
+                BasicDataUnitType.createBasic(Record.class),
+                BasicDataUnitType.createBasic(Record.class) 
         );
 
         final MapOperator<Record, Record> projection = new MapOperator<Record, Record>(pd);
-
         childOp.connectTo(0, projection, 0);
 
         return projection;
@@ -94,7 +84,7 @@ public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
 
         if (operator == SqlStdOperatorTable.PLUS) {
             // Handle addition
-            return evaluateNaryOperation(record, operands, Double::sum);
+            return evaluateNaryOperation(record, operands, (a, b) -> a + b);
         } else if (operator == SqlStdOperatorTable.MINUS) {
             // Handle subtraction
             return evaluateNaryOperation(record, operands, (a, b) -> a - b);

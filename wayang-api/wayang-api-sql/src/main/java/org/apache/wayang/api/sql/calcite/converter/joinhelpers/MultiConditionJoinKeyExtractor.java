@@ -22,9 +22,9 @@ import java.util.Arrays;
 import java.util.function.Function;
 
 import org.apache.wayang.basic.data.Record;
-import org.apache.wayang.core.function.FunctionDescriptor;
+import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 
-public class MultiConditionJoinKeyExtractor implements FunctionDescriptor.SerializableFunction<Record, Record> {
+public class MultiConditionJoinKeyExtractor implements SerializableFunction<Record, Record> {
         private final Integer[] indexes;
 
     /**
