@@ -28,12 +28,14 @@ retrained_bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-
 echo "Running JOBenchmark"
 
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
-    for query in "$test_path"/*.sql; do
+    #for query in "$test_path"/*.sql; do
+    query="$test_path"/10.sql
         for i in {0..1}; do
     #for query in $(ls "$test_path"/*.sql | tail -n +14); do
     #for query_name in "${selected_queries[@]}"; do
             ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
-            ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/tao/ $query bvae $bvae_1_path $data_path/experience/
+            ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark spark,postgres file://$data_path/ $timings_path/native/ $query
+            #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/tao/ $query bvae $bvae_1_path $data_path/experience/
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/ $query bvae $retrained_bvae_1_path $data_path/experience/
             #./bin/wayang-submit -Xmx33g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
             #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/2/ $query bvae $retrained_bvae_2_path $data_path/experience/
@@ -45,5 +47,5 @@ echo "Running JOBenchmark"
             sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
             sleep 1s
         done
-    done
+    #done
 

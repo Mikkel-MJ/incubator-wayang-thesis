@@ -158,9 +158,9 @@ public class LSBO {
                 /*
                 // REMOVE THIS FOR LIVE, ONLY HERE FOR TESTING
                 ExecutionPlan execPlan = context.buildInitialExecutionPlan("Test", sampledPlan, udfJars);
-                */
 
                 execTime = (long) new Random().ints(10_000, 100_000).findFirst().getAsInt();
+                */
 
                 encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + execTime;
                 //System.out.println(encodedInput);
