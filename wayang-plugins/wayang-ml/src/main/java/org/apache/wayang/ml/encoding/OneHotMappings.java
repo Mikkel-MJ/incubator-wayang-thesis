@@ -64,6 +64,7 @@ public class OneHotMappings {
 
         // add a null operator for encoding
         mappings.put(null, mappings.size());
+        mappings.forEach((k,v) -> System.out.println(k + ": " + v));
 
         return mappings;
     }
@@ -76,7 +77,7 @@ public class OneHotMappings {
         .sorted(Comparator.comparing(c -> c.getName()))
         .forEachOrdered(entry -> mappings.put(entry.getName(), mappings.size()));
 
-        //mappings.forEach((k,v) -> System.out.println(k + ": " + v));
+        mappings.forEach((k,v) -> System.out.println(k + ": " + v));
 
         return mappings;
     }

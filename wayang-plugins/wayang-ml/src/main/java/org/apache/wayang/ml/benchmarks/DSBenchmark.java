@@ -18,6 +18,8 @@
 
 package org.apache.wayang.ml.benchmarks;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
@@ -38,9 +40,7 @@ import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
-import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
-import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
@@ -48,12 +48,14 @@ import org.apache.wayang.basic.operators.MapOperator;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
-import org.apache.wayang.api.sql.context.SqlContext;
 import org.apache.wayang.apps.tpch.queries.Query1Wayang;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.calcite.sql.parser.SqlParseException;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
@@ -65,8 +67,12 @@ import scala.collection.JavaConversions;
 import java.util.Collection;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.SQLException;
 
-public class JOBenchmark {
+public class DSBenchmark {
+
+    public static SqlContext sqlContext;
 
     /**
      * 0: platforms
@@ -77,8 +83,8 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         try {
@@ -87,7 +93,7 @@ public class JOBenchmark {
             String modelType = "";
 
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "JOB Query");
+            config.setProperty("spark.app.name", "DSB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
             config.setProperty("spark.executor.memory", "42g");
             config.setProperty("spark.executor.cores", "4");
@@ -121,7 +127,7 @@ public class JOBenchmark {
                     "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
                     "            \"operand\": {\n" +
                     "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
-                    "                \"jdbcUrl\": \"jdbc:postgresql://job:5432/job\",\n" +
+                    "                \"jdbcUrl\": \"jdbc:postgresql://dsb:5432/dsb\",\n" +
                     "                \"jdbcUser\": \"" + psqlUser + "\",\n" +
                     "                \"jdbcPassword\": \"" + psqlPassword + "\"\n" +
                     "            }\n" +
@@ -131,7 +137,7 @@ public class JOBenchmark {
 
             config.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
             config.setProperty("wayang.calcite.model", calciteModel);
-            config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");
+            config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://dsb:5432/dsb");
             config.setProperty("wayang.postgres.jdbc.user", psqlUser);
             config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
 
@@ -140,7 +146,7 @@ public class JOBenchmark {
             }
 
             if (args.length > 6) {
-                JOBenchmark.setMLModel(config, modelType, args[5], args[6]);
+                DSBenchmark.setMLModel(config, modelType, args[5], args[6]);
             }
 
             // Take the query name
@@ -169,8 +175,8 @@ public class JOBenchmark {
             plugins.stream().forEach(plug -> wayangContext.register(plug));
 
             String[] jars = ArrayUtils.addAll(
-                ReflectionUtils.getAllJars(JOBenchmark.class),
-                ReflectionUtils.getLibs(JOBenchmark.class)
+                ReflectionUtils.getAllJars(DSBenchmark.class),
+                ReflectionUtils.getLibs(DSBenchmark.class)
             );
 
             jars = ArrayUtils.addAll(
@@ -179,29 +185,8 @@ public class JOBenchmark {
             );
 
             try {
-                WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+                WayangPlan plan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
-                IMDBJOBenchmark.setSources(plan, args[1]);
-
-                //ExplainUtils.parsePlan(plan, true);
-
-                //Set sink to be on Java
-                //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
-                //
-                /*
-                FileWriter fw = new FileWriter(
-                    "/var/www/html/data/benchmarks/operators.txt",
-                    true
-                );
-                BufferedWriter writer = new BufferedWriter(fw);
-
-
-                System.out.println("Operators: " + operators.size());
-
-                writer.write(args[3] + ": " + operators.size());
-                writer.newLine();
-                writer.flush();
-                writer.close();&*/
                 wayangContext.setLogLevel(Level.DEBUG);
 
                 if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
@@ -262,4 +247,23 @@ public class JOBenchmark {
         }
 
     }
+
+    public static WayangPlan getWayangPlan(
+        final String path,
+        final Configuration configuration,
+        final Plugin[] plugins,
+        final String... udfJars
+    ) throws SQLException, IOException, org.apache.calcite.sql.parser.SqlParseException {
+        sqlContext = new SqlContext(configuration, plugins);
+        final Path pathToQuery = Paths.get(path);
+
+        // need to chop off the last ';' otherwise sqlContext cant parse it
+        final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
+
+        WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
+
+        return plan;
+    }
+
+
 }
