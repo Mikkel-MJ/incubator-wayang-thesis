@@ -25,9 +25,9 @@ import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
+import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.CartesianOperator;
 import org.apache.wayang.basic.operators.MapOperator;
-import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.util.ReflectionUtils;
 
@@ -46,15 +46,18 @@ public class WayangCrossJoinVisitor extends WayangRelNodeVisitor<WayangJoin> imp
                 Record.class,
                 Record.class);
 
+        System.out.println("created cartesian: " + join);
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
-        final SerializableFunction<Tuple2<Record, Record>, Record> mp = new JoinFlattenResult();
-
-        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<>(
-                mp,
+        // Join returns Tuple2 - map to a Record
+        final ProjectionDescriptor<Tuple2<Record, Record>, Record> pd = new ProjectionDescriptor<>(
+                new JoinFlattenResult(),
                 ReflectionUtils.specify(Tuple2.class),
-                Record.class);
+                Record.class,
+                wayangRelNode.getRowType().getFieldNames().toArray(String[]::new));
+
+        final MapOperator<Tuple2<Record, Record>, Record> mapOperator = new MapOperator<>(pd);
 
         join.connectTo(0, mapOperator, 0);
 

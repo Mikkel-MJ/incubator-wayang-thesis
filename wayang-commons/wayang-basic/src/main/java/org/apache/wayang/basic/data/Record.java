@@ -28,7 +28,7 @@ import java.util.Objects;
 /**
  * A Type that represents a record with a schema, might be replaced with something standard like JPA entity.
  */
-public class Record implements Serializable, Copyable<Record> {
+public class Record implements Serializable, Copyable<Record>, Comparable<Record> {
 
     private Object[] values;
 
@@ -129,5 +129,29 @@ public class Record implements Serializable, Copyable<Record> {
 
     public Object[] getFields() {
         return this.values;
+    }
+
+
+    /**
+     * Compares the fields of this record to the fields of another record.
+     * 
+     * @param that another record not null
+     * @return
+     * @throws IllegalStateException if the two records do not have the same types in {@link #values}
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
+    public int compareTo(final Record that) throws IllegalStateException {
+        for (int i = 0; i < values.length; i++) {
+            if (!this.values[i].getClass().equals(that.values[i].getClass()))
+                throw new IllegalStateException("Tried compare records with dissimilar classes had, this values: "
+                        + this.values + ", that values: " + that.values + ", this item class: "
+                        + this.values[i].getClass() + ", that item class: " + that.values[i].getClass());
+        }
+
+        final Comparable[] thisComparables = (Comparable<?>[]) values;
+        final Comparable[] thatComparables = (Comparable<?>[]) that.values;
+
+        return Arrays.compare(thisComparables, thatComparables);
     }
 }

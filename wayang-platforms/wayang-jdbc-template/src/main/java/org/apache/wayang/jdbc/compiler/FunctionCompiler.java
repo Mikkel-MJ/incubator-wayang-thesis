@@ -22,6 +22,7 @@ import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.PredicateDescriptor;
 import org.apache.wayang.core.function.ReduceDescriptor;
+import org.apache.wayang.core.function.TransformationDescriptor;
 
 /**
  * Compiles {@link FunctionDescriptor}s to SQL clauses.
@@ -58,5 +59,16 @@ public class FunctionCompiler {
      */
     public String compile(ReduceDescriptor<?> descriptor) {
         return descriptor.getSqlImplementation();
+    }
+
+    
+    /**
+     * Compile global reduce descriptors to their SQL equivalent
+     * @param descriptor left 
+     * @param descriptor2 right
+     * @return a compiled SQL {@code GlobalReduce} clause
+     */
+    public String compile(TransformationDescriptor<?,?> descriptor) {
+        return descriptor.getSqlImplementation().field0 + " " + descriptor.getSqlImplementation().field1;
     }
 }

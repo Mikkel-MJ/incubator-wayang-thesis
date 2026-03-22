@@ -10,13 +10,16 @@ public class JoinCallTreeFactory implements CallTreeFactory {
 
     @Override
     public SerializableFunction<List<Object>, Object> deriveOperation(SqlKind kind) {
-        System.out.println(kind);
-
+        // TODO: needs to be converted to java functions not strings.
         switch(kind) {
             case EQUALS:
-                return op -> op.get(0) + " = " + op.get(1);
+                return op -> new UnsupportedOperationException();
             case AND:
-                return op -> "(" + op.get(0) + ") AND (" + op.get(1) + ")";
+                return op -> new UnsupportedOperationException();
+            case TIMES:
+                return op ->  new UnsupportedOperationException();
+            case GREATER_THAN:
+                return op ->  new UnsupportedOperationException();
             default:
                 throw new UnsupportedOperationException("Not implemented: " + kind);
         }

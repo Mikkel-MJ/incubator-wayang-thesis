@@ -28,9 +28,6 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 
@@ -55,6 +52,7 @@ public class WayangRules {
     public static final RelOptRule WAYANG_TABLESCAN_ENUMERABLE_RULE = new WayangTableScanRule(
             WayangTableScanRule.ENUMERABLE_CONFIG);
     public static final RelOptRule WAYANG_AGGREGATE_RULE = new WayangAggregateRule(WayangAggregateRule.DEFAULT_CONFIG);
+    public static final RelOptRule WAYANG_SORT_RULE = new WayangSortRule(WayangSortRule.DEFAULT_CONFIG);
 
     public static final RuleSet ALL = RuleSets.ofList(
             WAYANG_JOIN_RULE,
@@ -62,14 +60,8 @@ public class WayangRules {
             WAYANG_FILTER_RULE,
             WAYANG_TABLESCAN_RULE,
             WAYANG_TABLESCAN_ENUMERABLE_RULE,
-            WAYANG_AGGREGATE_RULE);
-
-    /**
-     * Rule that tries to take a multi conditional join and splits it into multiple
-     * binary joins.
-     */
-    public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE = new WayangMultiConditionJoinSplitRule(
-            WayangMultiConditionJoinSplitRule.Config.DEFAULT);
+            WAYANG_AGGREGATE_RULE,
+            WAYANG_SORT_RULE);
 
     private static class WayangProjectRule extends ConverterRule {
 

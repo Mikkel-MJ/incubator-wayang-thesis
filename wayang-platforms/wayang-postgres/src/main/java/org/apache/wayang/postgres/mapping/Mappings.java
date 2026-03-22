@@ -29,6 +29,9 @@ public class Mappings {
             new JoinMapping(),
             new ProjectionMapping(),
             new FlattenMapping(),
-            new GlobalReduceMapping()
+            new GlobalReduceMapping(),
+            new ReduceByMapping(),
+            new SortMapping(),
+            new CartesianMapping()
     );
 }

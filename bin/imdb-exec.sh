@@ -10,7 +10,7 @@ output_path="$(pwd)/imdb-exec-output.txt"
 cd /var/www/html/wayang-assembly/target/wayang-0.7.1/
 
 # Directory containing the SQL files
-DIRECTORY="/var/www/html/wayang-plugins/wayang-ml/src/main/resources/calcite-ready-job-queries"
+DIRECTORY="/var/www/html/wayang-plugins/wayang-ml/src/main/resources/benchmarks/complex"
 
 # Loop over each file in the directory
 for FILE in "$DIRECTORY"/*.sql

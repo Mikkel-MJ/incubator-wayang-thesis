@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.calcite.rex.RexCall;
@@ -83,32 +82,39 @@ class Call implements Node {
                 return kind.sql + "(" + operands.get(0).createSqlString(fieldNames) + ")";
             }
         } else if (operands.size() == 2) {
-            if (kind == SqlKind.SEARCH) {
-                final String columnSql = operands.get(0).createSqlString(fieldNames);
+            switch (kind) {
+                case TIMES:
+                    return operands.get(0).createSqlString(fieldNames) + " * "
+                            + operands.get(1).createSqlString(fieldNames);
+                case SEARCH:
+                    final String columnSql = operands.get(0).createSqlString(fieldNames);
 
-                final Object value = ((Literal) operands.get(1)).value;
-                if (value instanceof ImmutableRangeSet) {
-                    final ImmutableRangeSet<?> rangeSet = (ImmutableRangeSet<?>) value;
+                    final Object value = ((Literal) operands.get(1)).value;
+                    if (value instanceof ImmutableRangeSet) {
+                        final ImmutableRangeSet<?> rangeSet = (ImmutableRangeSet<?>) value;
 
-                    final Range<?> span = rangeSet.span();
-                    final Object lower = span.lowerEndpoint();
-                    final Object upper = span.upperEndpoint();
+                        final Range<?> span = rangeSet.span();
+                        final Object lower = span.lowerEndpoint();
+                        final Object upper = span.upperEndpoint();
 
-                    return columnSql + " BETWEEN " + sqlObjToString(lower) + " AND " + sqlObjToString(upper);
-                } else if (value instanceof ImmutableSortedSet) {
-                    ImmutableSortedSet<Range> ranges = (ImmutableSortedSet<Range>) value;
-                    String points = ranges.stream().map(
-                            span -> sqlObjToString("'" + sqlObjToString(span.lowerEndpoint())) + "','" + sqlObjToString(span.upperEndpoint()) + "'")
-                            .collect(Collectors.joining(","));
-                    String clause = columnSql + " IN (" + points + ")";
-                    System.out.println("span points clasue sorted set: " + clause);
-                    return clause;
-                } else {
-                    throw new UnsupportedOperationException("type not supported: " + value.getClass());
-                }
+                        return columnSql + " BETWEEN " + sqlObjToString(lower) + " AND " + sqlObjToString(upper);
+                    } else if (value instanceof ImmutableSortedSet) {
+                        final ImmutableSortedSet<Range> ranges = (ImmutableSortedSet<Range>) value;
+                        final String points = ranges.stream().map(
+                                span -> sqlObjToString("'" + sqlObjToString(span.lowerEndpoint())) + "','"
+                                        + sqlObjToString(span.upperEndpoint()) + "'")
+                                .collect(Collectors.joining(","));
+                        final String clause = columnSql + " IN (" + points + ")";
+                        System.out.println("span points clasue sorted set: " + clause);
+                        return clause;
+                    } else {
+                        throw new UnsupportedOperationException("type not supported: " + value.getClass());
+                    }
+                default:
+                    return operands.get(0).createSqlString(fieldNames) + " " + kind.sql + " "
+                            + operands.get(1).createSqlString(fieldNames);
             }
-            return operands.get(0).createSqlString(fieldNames) + " " + kind.sql + " "
-                    + operands.get(1).createSqlString(fieldNames);
+
         } else if (operands.size() > 2) {
             return operands.stream().map(op -> op.createSqlString(fieldNames))
                     .collect(Collectors.joining(" " + kind.sql + " "));
@@ -117,7 +123,7 @@ class Call implements Node {
         return kind.sql;
     }
 
-    private static String sqlObjToString(Object obj) {
+    private static String sqlObjToString(final Object obj) {
         if (obj instanceof NlsString)
             return ((NlsString) obj).getValue();
         return obj.toString();
@@ -128,6 +134,8 @@ class Literal implements Node {
     final Serializable value;
 
     Literal(final RexLiteral literal) {
+        System.out.println("RexLiteral type:" + literal.getTypeName());
+        System.out.println("RexLiteral: " + literal);
         switch (literal.getTypeName()) {
             case DATE:
                 value = literal.getValueAs(Calendar.class);
@@ -192,6 +200,8 @@ class InputRef implements Node {
 
     @Override
     public String createSqlString(final List<String> fieldNames) {
+        System.out.println("field names using key " + key + ": " + fieldNames);
+        System.out.println("got key " + key + ": " + fieldNames.get(key));
         return fieldNames.get(key);
     }
 }
