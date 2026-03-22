@@ -45,6 +45,8 @@ import org.apache.wayang.jdbc.operators.JdbcFilterOperator;
 import org.apache.wayang.jdbc.operators.JdbcGlobalReduceOperator;
 import org.apache.wayang.jdbc.operators.JdbcJoinOperator;
 import org.apache.wayang.jdbc.operators.JdbcProjectionOperator;
+import org.apache.wayang.jdbc.operators.JdbcReduceByOperator;
+import org.apache.wayang.jdbc.operators.JdbcSortOperator;
 import org.apache.wayang.jdbc.operators.JdbcTableSource;
 import org.apache.wayang.jdbc.operators.SqlToRddOperator;
 import org.apache.wayang.jdbc.operators.SqlToStreamOperator;
@@ -128,14 +130,17 @@ public class JdbcExecutor extends ExecutorTemplate {
                         .map(name -> leftAlias + "." + name).collect(Collectors.toList());
                 final List<String> aliasedRight = joinKeyDescriptor1.getFieldNames().stream()
                         .map(name -> rightAlias + "." + name).collect(Collectors.toList());
-                final List<String> aliasedFields = Stream.concat(aliasedLeft.stream(), aliasedRight.stream())
+                final List<String> aliasedFields = Stream
+                        .concat(aliasedLeft.stream(), aliasedRight.stream())
                         .collect(Collectors.toList());
 
                 condition = joinKeyDescriptor0.createSqlString(aliasedFields);
             } else {
                 // setup join condition
-                final String leftField = joinKeyDescriptor0.getFieldNames().get(joinKeyDescriptor0.getkeys().get(0));
-                final String rightField = joinKeyDescriptor1.getFieldNames().get(joinKeyDescriptor1.getkeys().get(0));
+                final String leftField = joinKeyDescriptor0.getFieldNames()
+                        .get(joinKeyDescriptor0.getkeys().get(0));
+                final String rightField = joinKeyDescriptor1.getFieldNames()
+                        .get(joinKeyDescriptor1.getkeys().get(0));
 
                 assert leftField != null : "Left join field in filter was null.";
                 assert rightField != null : "Right join field in filter was null.";
@@ -143,11 +148,8 @@ public class JdbcExecutor extends ExecutorTemplate {
                 condition = String.format("%s.%s = %s.%s",
                         leftAlias, leftField,
                         rightAlias, rightField);
-
-                System.out.println("[visitTask(Join) condition]: " + condition);
             }
 
-            System.out.println("[visitTask(Join)] condition: " + condition);
             return "SELECT " + selectStatement + " FROM (" + left + ") AS left" + alias +
                     " INNER JOIN (" + right
                     + ") AS right"
@@ -167,12 +169,29 @@ public class JdbcExecutor extends ExecutorTemplate {
             // handle aliases
             final String alias = aliasMap.computeIfAbsent(operator);
 
-            System.out.println("columns: " + columns);
             final String returnStmnt = columns.length() == 0
                     ? input
                     : "SELECT " + columns + " FROM (" + input + ") AS " + alias;
 
             return returnStmnt;
+        } else if (operator instanceof JdbcSortOperator) {
+            final JdbcSortOperator sort = (JdbcSortOperator) operator;
+
+            assert nextOperators.size() == 1
+                    : "amount of next operators of filter operator was not one, got: "
+                            + nextOperators.size();
+            final String input = visitTask(nextOperators.get(0), edgeMap, subqueryCount + 1, aliasMap);
+            final String alias = aliasMap.computeIfAbsent(operator);
+
+            return "SELECT * FROM (" + input + ") AS " + alias + " WHERE "
+                    + sort.getKeyDescriptor().getSqlImplementation();
+        } else if (operator instanceof JdbcReduceByOperator) {
+            final JdbcReduceByOperator reduceBy = (JdbcReduceByOperator) operator;
+            final String input = visitTask(nextOperators.get(0), edgeMap, subqueryCount + 1, aliasMap);
+            final String alias = aliasMap.computeIfAbsent(operator);
+
+            return "SELECT * FROM (" + input + ") AS " + alias + " WHERE "
+                    + reduceBy.getKeyDescriptor().getSqlImplementation();
         } else if (operator instanceof JdbcFilterOperator) {
             final JdbcFilterOperator filter = (JdbcFilterOperator) operator;
 
@@ -184,7 +203,6 @@ public class JdbcExecutor extends ExecutorTemplate {
             final List<String> fields = filter.getPredicateDescriptor().fieldNames;
             final String condition = filter.getPredicateDescriptor().createSqlString.apply(fields);
 
-            System.out.println("[visitTask(filter)] condition: " + condition);
             return "SELECT * FROM (" + input + ") AS " + alias + " WHERE "
                     + condition;
         } else if (operator instanceof JdbcGlobalReduceOperator) {
@@ -196,8 +214,8 @@ public class JdbcExecutor extends ExecutorTemplate {
             final String input = visitTask(nextOperators.get(0), edgeMap, subqueryCount + 1, aliasMap);
             final String alias = aliasMap.computeIfAbsent(operator);
 
-            System.out.println("[visitTask(reduce)] condition: " + reduce.getReduceDescriptor().getSqlImplementation() );
-            return "SELECT " + reduce.getReduceDescriptor().getSqlImplementation() + " FROM (" + input + ") AS "
+            return "SELECT " + reduce.getReduceDescriptor().getSqlImplementation() + " FROM (" + input
+                    + ") AS "
                     + alias;
         } else if (operator instanceof JdbcTableSource) {
             final JdbcTableSource table = (JdbcTableSource) operator;
@@ -238,7 +256,7 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .map(task -> visitTask(task.getOperator(), operatorMap, 0, new AliasMap()))
                 .findAny()
                 .orElseThrow(() -> new WayangException("Could not produce Sql in JdbcExecutor."));
-
+        
         final List<ExecutionTask> allTasksWithTableSources = Arrays
                 .stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
                 .collect(Collectors.toList());
@@ -261,7 +279,7 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         // set the string query generated above to each channel
         outBoundChannels.forEach(chann -> {
-            chann.setSqlQuery(query);
+            chann.setSqlQuery(noAliasQuery);
             executionState.register(chann); // register at this execution stage so it gets executed
         });
     }

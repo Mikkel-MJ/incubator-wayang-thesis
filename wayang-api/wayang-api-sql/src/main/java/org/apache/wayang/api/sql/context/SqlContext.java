@@ -25,8 +25,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
-import org.apache.calcite.rel.rules.*;
-import org.apache.calcite.rel.logical.*;
 
 import org.apache.wayang.api.sql.calcite.convention.WayangConvention;
 import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
@@ -92,9 +90,11 @@ public class SqlContext extends WayangContext {
     }
 
     /**
-     * Method for building {@link WayangPlan}s useful for testing, benchmarking and other
+     * Method for building {@link WayangPlan}s useful for testing, benchmarking and
+     * other
      * usages where you want to handle the intermediate {@link WayangPlan}
-     * @param sql sql query string with the {@code ;} cut off
+     * 
+     * @param sql     sql query string with the {@code ;} cut off
      * @param udfJars
      * @return a {@link WayangPlan} of a given sql string
      * @throws SqlParseException
@@ -104,10 +104,9 @@ public class SqlContext extends WayangContext {
         final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
         final Optimizer optimizer = Optimizer.create(
-            calciteSchema,
-            configProperties,
-            relDataTypeFactory
-        );
+                calciteSchema,
+                configProperties,
+                relDataTypeFactory);
 
         final SqlNode sqlNode = optimizer.parseSql(sql);
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
@@ -144,11 +143,11 @@ public class SqlContext extends WayangContext {
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(optimized, 0, null);
 
-        //final RelNode converted = optimizer.prepare(optimized, rulesList);
+        // final RelNode converted = optimizer.prepare(optimized, rulesList);
 
         final AliasFinder aliasFinder = new AliasFinder(visitor);
-        //aliasFinder.context = relContext;
-        
+        // aliasFinder.context = relContext;
+
         final Collection<Record> collector = new ArrayList<>();
         return optimizer.convert(optimized, collector, aliasFinder);
     }
@@ -185,19 +184,16 @@ public class SqlContext extends WayangContext {
         final RuleSet rules = RuleSets.ofList(
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
+                WayangRules.WAYANG_AGGREGATE_RULE,
                 WayangRules.WAYANG_PROJECT_RULE,
                 WayangRules.WAYANG_FILTER_RULE,
                 WayangRules.WAYANG_JOIN_RULE,
-                WayangRules.WAYANG_AGGREGATE_RULE,
                 WayangRules.WAYANG_SORT_RULE);
-    
-
 
         final RelNode wayangRel = optimizer.optimize(
                 relNode,
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
-
 
         PrintUtils.print("wayang rel 2: ", wayangRel);
         final Collection<Record> collector = new ArrayList<>();

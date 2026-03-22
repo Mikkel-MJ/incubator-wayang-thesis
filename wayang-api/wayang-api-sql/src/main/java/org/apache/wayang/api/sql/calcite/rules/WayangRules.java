@@ -60,14 +60,8 @@ public class WayangRules {
             WAYANG_FILTER_RULE,
             WAYANG_TABLESCAN_RULE,
             WAYANG_TABLESCAN_ENUMERABLE_RULE,
-            WAYANG_AGGREGATE_RULE);
-
-    /**
-     * Rule that tries to take a multi conditional join and splits it into multiple
-     * binary joins.
-     */
-    public static final RelOptRule WAYANG_MULTI_CONDITION_JOIN_SPLIT_RULE = new WayangMultiConditionJoinSplitRule(
-            WayangMultiConditionJoinSplitRule.Config.DEFAULT);
+            WAYANG_AGGREGATE_RULE,
+            WAYANG_SORT_RULE);
 
     private static class WayangProjectRule extends ConverterRule {
 
