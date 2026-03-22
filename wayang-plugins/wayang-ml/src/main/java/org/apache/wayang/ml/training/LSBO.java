@@ -147,7 +147,7 @@ public class LSBO {
 
             //ExplainUtils.parsePlan(sampledPlan, false);
             TreeNode encoded = TreeEncoder.encode(sampledPlan);
-            long execTime = Long.MAX_VALUE;
+            long execTime = -1;
 
             try {
                 Instant start = Instant.now();
@@ -184,7 +184,7 @@ public class LSBO {
                 System.out.println(e);
 
                 // Send longest possible time back, only execution failed
-                encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + Long.MAX_VALUE;
+                encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + -1l;
                 //System.out.println(encodedInput);
 
                 ArrayList<String> latency = new ArrayList<>();
@@ -235,7 +235,7 @@ public class LSBO {
             WayangPlan sampledPlan = decodedPlans.get(0);
 
             TreeNode encoded = TreeEncoder.encode(sampledPlan);
-            long execTime = Long.MAX_VALUE;
+            long execTime = -1;
 
             try {
                 ExecutionPlan executionPlan = samplingJob.buildInitialExecutionPlan();
@@ -261,7 +261,7 @@ public class LSBO {
                 System.out.println(e);
 
                 // Send longest possible time back, only execution failed
-                String encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + Long.MAX_VALUE;
+                String encodedInput = wayangNode.toStringEncoding() + ":" + encoded.toStringEncoding() + ":" + -1l;
                 //System.out.println(encodedInput);
 
                 ArrayList<String> latency = new ArrayList<>();
@@ -321,10 +321,10 @@ public class LSBO {
                 long[][] platformChoices = PlatformChoiceValidator.validate(
                     choices,
                     indexes,
-                    encoded,
+                    encoded/*,
                     new BitmaskValidationRule(),
                     new OperatorValidationRule(),
-                    new PostgresSourceValidationRule()
+                    new PostgresSourceValidationRule()*/
                 );
 
                 /*

@@ -1,4 +1,0 @@
-Encoding: 3
-Inference: 5
-Unpacking: 1
-Decoding: 0
