@@ -90,7 +90,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
                     DataUnitType.createGrouped(Record.class),
                     DataUnitType.createBasicUnchecked(Record.class));
             reduceDescriptor.withSqlImplementation(Arrays.stream(reductionStatements).collect(Collectors.joining(",")));
-            
+
             System.out.println("making reduce operator instead of global");
             final ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
                     new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class,
