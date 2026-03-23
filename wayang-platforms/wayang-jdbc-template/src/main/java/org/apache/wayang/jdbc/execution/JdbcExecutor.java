@@ -125,30 +125,17 @@ public class JdbcExecutor extends ExecutorTemplate {
 
             final String condition;
 
-            if (joinKeyDescriptor0.hasSqlImpl()) {
-                final List<String> aliasedLeft = joinKeyDescriptor0.getFieldNames().stream()
-                        .map(name -> leftAlias + "." + name).collect(Collectors.toList());
-                final List<String> aliasedRight = joinKeyDescriptor1.getFieldNames().stream()
-                        .map(name -> rightAlias + "." + name).collect(Collectors.toList());
-                final List<String> aliasedFields = Stream
-                        .concat(aliasedLeft.stream(), aliasedRight.stream())
-                        .collect(Collectors.toList());
+            assert joinKeyDescriptor0.hasSqlImpl() : "join didnt have sql impl.";
 
-                condition = joinKeyDescriptor0.createSqlString(aliasedFields);
-            } else {
-                // setup join condition
-                final String leftField = joinKeyDescriptor0.getFieldNames()
-                        .get(joinKeyDescriptor0.getkeys().get(0));
-                final String rightField = joinKeyDescriptor1.getFieldNames()
-                        .get(joinKeyDescriptor1.getkeys().get(0));
+            final List<String> aliasedLeft = joinKeyDescriptor0.getFieldNames().stream()
+                    .map(name -> leftAlias + "." + name).collect(Collectors.toList());
+            final List<String> aliasedRight = joinKeyDescriptor1.getFieldNames().stream()
+                    .map(name -> rightAlias + "." + name).collect(Collectors.toList());
+            final List<String> aliasedFields = Stream
+                    .concat(aliasedLeft.stream(), aliasedRight.stream())
+                    .collect(Collectors.toList());
 
-                assert leftField != null : "Left join field in filter was null.";
-                assert rightField != null : "Right join field in filter was null.";
-
-                condition = String.format("%s.%s = %s.%s",
-                        leftAlias, leftField,
-                        rightAlias, rightField);
-            }
+            condition = joinKeyDescriptor0.createSqlString(aliasedFields);
 
             return "SELECT " + selectStatement + " FROM (" + left + ") AS left" + alias +
                     " INNER JOIN (" + right

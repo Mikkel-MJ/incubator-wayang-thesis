@@ -20,18 +20,17 @@ public final class Call implements Node {
             return ((NlsString) obj).getValue();
         return obj.toString();
     }
+
     private final List<Node> operands;
     final List<SqlKind> operandTypes;
     final SerializableFunction<List<Object>, Object> operation;
-
     final SqlKind kind;
-
+    
     public Call(final RexCall call, final CallTreeFactory tree) {
-        operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
-        operandTypes = call.getOperands().stream().map(RexNode::getKind).collect(Collectors.toList());
-        kind = call.getKind();
-
-        operation = tree.deriveOperation(kind);
+        this.operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
+        this.operandTypes = call.getOperands().stream().map(RexNode::getKind).collect(Collectors.toList());
+        this.kind = call.getKind();
+        this.operation = tree.deriveOperation(kind);
     }
 
     @Override

@@ -18,7 +18,6 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataTypeField;
 
@@ -55,7 +54,7 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
     Operator visit(final WayangAggregate wayangRelNode) {
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
 
-        final List<AggregateCall> aggregateCalls = ((Aggregate) wayangRelNode).getAggCallList();
+        final List<AggregateCall> aggregateCalls = wayangRelNode.getAggCallList();
         final int groupCount = wayangRelNode.getGroupCount();
         final HashSet<Integer> groupingFields = new HashSet<>(wayangRelNode.getGroupSet().asSet());
 

@@ -15,7 +15,6 @@ public final class InputRef implements Node {
 
     @Override
     public Object evaluate(final Record rec) {
-        System.out.println("evaluating rec: " + rec + ", with key: " + key);
         return rec.getField(key);
     }
 

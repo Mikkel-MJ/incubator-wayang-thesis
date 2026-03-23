@@ -28,6 +28,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.Node;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinCallTreeFactory;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
+import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
@@ -48,8 +49,6 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-
-        System.out.println("join fields: "  + wayangRelNode.getRowType().getFieldList());
         final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), aliasFinder);
         final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), aliasFinder);
 
@@ -63,6 +62,12 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
 
         assert (keys.size() == 2) : "Amount of keys found in join was not 2, got: " + keys.size();
 
+        // offset of the index in the right child
+        final int offset = wayangRelNode.getInput(0).getRowType().getFieldCount();
+
+        final int leftKeyIndex  = keys.get(0) < keys.get(1) ? keys.get(0)          : keys.get(1);
+        final int rightKeyIndex = keys.get(0) < keys.get(1) ? keys.get(1) - offset : keys.get(0) - offset;
+
         if (!condition.isA(SqlKind.EQUALS)) {
             throw new UnsupportedOperationException("Only equality joins supported");
         }
@@ -74,29 +79,16 @@ public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
         final List<String> rightProjection = wayangRelNode.getRowType().getFieldNames().stream()
                 .skip(leftProjectionAliases.size()).collect(Collectors.toList());
 
-        System.out.println("[JoinVisitor]: left field list get name " + wayangRelNode.getLeft().getRowType().getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println("[JoinVisitor]: left field names " + wayangRelNode.getLeft().getRowType().getFieldNames());
-        System.out.println("[JoinVisitor]: right field list get name " + wayangRelNode.getRowType().getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println("[JoinVisitor]: right field names " + wayangRelNode.getRight().getRowType().getFieldNames());
-        System.out.println("[JoinVisitor]: field list get name " + wayangRelNode.getRight().getRowType().getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println("[JoinVisitor]: field names " + wayangRelNode.getRowType().getFieldNames());
-        System.out.println("[JoinVisitor]: join: " + wayangRelNode);
-        System.out.println("[JoinVisitor]: left proj aliases: " + leftProjectionAliases);
-        System.out.println("[JoinVisitor]: left proj: " + leftProjection);
-        System.out.println("[JoinVisitor]:right proj aliases: " + rightProjectionAliases);
-        System.out.println("[JoinVisitor]: right proj: " + rightProjection);
-
         assert leftProjectionAliases.size() == leftProjection.size();
         assert rightProjectionAliases.size() == rightProjection.size();
 
-        final JoinCallTreeFactory factory = new JoinCallTreeFactory();
-        final Node joinCallTree = factory.fromRexNode(wayangRelNode.getCondition());
-        final SerializableFunction<Record, Record> javaImpl = rec -> new Record(joinCallTree.evaluate(rec));
-        final SerializableFunction<List<String>, String> createSqlFunc = fields -> joinCallTree.createSqlString(fields);
+        final Node leftJoinCallTree = new JoinCallTreeFactory().fromRexNode(wayangRelNode.getCondition());
 
-        final JoinKeyDescriptor leftKeyDescriptor = new JoinKeyDescriptor(javaImpl, leftProjection,
+        final SerializableFunction<List<String>, String> createSqlFunc = fields -> leftJoinCallTree.createSqlString(fields);
+
+        final JoinKeyDescriptor leftKeyDescriptor = new JoinKeyDescriptor(new KeyExtractor<Record>(leftKeyIndex), leftProjection,
                 leftProjectionAliases, createSqlFunc);
-        final JoinKeyDescriptor righKeyDescriptor = new JoinKeyDescriptor(javaImpl, rightProjection,
+        final JoinKeyDescriptor righKeyDescriptor = new JoinKeyDescriptor(new KeyExtractor<Record>(rightKeyIndex), rightProjection,
                 rightProjectionAliases, createSqlFunc);
 
         final JoinOperator<Record, Record, Record> join = new JoinOperator<>(

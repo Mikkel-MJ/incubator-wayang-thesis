@@ -4,6 +4,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
@@ -14,9 +15,11 @@ import org.apache.wayang.api.sql.calcite.converter.calltrees.CallTreeFactory;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
+import org.checkerframework.checker.units.qual.s;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.Node;
 
 import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Range;
 
 public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredicate<Record> {
@@ -55,6 +58,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                         case PLUS:
                             return widenToDouble.apply(input.get(0)) + widenToDouble.apply(input.get(1));
                         case SEARCH:
+                            //System.out.println("searchin");
                             if (input.get(0) instanceof ImmutableRangeSet) {
                                 ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(0);
                                 if (!(input.get(1) instanceof Comparable)) {
@@ -67,17 +71,30 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                                 return newRange.contains(field);
                             } else if (input.get(1) instanceof ImmutableRangeSet) {
                                 final ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(1);
-                                assert input.get(0) == null || input.get(0) instanceof Comparable : "left input should be null or comparable.";
+                                assert input.get(0) == null || input.get(0) instanceof Comparable
+                                        : "left input should be null or comparable.";
 
                                 final Comparable field = ensureComparable.apply(input.get(0));
                                 final Comparable left = ensureComparable.apply(range.span().lowerEndpoint());
                                 final Comparable right = ensureComparable.apply(range.span().upperEndpoint());
                                 final Range<Comparable> newRange = Range.closed(left, right);
 
-                                if (field == null) return false;
+                                if (field == null)
+                                    return false;
                                 return newRange.contains(field);
+                            } else if (input.get(1) instanceof ImmutableSortedSet) {
+                                final ImmutableSortedSet<?> set = (ImmutableSortedSet<?>) input.get(1);
+
+                                //System.out.println("set: " + set.asList());
+                                //System.out.println("elem: " + input.get(0));
+                                //System.out.println("set contains? " + set.contains(input.get(0)));
+                                return set.stream().map(Range.class::cast)
+                                        .map(range -> range.lowerEndpoint())
+                                        .map(ensureComparable::apply)
+                                        .collect(Collectors.toSet())
+                                        .contains(input.get(0));
                             } else {
-                                throw new UnsupportedOperationException("No range set found in SARG, input1: "
+                                throw new UnsupportedOperationException("No range or set found in SARG, input1: "
                                         + input.get(0).getClass() + ", input2: " + input.get(1).getClass());
                             }
                         default:
@@ -95,22 +112,29 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         }
 
         private boolean isGreaterThan(final Object o1, final Object o2) {
-            if (o1 == null && o2 == null) return false;
-            if (o1 == null) return false;
-            if (o2 == null) return true;
-            //System.out.println("[FilterPred.gt]: o1 " + o1 + " and o2, " + o2);
+            if (o1 == null && o2 == null)
+                return false;
+            if (o1 == null)
+                return false;
+            if (o2 == null)
+                return true;
+            // System.out.println("[FilterPred.gt]: o1 " + o1 + " and o2, " + o2);
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) > 0;
         }
 
         private boolean isLessThan(final Object o1, final Object o2) {
-            if (o1 == null && o2 == null) return false;
-            if (o1 == null) return true;
-            if (o2 == null) return false;
+            if (o1 == null && o2 == null)
+                return false;
+            if (o1 == null)
+                return true;
+            if (o2 == null)
+                return false;
             return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) < 0;
         }
 
         private boolean isEqualTo(final Object o1, final Object o2) {
-            if (o1 == null || o2 == null) return o1 == o2;
+            if (o1 == null || o2 == null)
+                return o1 == o2;
             return Objects.equals(ensureComparable.apply(o1), ensureComparable.apply(o2));
         }
     }
@@ -164,7 +188,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
 
     @Override
     public boolean test(final Record rec) {
-        //System.out.println("[FilterPred.rec]: " + rec);
+        // System.out.println("[FilterPred.rec]: " + rec);
         return (boolean) callTree.evaluate(rec);
     }
 
@@ -172,4 +196,3 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         return callTree.createSqlString(fieldNames);
     }
 }
-
