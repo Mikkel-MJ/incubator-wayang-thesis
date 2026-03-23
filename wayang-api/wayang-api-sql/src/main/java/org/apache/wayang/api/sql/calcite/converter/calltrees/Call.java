@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Range;
 
-class Call implements Node {
+public final class Call implements Node {
     private static String sqlObjToString(final Object obj) {
         if (obj instanceof NlsString)
             return ((NlsString) obj).getValue();
@@ -26,7 +26,7 @@ class Call implements Node {
 
     final SqlKind kind;
 
-    protected Call(final RexCall call, final CallTreeFactory tree) {
+    public Call(final RexCall call, final CallTreeFactory tree) {
         operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
         operandTypes = call.getOperands().stream().map(RexNode::getKind).collect(Collectors.toList());
         kind = call.getKind();

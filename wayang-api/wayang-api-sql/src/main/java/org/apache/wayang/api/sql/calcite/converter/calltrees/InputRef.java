@@ -6,10 +6,10 @@ import java.util.List;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.wayang.basic.data.Record;
 
-class InputRef implements Node {
+public final class InputRef implements Node {
     private final int key;
 
-    InputRef(final RexInputRef inputRef) {
+    public InputRef(final RexInputRef inputRef) {
         this.key = inputRef.getIndex();
     }
 

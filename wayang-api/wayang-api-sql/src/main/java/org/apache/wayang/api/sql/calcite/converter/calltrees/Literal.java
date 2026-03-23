@@ -1,28 +1,20 @@
 package org.apache.wayang.api.sql.calcite.converter.calltrees;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.Sarg;
 import org.apache.wayang.basic.data.Record;
-import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 
 import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Range;
 
-class Literal implements Node {
+public final class Literal implements Node {
     final Serializable value;
 
-    Literal(final RexLiteral literal) {
+    public Literal(final RexLiteral literal) {
         switch (literal.getTypeName()) {
             case DATE:
                 value = literal.getValueAs(Calendar.class);
