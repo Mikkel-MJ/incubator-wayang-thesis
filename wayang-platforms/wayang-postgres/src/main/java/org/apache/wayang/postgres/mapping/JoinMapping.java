@@ -59,7 +59,11 @@ public class JoinMapping implements Mapping {
                 false
         )
         .withAdditionalTest(op -> op.getKeyDescriptor0() instanceof TransformationDescriptor)
-        .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor);
+        .withAdditionalTest(op -> op.getKeyDescriptor1() instanceof TransformationDescriptor)
+        .withAdditionalTest(op -> {
+                return Mappings.isValidPostgres(op);
+        });
+
         return SubplanPattern.createSingleton(operatorPattern);
     }
 

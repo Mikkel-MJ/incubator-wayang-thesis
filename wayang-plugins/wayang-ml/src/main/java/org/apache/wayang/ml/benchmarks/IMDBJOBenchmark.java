@@ -48,11 +48,19 @@ public class IMDBJOBenchmark {
         final Plugin[] plugins,
         final String... udfJars
     ) throws SQLException, IOException, org.apache.calcite.sql.parser.SqlParseException {
+
+        sqlContext = new SqlContext(configuration, Spark.basicPlugin(), Postgres.plugin(),
+                Java.channelConversionPlugin(), Java.testSuitePlugin(), Flink.basicPlugin());
+
+        final Path pathToQuery = Paths.get(path);
+        final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off
+        /*
         sqlContext = new SqlContext(configuration, plugins);
         final Path pathToQuery = Paths.get(path);
 
         // need to chop off the last ';' otherwise sqlContext cant parse it
         final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
+        */
 
         WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
 
@@ -107,8 +115,8 @@ public class IMDBJOBenchmark {
 
             configuration.setProperty("wayang.ml.experience.enabled", "false");
 
-            final SqlContext sqlContext = new SqlContext(configuration, Postgres.plugin(),
-                    Java.channelConversionPlugin(), Java.testSuitePlugin());
+            final SqlContext sqlContext = new SqlContext(configuration, Spark.basicPlugin(), Postgres.plugin(),
+                    Java.channelConversionPlugin(), Java.testSuitePlugin(), Flink.basicPlugin());
 
             final Path pathToQuery = Paths.get(args[0]);
             final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing()); // need to chop off

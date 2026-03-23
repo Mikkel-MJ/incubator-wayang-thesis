@@ -32,7 +32,11 @@ import java.util.Collections;
             final OperatorPattern<ReduceByOperator<Record, Record>> operatorPattern = new OperatorPattern<ReduceByOperator<Record, Record>>(
                     "reduce",
                     new ReduceByOperator<Record, Record>(null, null, DataSetType.createDefault(Record.class)),
-                    false);
+                    false)
+            .withAdditionalTest(op -> {
+                return Mappings.isValidPostgres(op);
+            });
+
             return SubplanPattern.createSingleton(operatorPattern);
         }
 

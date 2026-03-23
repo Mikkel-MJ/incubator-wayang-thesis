@@ -30,7 +30,11 @@ public class GlobalReduceMapping implements Mapping {
 
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern<GlobalReduceOperator<Record>> operatorPattern = new OperatorPattern<>(
-                "reduce", new GlobalReduceOperator<Record>(null, DataSetType.createDefault(Record.class)), false);
+                "reduce", new GlobalReduceOperator<Record>(null, DataSetType.createDefault(Record.class)), false)
+            .withAdditionalTest(op -> {
+                return Mappings.isValidPostgres(op);
+            });
+
         return SubplanPattern.createSingleton(operatorPattern);
     }
 

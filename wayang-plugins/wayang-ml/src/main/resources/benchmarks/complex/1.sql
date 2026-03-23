@@ -1,4 +1,3 @@
-
 SELECT
     MIN(cn.name) AS company_name,
     MIN(lt.link) AS link_type,

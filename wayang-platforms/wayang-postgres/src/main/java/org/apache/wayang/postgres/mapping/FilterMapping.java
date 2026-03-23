@@ -50,7 +50,11 @@ public class FilterMapping implements Mapping {
     private SubplanPattern createSubplanPattern() {
         final OperatorPattern<FilterOperator<Record>> operatorPattern = new OperatorPattern<>(
                 "filter", new FilterOperator<>(null, DataSetType.createDefault(Record.class)), false
-        );
+        )
+        .withAdditionalTest(op -> {
+            return Mappings.isValidPostgres(op);
+        });
+
         return SubplanPattern.createSingleton(operatorPattern);
     }
 

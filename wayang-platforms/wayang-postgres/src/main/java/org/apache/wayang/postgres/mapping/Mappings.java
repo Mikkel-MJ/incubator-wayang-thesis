@@ -16,9 +16,18 @@
 * limitations under the License.
 */
 package org.apache.wayang.postgres.mapping;
+
 import org.apache.wayang.core.mapping.Mapping;
+import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
+import org.apache.wayang.postgres.operators.PostgresExecutionOperator;
+import org.apache.wayang.core.plan.wayangplan.OperatorAlternative;
+import org.apache.wayang.core.plan.wayangplan.Operator;
+
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 /**
 * Register for the {@link Mapping}s supported for this platform.
@@ -34,4 +43,35 @@ public class Mappings {
             new SortMapping(),
             new CartesianMapping()
     );
+
+    public static boolean isValidPostgres(Operator operator) {
+        if (operator instanceof ExecutionOperator) {
+            return operator instanceof PostgresExecutionOperator;
+        }
+
+        if (operator.getNumInputs() == 0) {
+            if (operator instanceof OperatorAlternative) {
+                List<OperatorAlternative.Alternative> alternatives = ((OperatorAlternative) operator).getAlternatives();
+
+                long noOfPostgresAlts = alternatives
+                    .stream()
+                    .filter(op -> op.getContainedOperators().stream().findFirst().get() instanceof PostgresExecutionOperator)
+                    .count();
+
+                if (noOfPostgresAlts == 0) {
+                    return false;
+                }
+            }
+        }
+
+        for (int i = 0; i < operator.getNumInputs(); i++) {
+            Operator input = operator.getEffectiveOccupant(i).getOwner();
+
+            if (!isValidPostgres(input)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

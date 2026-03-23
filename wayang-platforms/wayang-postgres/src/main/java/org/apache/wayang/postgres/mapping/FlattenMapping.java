@@ -62,6 +62,9 @@ public class FlattenMapping implements Mapping {
                         DataSetType.createDefault(ReflectionUtils.specify(Tuple2.class)),
                         DataSetType.createDefault(Record.class)),
                 false)
+                .withAdditionalTest(op -> {
+                    return Mappings.isValidPostgres(op);
+                })
                 .withAdditionalTest(op -> op.getNumInputs() == 1);
         return SubplanPattern.createSingleton(operatorPattern);
     }

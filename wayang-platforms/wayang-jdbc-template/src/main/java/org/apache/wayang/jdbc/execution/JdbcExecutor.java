@@ -256,7 +256,7 @@ public class JdbcExecutor extends ExecutorTemplate {
                 .map(task -> visitTask(task.getOperator(), operatorMap, 0, new AliasMap()))
                 .findAny()
                 .orElseThrow(() -> new WayangException("Could not produce Sql in JdbcExecutor."));
-        
+
         final List<ExecutionTask> allTasksWithTableSources = Arrays
                 .stream(stage.getAllTasks().toArray(ExecutionTask[]::new))
                 .collect(Collectors.toList());
@@ -279,7 +279,7 @@ public class JdbcExecutor extends ExecutorTemplate {
 
         // set the string query generated above to each channel
         outBoundChannels.forEach(chann -> {
-            chann.setSqlQuery(noAliasQuery);
+            chann.setSqlQuery(query);
             executionState.register(chann); // register at this execution stage so it gets executed
         });
     }

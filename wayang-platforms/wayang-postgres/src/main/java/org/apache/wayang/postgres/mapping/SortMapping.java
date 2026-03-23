@@ -34,7 +34,11 @@ import java.util.Collections;
             final OperatorPattern<SortOperator<Record, Record>> operatorPattern = new OperatorPattern<SortOperator<Record, Record>>(
                     "sort",
                     new SortOperator<Record, Record>(null, DataSetType.createDefault(Record.class)),
-                    false);
+                    false)
+            .withAdditionalTest(op -> {
+                return Mappings.isValidPostgres(op);
+            });
+
             return SubplanPattern.createSingleton(operatorPattern);
         }
 

@@ -47,7 +47,11 @@ public class CartesianMapping implements Mapping {
                 new CartesianOperator<Record, Record>(
                         DataSetType.createDefault(Record.class),
                         DataSetType.createDefault(Record.class)),
-                false);
+                false)
+                .withAdditionalTest(op -> {
+                    return Mappings.isValidPostgres(op);
+                });
+
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
@@ -55,7 +59,7 @@ public class CartesianMapping implements Mapping {
         return new ReplacementSubplanFactory.OfSingleOperators<JoinOperator<Record, Record, Object>>(
                 (matchedOperator, epoch) -> {
                     System.out.println("matched postgres mapping with op: " + matchedOperator);
-                    return new PostgresJoinOperator<>(matchedOperator).at(epoch); 
+                    return new PostgresJoinOperator<>(matchedOperator).at(epoch);
             });
     }
 }

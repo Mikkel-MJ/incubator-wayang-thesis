@@ -59,6 +59,7 @@ import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import scala.collection.Seq;
 import scala.collection.JavaConversions;
@@ -77,12 +78,16 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         try {
-            List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
+            List<Plugin> pluginsSeq = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
+            ArrayList<Plugin> plugins = new ArrayList<>(pluginsSeq);
+            plugins.add(Java.testSuitePlugin());
+            plugins.add(Java.channelConversionPlugin());
+
             Configuration config = new Configuration();
             String modelType = "";
 
@@ -167,6 +172,7 @@ public class JOBenchmark {
 
             final MLContext wayangContext = new MLContext(config);
             plugins.stream().forEach(plug -> wayangContext.register(plug));
+
 
             String[] jars = ArrayUtils.addAll(
                 ReflectionUtils.getAllJars(JOBenchmark.class),

@@ -55,7 +55,10 @@ public class ProjectionMapping implements Mapping {
                         DataSetType.createDefault(Record.class)),
                 false)
                 .withAdditionalTest(op -> op.getFunctionDescriptor() instanceof ProjectionDescriptor)
-                .withAdditionalTest(op -> op.getNumInputs() == 1); // No broadcasts.
+                .withAdditionalTest(op -> op.getNumInputs() == 1) // No broadcasts.
+                .withAdditionalTest(op -> {
+                    return Mappings.isValidPostgres(op);
+                });
         return SubplanPattern.createSingleton(operatorPattern);
     }
 
