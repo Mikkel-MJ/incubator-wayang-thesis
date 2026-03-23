@@ -1,0 +1,26 @@
+
+package org.apache.wayang.api.sql.calcite.converter.calltrees;
+
+import java.util.List;
+
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.wayang.basic.data.Record;
+
+class InputRef implements Node {
+    private final int key;
+
+    InputRef(final RexInputRef inputRef) {
+        this.key = inputRef.getIndex();
+    }
+
+    @Override
+    public Object evaluate(final Record rec) {
+        System.out.println("evaluating rec: " + rec + ", with key: " + key);
+        return rec.getField(key);
+    }
+
+    @Override
+    public String createSqlString(final List<String> fieldNames) {
+        return fieldNames.get(key);
+    }
+}
