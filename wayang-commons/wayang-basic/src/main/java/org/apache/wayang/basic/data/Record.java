@@ -134,7 +134,7 @@ public class Record implements Serializable, Copyable<Record>, Comparable<Record
 
     /**
      * Compares the fields of this record to the fields of another record.
-     * 
+     *
      * @param that another record not null
      * @return
      * @throws IllegalStateException if the two records do not have the same types in {@link #values}
@@ -142,16 +142,27 @@ public class Record implements Serializable, Copyable<Record>, Comparable<Record
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public int compareTo(final Record that) throws IllegalStateException {
-        for (int i = 0; i < values.length; i++) {
-            if (!this.values[i].getClass().equals(that.values[i].getClass()))
-                throw new IllegalStateException("Tried compare records with dissimilar classes had, this values: "
-                        + this.values + ", that values: " + that.values + ", this item class: "
-                        + this.values[i].getClass() + ", that item class: " + that.values[i].getClass());
+        for (int i = 0; i < this.values.length; i++) {
+            if (!this.values[i].getClass().equals(that.values[i].getClass())) {
+                throw new IllegalStateException(
+                    "Tried to compare records with dissimilar classes. " +
+                    "this item class: " + this.values[i].getClass() +
+                    ", that item class: " + that.values[i].getClass()
+                );
+            }
+
+            if (!(this.values[i] instanceof Comparable)) {
+                throw new IllegalStateException(
+                    "Record value at index " + i + " is not Comparable: " +
+                    this.values[i].getClass()
+                );
+            }
+
+            @SuppressWarnings("unchecked")
+            int cmp = ((Comparable<Object>) this.values[i]).compareTo(that.values[i]);
+
+            if (cmp != 0) return cmp;
         }
-
-        final Comparable[] thisComparables = (Comparable<?>[]) values;
-        final Comparable[] thatComparables = (Comparable<?>[]) that.values;
-
-        return Arrays.compare(thisComparables, thatComparables);
+        return Integer.compare(this.values.length, that.values.length);
     }
 }

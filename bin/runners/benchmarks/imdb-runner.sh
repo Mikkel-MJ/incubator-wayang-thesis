@@ -1,3 +1,5 @@
+
+
 export WORKDIR=/work/lsbo-paper
 export DEPENDENCIES_DIR="${WORKDIR}/dependencies"
 export HADOOP_HOME="${DEPENDENCIES_DIR}/hadoop"
@@ -15,8 +17,8 @@ cd ${WORKDIR}
 cd wayang-0.7.1
 
 data_path=/work/lsbo-paper/data/JOBenchmark/data
-timings_path=/work/lsbo-paper/data/benchmarks/job
-test_path=/work/lsbo-paper/data/JOBenchmark/queries/light
+timings_path=/work/lsbo-paper/data/benchmarks/job/complex
+test_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
 model_path=/work/lsbo-paper/data/models/imdb/bqs/bvae.onnx
 
 bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-tao.onnx
@@ -26,15 +28,16 @@ retrained_bvae_2_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-
 retrained_bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-5.onnx
 
 echo "Running JOBenchmark"
+    queries=(23 24 25 27 29 30)
 
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
     #for query in "$test_path"/*.sql; do
-    query="$test_path"/10.sql
-        for i in {0..1}; do
+    #for i in {0..2}; do
     #for query in $(ls "$test_path"/*.sql | tail -n +14); do
-    #for query_name in "${selected_queries[@]}"; do
+    for query_name in "${queries[@]}"; do
+        query="$test_path"/"$query_name".sql
             ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
-            ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark spark,postgres file://$data_path/ $timings_path/native/ $query
+            #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark spark,postgres file://$data_path/ $timings_path/native/ $query
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/tao/ $query bvae $bvae_1_path $data_path/experience/
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/ $query bvae $retrained_bvae_1_path $data_path/experience/
             #./bin/wayang-submit -Xmx33g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
@@ -46,6 +49,7 @@ echo "Running JOBenchmark"
             sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
             sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
             sleep 1s
-        done
-    #done
+        #done
+    done
+
 
