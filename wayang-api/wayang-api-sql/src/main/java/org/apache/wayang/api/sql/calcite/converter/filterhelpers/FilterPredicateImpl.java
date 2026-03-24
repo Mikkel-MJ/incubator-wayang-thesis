@@ -108,7 +108,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
          * Java equivalent of SQL like clauses
          */
         private boolean like(final String s1, final String s2) {
-            return SqlFunctions.like(s1, s2);
+            return s1 == null || s2 == null ? false : SqlFunctions.like(s1, s2);
         }
 
         private boolean isGreaterThan(final Object o1, final Object o2) {
