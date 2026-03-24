@@ -23,9 +23,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.Node;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinCallTreeFactory;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
+import org.apache.wayang.api.sql.calcite.converter.joinhelpers.MultiConditionJoinKeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
@@ -66,11 +69,16 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
         final List<String> rightProjection = wayangRelNode.getRowType().getFieldNames().stream()
                 .skip(leftProjectionAliases.size()).collect(Collectors.toList());
 
-        System.out.println("[MultiCondJoinVisitor]: left field list get name " + wayangRelNode.getLeft().getRowType().getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println("[MultiCondJoinVisitor]: left field names " + wayangRelNode.getLeft().getRowType().getFieldNames());
-        System.out.println("[MultiCondJoinVisitor]: right field list get name " + wayangRelNode.getRowType().getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println("[MultiCondJoinVisitor]: right field names " + wayangRelNode.getRight().getRowType().getFieldNames());
-        System.out.println("[MultiCondJoinVisitor]: field list get name " + wayangRelNode.getRight().getRowType().getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
+        System.out.println("[MultiCondJoinVisitor]: left field list get name " + wayangRelNode.getLeft().getRowType()
+                .getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
+        System.out.println(
+                "[MultiCondJoinVisitor]: left field names " + wayangRelNode.getLeft().getRowType().getFieldNames());
+        System.out.println("[MultiCondJoinVisitor]: right field list get name " + wayangRelNode.getRowType()
+                .getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
+        System.out.println(
+                "[MultiCondJoinVisitor]: right field names " + wayangRelNode.getRight().getRowType().getFieldNames());
+        System.out.println("[MultiCondJoinVisitor]: field list get name " + wayangRelNode.getRight().getRowType()
+                .getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
         System.out.println("[MultiCondJoinVisitor]: field names " + wayangRelNode.getRowType().getFieldNames());
         System.out.println("[MultiCondJoinVisitor]: join: " + wayangRelNode);
         System.out.println("[MultiCondJoinVisitor]: left proj aliases: " + leftProjectionAliases);
@@ -78,16 +86,48 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
         System.out.println("[MultiCondJoinVisitor]:right proj aliases: " + rightProjectionAliases);
         System.out.println("[MultiCondJoinVisitor]: right proj: " + rightProjection);
 
-
         final JoinCallTreeFactory factory = new JoinCallTreeFactory();
         final Node joinCallTree = factory.fromRexNode(wayangRelNode.getCondition());
-        final SerializableFunction<Record, Record> javaImpl = rec -> new Record(joinCallTree.evaluate(rec));
-        
+
         final SerializableFunction<List<String>, String> createSqlFunc = fields -> joinCallTree.createSqlString(fields);
 
-        final JoinKeyDescriptor leftKeyDescriptor = new JoinKeyDescriptor(javaImpl, leftProjection, leftProjectionAliases, createSqlFunc);
+        final RexCall call = (RexCall) wayangRelNode.getCondition();
 
-        final JoinKeyDescriptor righKeyDescriptor = new JoinKeyDescriptor(javaImpl, rightProjection, rightProjectionAliases, createSqlFunc);
+        final List<RexCall> subConditions = call.operands.stream()
+                .map(RexCall.class::cast)
+                .collect(Collectors.toList());
+        final List<RexInputRef> leftTableInputRefs = subConditions.stream()
+                .map(sub -> sub.getOperands().stream()
+                        .map(RexInputRef.class::cast)
+                        .min((left, right) -> Integer.compare(left.getIndex(), right.getIndex()))
+                        .get())
+                .collect(Collectors.toList());
+
+        final Integer[] leftTableKeyIndexes = leftTableInputRefs.stream()
+                .map(RexInputRef::getIndex)
+                .toArray(Integer[]::new);
+
+        // for the right table input refs, the indexes are offset by the amount of rows
+        // in the left
+        // input to the join
+        final List<RexInputRef> rightTableInputRefs = subConditions.stream()
+                .map(sub -> sub.getOperands().stream()
+                        .map(RexInputRef.class::cast)
+                        .max((left, right) -> Integer.compare(left.getIndex(), right.getIndex()))
+                        .get())
+                .collect(Collectors.toList());
+
+        final Integer[] rightTableKeyIndexes = rightTableInputRefs.stream()
+                .map(RexInputRef::getIndex)
+                .map(key -> key - wayangRelNode.getLeft().getRowType().getFieldCount()) // apply offset
+                .toArray(Integer[]::new);
+
+        final JoinKeyDescriptor leftKeyDescriptor = new JoinKeyDescriptor(
+                new MultiConditionJoinKeyExtractor(leftTableKeyIndexes), leftProjection, leftProjectionAliases,
+                createSqlFunc);
+        final JoinKeyDescriptor righKeyDescriptor = new JoinKeyDescriptor(
+                new MultiConditionJoinKeyExtractor(rightTableKeyIndexes), rightProjection, rightProjectionAliases,
+                createSqlFunc);
 
         final JoinOperator<Record, Record, Record> join = new JoinOperator<>(
                 leftKeyDescriptor,
