@@ -30,7 +30,6 @@ import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinCallTreeFacto
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.JoinKeyDescriptor;

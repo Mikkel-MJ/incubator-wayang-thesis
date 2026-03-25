@@ -26,7 +26,6 @@ import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFun
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
