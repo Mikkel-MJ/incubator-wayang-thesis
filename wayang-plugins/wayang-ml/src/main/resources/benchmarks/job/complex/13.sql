@@ -14,7 +14,7 @@ FROM
     postgres.movie_info_idx AS mi_idx,
     postgres.movie_keyword AS mk,
     postgres.title AS t,
-    postgres.aka_title AS at,
+    postgres.aka_title AS at_alias,
     postgres.aka_name AS an
 WHERE
     cn.country_code <> '[us]' AND
@@ -32,10 +32,10 @@ WHERE
     t.id = mk.movie_id AND
     t.id = mi_idx.movie_id AND
     t.id = mc.movie_id AND
-    t.imdb_index = at.imdb_index AND
-    at.movie_id = mc.movie_id AND
+    t.imdb_index = at_alias.imdb_index AND
+    at_alias.movie_id = mc.movie_id AND
     an.imdb_index = t.imdb_index AND
-    an.imdb_index = at.imdb_index AND
+    an.imdb_index = at_alias.imdb_index AND
     mk.movie_id = mi.movie_id AND
     mk.movie_id = mi_idx.movie_id AND
     mk.movie_id = mc.movie_id AND

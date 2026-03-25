@@ -17,7 +17,7 @@ FROM
     postgres.movie_info_idx AS mi_idx,
     postgres.movie_keyword AS mk,
     postgres.title AS t,
-    postgres.aka_title AS at,
+    postgres.aka_title AS at_alias,
     postgres.cast_info AS ci
 WHERE
     cct1.kind = 'crew' AND
@@ -56,6 +56,6 @@ WHERE
     cct1.id = cc.subject_id AND
     cct2.id = cc.status_id AND
     ci.nr_order = cc.status_id AND
-    at.imdb_index = t.imdb_index AND
+    at_alias.imdb_index = t.imdb_index AND
     ci.movie_id = t.id AND
     ci.movie_id = mi.movie_id;
