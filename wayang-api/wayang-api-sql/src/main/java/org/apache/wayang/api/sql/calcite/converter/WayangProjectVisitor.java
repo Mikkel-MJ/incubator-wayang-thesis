@@ -21,7 +21,6 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.wayang.api.sql.calcite.converter.projecthelpers.MapFunctionImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangProject;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
 import org.apache.wayang.basic.operators.MapOperator;
@@ -40,13 +39,13 @@ import java.util.List;
 import java.util.function.BinaryOperator;
 
 public class WayangProjectVisitor extends WayangRelNodeVisitor<WayangProject> {
-    WayangProjectVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangProjectVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override
     Operator visit(final WayangProject wayangRelNode) {
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
         final List<RexNode> projects = wayangRelNode.getProjects();
 
         final List<String> fields = wayangRelNode.getInput().getRowType().getFieldNames();

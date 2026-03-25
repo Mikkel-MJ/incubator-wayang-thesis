@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.Node;
@@ -49,14 +48,14 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
      *
      * @param wayangRelConverter
      */
-    WayangMultiConditionJoinVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangMultiConditionJoinVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), this.aliasFinder);
-        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), this.aliasFinder);
+        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0));
+        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1));
 
         assert wayangRelNode.getLeft().getRowType().getFieldCount()
                 + wayangRelNode.getRight().getRowType().getFieldCount() == wayangRelNode.getRowType()

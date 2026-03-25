@@ -20,10 +20,7 @@ package org.apache.wayang.api.sql.calcite.converter;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.wayang.api.sql.calcite.rel.WayangTableScan;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.ModelParser;
 import org.apache.wayang.api.sql.sources.fs.JavaCSVTableSource;
 import org.apache.wayang.core.plan.wayangplan.Operator;
@@ -39,8 +36,8 @@ import java.util.Objects;
 //TODO: create tablesource with column types
 //TODO: support other sources
 public class WayangTableScanVisitor extends WayangRelNodeVisitor<WayangTableScan> {
-    WayangTableScanVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangTableScanVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override

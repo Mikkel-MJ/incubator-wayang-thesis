@@ -22,7 +22,6 @@ import java.io.Serializable;
 
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
@@ -33,20 +32,19 @@ import org.apache.wayang.core.util.ReflectionUtils;
 
 public class WayangCrossJoinVisitor extends WayangRelNodeVisitor<WayangJoin> implements Serializable {
 
-    WayangCrossJoinVisitor(final WayangRelConverter wayangRelConverter, AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangCrossJoinVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), aliasFinder);
-        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), aliasFinder);
+        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0));
+        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1));
 
         final CartesianOperator<Record, Record> join = new CartesianOperator<>(
                 Record.class,
                 Record.class);
 
-        System.out.println("created cartesian: " + join);
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 

@@ -167,16 +167,6 @@ public class SqlContext extends WayangContext {
         final SqlNode validatedSqlNode = optimizer.validate(sqlNode);
         final RelNode relNode = optimizer.convert(validatedSqlNode);
 
-        // initialisations that handles decompilations of calcite's relnodes back to SQL
-        final RelToSqlConverter decompiler = new RelToSqlConverter(AnsiSqlDialect.DEFAULT);
-        final SqlImplementor.Context relContext = decompiler.visitInput(relNode,0).qualifiedContext();
-
-        final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
-        visitor.visit(relNode, 0, null);
-
-        final AliasFinder aliasFinder = new AliasFinder(visitor);
-        aliasFinder.context = relContext;
-
         final RuleSet rules = RuleSets.ofList(
                 WayangRules.WAYANG_TABLESCAN_RULE,
                 WayangRules.WAYANG_TABLESCAN_ENUMERABLE_RULE,
