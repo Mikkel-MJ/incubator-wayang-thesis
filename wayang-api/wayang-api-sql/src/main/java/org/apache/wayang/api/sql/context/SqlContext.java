@@ -20,11 +20,8 @@ package org.apache.wayang.api.sql.context;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
@@ -34,7 +31,6 @@ import org.apache.wayang.api.sql.calcite.converter.TableScanVisitor;
 import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
@@ -135,13 +131,8 @@ public class SqlContext extends WayangContext {
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(optimized, 0, null);
 
-        // final RelNode converted = optimizer.prepare(optimized, rulesList);
-
-        final AliasFinder aliasFinder = new AliasFinder(visitor);
-        // aliasFinder.context = relContext;
-
         final Collection<Record> collector = new ArrayList<>();
-        return optimizer.convert(optimized, collector, aliasFinder);
+        return optimizer.convert(optimized, collector);
     }
 
     /**
@@ -183,7 +174,7 @@ public class SqlContext extends WayangContext {
 
         PrintUtils.print("wayang rel 2: ", wayangRel);
         final Collection<Record> collector = new ArrayList<>();
-        final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector, aliasFinder);
+        final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector);
 
         PrintUtils.print("wayang plan 2: ", wayangPlan);
 
