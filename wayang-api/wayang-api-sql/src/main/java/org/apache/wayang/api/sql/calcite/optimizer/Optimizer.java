@@ -344,7 +344,7 @@ public class Optimizer {
     }
 
     public WayangPlan convert(final RelNode relNode) {
-        return convert(relNode, new ArrayList<>(), null);
+        return convert(relNode, new ArrayList<>());
     }
 
     public WayangPlan convert(final RelNode relNode, final Collection<Record> collector) {
