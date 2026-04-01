@@ -851,6 +851,22 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-core</artifactId>
+            <version>${calcite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-linq4j</artifactId>
+            <version>${calcite.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-file</artifactId>
+            <version>${calcite.version}</version>
+        </dependency>
+
         <!-- Coverage -->
         <!-- TODO: add the coverage elements -->
     </dependencies>

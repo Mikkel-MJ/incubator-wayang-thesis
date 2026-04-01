@@ -25,7 +25,7 @@ public final class Call implements Node {
     final List<SqlKind> operandTypes;
     final SerializableFunction<List<Object>, Object> operation;
     final SqlKind kind;
-    
+
     public Call(final RexCall call, final CallTreeFactory tree) {
         this.operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
         this.operandTypes = call.getOperands().stream().map(RexNode::getKind).collect(Collectors.toList());
@@ -73,7 +73,6 @@ public final class Call implements Node {
                                         + sqlObjToString(span.upperEndpoint()) + "'")
                                 .collect(Collectors.joining(","));
                         final String clause = columnSql + " IN (" + points + ")";
-                        System.out.println("span points clasue sorted set: " + clause);
                         return clause;
                     } else {
                         throw new UnsupportedOperationException("type not supported: " + value.getClass());

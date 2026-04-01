@@ -36,13 +36,10 @@ public class WayangRelConverter {
         } else if (node instanceof WayangFilter) {
             return new WayangFilterVisitor(this, aliasFinder).visit((WayangFilter) node);
         } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isAlwaysTrue()) {
-            System.out.println("visiting cross join: " + node);
             return new WayangCrossJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
         } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isA(SqlKind.AND)) {
-            System.out.println("visiting multicond join: " + node);
             return new WayangMultiConditionJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
         }else if (node instanceof WayangJoin) {
-            System.out.println("visiting join: " + node);
             return new WayangJoinVisitor(this, aliasFinder).visit((WayangJoin) node);
         } else if (node instanceof WayangAggregate) {
             return new WayangAggregateVisitor(this, aliasFinder).visit((WayangAggregate) node);

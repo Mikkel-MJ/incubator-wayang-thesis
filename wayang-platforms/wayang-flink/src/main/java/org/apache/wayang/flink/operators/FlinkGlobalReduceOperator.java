@@ -128,6 +128,6 @@ public class FlinkGlobalReduceOperator<Type>
 
     @Override
     public boolean containsAction() {
-        return true;
+        return false;
     }
 }

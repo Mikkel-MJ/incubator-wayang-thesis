@@ -46,7 +46,6 @@ public class WayangCrossJoinVisitor extends WayangRelNodeVisitor<WayangJoin> imp
                 Record.class,
                 Record.class);
 
-        System.out.println("created cartesian: " + join);
         childOpLeft.connectTo(0, join, 0);
         childOpRight.connectTo(0, join, 1);
 
