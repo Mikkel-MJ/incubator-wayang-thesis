@@ -1,4 +1,4 @@
-\copy badges from '/tmp/data/stats/badges.csv' with CSV header;
+\copy badges from '/tmp/data/badges.csv' with CSV header;
 \copy comments from '/tmp/data/comments.csv' with CSV header;
 \copy users from '/tmp/data/users.csv' with CSV header;
 \copy tags from '/tmp/data/tags.csv' with CSV header;
