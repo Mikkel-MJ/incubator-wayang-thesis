@@ -15,7 +15,6 @@ import org.apache.wayang.api.sql.calcite.converter.calltrees.CallTreeFactory;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
-import org.checkerframework.checker.units.qual.s;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.Node;
 
 import com.google.common.collect.ImmutableRangeSet;
@@ -54,19 +53,18 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                         case OR:
                             return input.stream().anyMatch(obj -> Boolean.class.cast(obj).booleanValue());
                         case MINUS:
-                            return widenToDouble.apply(input.get(0)) - widenToDouble.apply(input.get(1));
+                            return widenToDouble(input.get(0)) - widenToDouble(input.get(1));
                         case PLUS:
-                            return widenToDouble.apply(input.get(0)) + widenToDouble.apply(input.get(1));
+                            return widenToDouble(input.get(0)) + widenToDouble(input.get(1));
                         case SEARCH:
-                            //System.out.println("searchin");
                             if (input.get(0) instanceof ImmutableRangeSet) {
                                 ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(0);
                                 if (!(input.get(1) instanceof Comparable)) {
                                     throw new AssertionError("field is not comparable: " + input.get(1).getClass());
                                 }
-                                Comparable field = ensureComparable.apply(input.get(1));
-                                Comparable left = ensureComparable.apply(range.span().lowerEndpoint());
-                                Comparable right = ensureComparable.apply(range.span().upperEndpoint());
+                                Comparable field = ensureComparable(input.get(1));
+                                Comparable left = ensureComparable(range.span().lowerEndpoint());
+                                Comparable right = ensureComparable(range.span().upperEndpoint());
                                 Range<Comparable> newRange = Range.closed(left, right);
                                 return newRange.contains(field);
                             } else if (input.get(1) instanceof ImmutableRangeSet) {
@@ -74,9 +72,9 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                                 assert input.get(0) == null || input.get(0) instanceof Comparable
                                         : "left input should be null or comparable.";
 
-                                final Comparable field = ensureComparable.apply(input.get(0));
-                                final Comparable left = ensureComparable.apply(range.span().lowerEndpoint());
-                                final Comparable right = ensureComparable.apply(range.span().upperEndpoint());
+                                final Comparable field = ensureComparable(input.get(0));
+                                final Comparable left = ensureComparable(range.span().lowerEndpoint());
+                                final Comparable right = ensureComparable(range.span().upperEndpoint());
                                 final Range<Comparable> newRange = Range.closed(left, right);
 
                                 if (field == null)
@@ -85,12 +83,9 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                             } else if (input.get(1) instanceof ImmutableSortedSet) {
                                 final ImmutableSortedSet<?> set = (ImmutableSortedSet<?>) input.get(1);
 
-                                //System.out.println("set: " + set.asList());
-                                //System.out.println("elem: " + input.get(0));
-                                //System.out.println("set contains? " + set.contains(input.get(0)));
                                 return set.stream().map(Range.class::cast)
                                         .map(range -> range.lowerEndpoint())
-                                        .map(ensureComparable::apply)
+                                        .map(FilterPredicateImpl::ensureComparable)
                                         .collect(Collectors.toSet())
                                         .contains(input.get(0));
                             } else {
@@ -118,8 +113,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                 return false;
             if (o2 == null)
                 return true;
-            // System.out.println("[FilterPred.gt]: o1 " + o1 + " and o2, " + o2);
-            return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) > 0;
+            return ensureComparable(o1).compareTo(ensureComparable(o2)) > 0;
         }
 
         private boolean isLessThan(final Object o1, final Object o2) {
@@ -129,58 +123,52 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                 return true;
             if (o2 == null)
                 return false;
-            return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) < 0;
+            return ensureComparable(o1).compareTo(ensureComparable(o2)) < 0;
         }
 
         private boolean isEqualTo(final Object o1, final Object o2) {
             if (o1 == null || o2 == null)
                 return o1 == o2;
-            return Objects.equals(ensureComparable.apply(o1), ensureComparable.apply(o2));
+            return Objects.equals(ensureComparable(o1), ensureComparable(o2));
         }
     }
 
     private final Node callTree;
 
-    final SerializableFunction<Object, Double> widenToDouble = new SerializableFunction<Object, Double>() {
-        @Override
-        public Double apply(Object field) {
-            if (field instanceof Number) {
-                return ((Number) field).doubleValue();
-            } else if (field instanceof Date) {
-                return (double) ((Date) field).getTime();
-            } else if (field instanceof Calendar) {
-                return (double) ((Calendar) field).getTime().getTime();
-            } else {
-                throw new UnsupportedOperationException("Could not widen to double, field class: " + field.getClass());
-            }
+    public static final Double widenToDouble(Object field) {
+        if (field instanceof Number) {
+            return ((Number) field).doubleValue();
+        } else if (field instanceof Date) {
+            return (double) ((Date) field).getTime();
+        } else if (field instanceof Calendar) {
+            return (double) ((Calendar) field).getTime().getTime();
+        } else {
+            throw new UnsupportedOperationException("Could not widen to double, field class: " + field.getClass());
         }
-    };
+    }
 
-    final SerializableFunction<Object, Comparable> ensureComparable = new SerializableFunction<Object, Comparable>() {
-        @Override
-        public Comparable apply(Object field) {
-            if (field instanceof Number) {
-                return ((Number) field).doubleValue();
-            } else if (field instanceof Date) {
-                return (double) ((Date) field).getTime();
-            } else if (field instanceof Calendar) {
-                return (double) ((Calendar) field).getTime().getTime();
-            } else if (field instanceof String) {
-                return (String) field;
-            } else if (field instanceof NlsString) {
-                return ((NlsString) field).getValue();
-            } else if (field instanceof Character) {
-                return field.toString();
-            } else if (field instanceof DateString) {
-                return (double) ((DateString) field).getMillisSinceEpoch();
-            } else if (field == null) {
-                return null;
-            } else {
-                throw new UnsupportedOperationException(
-                        "Type not supported in filter comparisons yet: " + field.getClass());
-            }
+    public static final Comparable ensureComparable(Object field) {
+        if (field instanceof Number) {
+            return ((Number) field).doubleValue();
+        } else if (field instanceof Date) {
+            return (double) ((Date) field).getTime();
+        } else if (field instanceof Calendar) {
+            return (double) ((Calendar) field).getTime().getTime();
+        } else if (field instanceof String) {
+            return (String) field;
+        } else if (field instanceof NlsString) {
+            return ((NlsString) field).getValue();
+        } else if (field instanceof Character) {
+            return field.toString();
+        } else if (field instanceof DateString) {
+            return (double) ((DateString) field).getMillisSinceEpoch();
+        } else if (field == null) {
+            return null;
+        } else {
+            throw new UnsupportedOperationException(
+                    "Type not supported in filter comparisons yet: " + field.getClass());
         }
-    };
+    }
 
     public FilterPredicateImpl(final RexNode condition) {
         this.callTree = new FilterCallTreeFactory().fromRexNode(condition);
@@ -188,7 +176,6 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
 
     @Override
     public boolean test(final Record rec) {
-        // System.out.println("[FilterPred.rec]: " + rec);
         return (boolean) callTree.evaluate(rec);
     }
 

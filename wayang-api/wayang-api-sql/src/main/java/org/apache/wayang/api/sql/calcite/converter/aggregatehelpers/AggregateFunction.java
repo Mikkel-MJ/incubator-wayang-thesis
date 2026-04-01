@@ -17,9 +17,7 @@
  */
 package org.apache.wayang.api.sql.calcite.converter.aggregatehelpers;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -111,9 +109,6 @@ public class AggregateFunction
             final BiFunction<Long, Long, Object> longMap,
             final BiFunction<Integer, Integer, Object> integerMap,
             final BiFunction<Double, Double, Object> doubleMap) {
-        // Lets fucking disallow nulls
-        //
-        //
         if (a == null && b == null) {
             return null;
         }

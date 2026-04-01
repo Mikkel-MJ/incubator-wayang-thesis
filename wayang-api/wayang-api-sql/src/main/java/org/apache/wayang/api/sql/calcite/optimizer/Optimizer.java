@@ -136,7 +136,7 @@ public class Optimizer {
                 .chain(ImmutableList.of(SqlStdOperatorTable.instance()));
 
         final SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
-                    .withLenientOperatorLookup(config.lenientOperatorLookup())
+                .withLenientOperatorLookup(config.lenientOperatorLookup())
                 .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
@@ -348,9 +348,7 @@ public class Optimizer {
     }
 
     public WayangPlan convert(final RelNode relNode, final Collection<Record> collector) {
-        // LocalCallbackSink<Record> sink =
-        // LocalCallbackSink.createCollectingSink(collector, Record.class);
-        final LocalCallbackSink<Record> sink = LocalCallbackSink.createStdoutSink(Record.class);
+        final LocalCallbackSink<Record> sink = LocalCallbackSink.createCollectingSink(collector, Record.class);
         final Operator op = new WayangRelConverter().convert(relNode);
 
         op.connectTo(0, sink, 0);

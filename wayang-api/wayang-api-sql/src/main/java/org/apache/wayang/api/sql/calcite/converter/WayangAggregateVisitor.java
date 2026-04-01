@@ -18,30 +18,26 @@
 
 package org.apache.wayang.api.sql.calcite.converter;
 
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.type.RelDataTypeField;
-
-import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AddAggCols;
-import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFunction;
-import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
-import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
-import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
-
-import org.apache.wayang.basic.data.Record;
-import org.apache.wayang.basic.function.ProjectionDescriptor;
-import org.apache.wayang.basic.operators.GlobalReduceOperator;
-import org.apache.wayang.basic.operators.MapOperator;
-import org.apache.wayang.basic.operators.ReduceByOperator;
-import org.apache.wayang.core.function.ReduceDescriptor;
-import org.apache.wayang.core.function.TransformationDescriptor;
-import org.apache.wayang.core.plan.wayangplan.Operator;
-import org.apache.wayang.core.types.DataUnitType;
-
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Comparator;
+
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.runtime.SqlFunctions;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
+import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
+import org.apache.wayang.basic.data.Record;
+import org.apache.wayang.basic.operators.GlobalReduceOperator;
+import org.apache.wayang.basic.operators.ReduceByOperator;
+import org.apache.wayang.core.function.FunctionDescriptor.SerializableBinaryOperator;
+import org.apache.wayang.core.function.ReduceDescriptor;
+import org.apache.wayang.core.function.TransformationDescriptor;
+import org.apache.wayang.core.plan.wayangplan.Operator;
+import org.apache.wayang.core.types.DataUnitType;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
@@ -53,91 +49,108 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
     Operator visit(final WayangAggregate wayangRelNode) {
         final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
 
-        final List<AggregateCall> aggregateCalls = wayangRelNode.getAggCallList();
+        final List<AggregateCall> aggCalls = wayangRelNode.getAggCallList();
+        final List<Integer> groupFields = new ArrayList<>(wayangRelNode.getGroupSet().asList());
         final int groupCount = wayangRelNode.getGroupCount();
-        final HashSet<Integer> groupingFields = new HashSet<>(wayangRelNode.getGroupSet().asSet());
 
-        final ProjectionDescriptor<Record, Record> pd = new ProjectionDescriptor<>(
-                new AddAggCols(aggregateCalls),
-                Record.class, Record.class);
+        final List<SqlKind> aggKinds = new ArrayList<>();
+        final List<Integer> aggArgs = new ArrayList<>();
 
-        final MapOperator<Record, Record> mapOperator = new MapOperator<>(pd);
+        for (final AggregateCall call : aggCalls) {
+            final SqlKind k = call.getAggregation().getKind();
 
-        childOp.connectTo(0, mapOperator, 0);
+            final int argIndex = call.getArgList().isEmpty() ? -1 : call.getArgList().get(0);
+
+            aggKinds.add(k);
+            aggArgs.add(argIndex);
+        }
+
+        final List<String> reductionFunctions = wayangRelNode.getNamedAggCalls().stream()
+                .map(agg -> agg.left.getAggregation().getName()).collect(Collectors.toList());
+
+        final List<String> fields = wayangRelNode.getInput().getRowType().getFieldList().stream()
+                .map(RelDataTypeField::getName).collect(Collectors.toList());
+
+        final List<String> aliases = wayangRelNode.getRowType().getFieldList().stream()
+                .map(RelDataTypeField::getName).collect(Collectors.toList());
+
+        final String[] reductionStatements = new String[reductionFunctions.size()];
+
+        for (int i = 0; i < reductionStatements.length; i++) {
+            reductionStatements[i] = reductionFunctions.get(i) + "(" + fields.get(i) + ") AS " + aliases.get(i);
+        }
+
+        final ReduceDescriptor<Record> reduceDescriptor = new ReduceDescriptor<>(
+                new AggregateBinaryOperator(aggKinds),
+                DataUnitType.createGrouped(Record.class),
+                DataUnitType.createBasicUnchecked(Record.class));
+
+        reduceDescriptor.withSqlImplementation(Arrays.stream(reductionStatements).collect(Collectors.joining(",")));
 
         final Operator aggregateOperator;
 
         if (groupCount > 0) {
-            final List<String> reductionFunctions = wayangRelNode.getNamedAggCalls().stream()
-                    .map(agg -> agg.left.getAggregation().getName()).collect(Collectors.toList());
-
-            final List<String> fields = wayangRelNode.getInput().getRowType().getFieldList().stream()
-                    .map(RelDataTypeField::getName).collect(Collectors.toList());
-
-            final List<String> aliases = wayangRelNode.getRowType().getFieldList().stream()
-                    .map(RelDataTypeField::getName).collect(Collectors.toList());
-
-            final String[] reductionStatements = new String[reductionFunctions.size()];
-
-            for (int i = 0; i < reductionStatements.length; i++) {
-                reductionStatements[i] = reductionFunctions.get(i) + "(" + fields.get(i) + ") AS " + aliases.get(i);
-            }
-
-            final ReduceDescriptor<Record> reduceDescriptor = new ReduceDescriptor<>(
-                    new AggregateFunction(aggregateCalls),
-                    DataUnitType.createGrouped(Record.class),
-                    DataUnitType.createBasicUnchecked(Record.class));
-            reduceDescriptor.withSqlImplementation(Arrays.stream(reductionStatements).collect(Collectors.joining(",")));
-
-            System.out.println("making reduce operator instead of global");
-            final ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
-                    new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class,
+            aggregateOperator = new ReduceByOperator<>(
+                    new TransformationDescriptor<>(new KeyExtractor(new HashSet<>(groupFields)),
+                            Record.class,
                             Object.class),
                     reduceDescriptor);
-
-            aggregateOperator = reduceByOperator;
         } else {
-            final List<String> reductionFunctions = wayangRelNode.getNamedAggCalls().stream()
-                    .map(agg -> agg.left.getAggregation().getName()).collect(Collectors.toList());
-
-            final List<String> fields = wayangRelNode.getInput().getRowType().getFieldList().stream()
-                    .map(RelDataTypeField::getName).collect(Collectors.toList());
-
-            final List<String> aliases = wayangRelNode.getRowType().getFieldList().stream()
-                    .map(RelDataTypeField::getName).collect(Collectors.toList());
-
-            final String[] reductionStatements = new String[reductionFunctions.size()];
-
-            for (int i = 0; i < reductionStatements.length; i++) {
-                reductionStatements[i] = reductionFunctions.get(i) + "(" + fields.get(i) + ") AS " + aliases.get(i);
-            }
-
-            final ReduceDescriptor<Record> reduceDescriptor = new ReduceDescriptor<>(
-                    new AggregateFunction(aggregateCalls),
-                    DataUnitType.createGrouped(Record.class),
-                    DataUnitType.createBasicUnchecked(Record.class));
-
-            reduceDescriptor.withSqlImplementation(Arrays.stream(reductionStatements).collect(Collectors.joining(",")));
-
             aggregateOperator = new GlobalReduceOperator<>(reduceDescriptor);
-
         }
 
-        mapOperator.connectTo(0, aggregateOperator, 0);
+        childOp.connectTo(0, aggregateOperator, 0);
 
-        final List<Integer> orderedGroupingFields = groupingFields
-                .stream()
-                .sorted(Comparator.naturalOrder())
-                .collect(Collectors.toList());
-
-        final ProjectionDescriptor<Record, Record> pdAgg = new ProjectionDescriptor<>(
-                new GetResult(aggregateCalls, orderedGroupingFields),
-                Record.class, Record.class);
-
-        final MapOperator<Record, Record> mapOperator2 = new MapOperator<>(pdAgg);
-
-        aggregateOperator.connectTo(0, mapOperator2, 0);
-
-        return mapOperator2;
+        return aggregateOperator;
     }
 }
+
+class AggregateBinaryOperator implements SerializableBinaryOperator<Record> {
+    private final List<SqlKind> aggKinds;
+    private final Object[] state;
+
+    public AggregateBinaryOperator(final List<SqlKind> aggKinds) {
+        this.aggKinds = aggKinds;
+        this.state = new Object[aggKinds.size()];
+
+        for (int i = 0; i < aggKinds.size(); i++) {
+            final SqlKind kind = aggKinds.get(i);
+
+            switch (kind) {
+                case MIN:
+                case MAX:
+                    break; 
+                case COUNT:
+                    //state[i] = 1;
+                    break; 
+                default:
+                    throw new UnsupportedOperationException("Not implemented: " + kind);
+            }
+        }
+    }
+
+    @Override
+    public Record apply(Record arg0, Record arg1) {
+        for (int i = 0; i < aggKinds.size(); i++) {
+            final SqlKind kind = aggKinds.get(i);
+
+            switch (kind) {
+                case MIN:
+                    state[i] = SqlFunctions.leAny(arg0.getField(0), arg1.getField(0)) ? arg0.getField(0) : arg1.getField(0);
+                    break;
+                case MAX:
+                    state[i] = SqlFunctions.geAny(arg0.getField(0), arg1.getField(0)) ? arg0.getField(0) : arg1.getField(0);
+                    break; 
+                case COUNT:
+
+                    state[i] = state[i] instanceof Integer ? ((int) state[i]) : 1;
+                    state[i] = ((int) state[i]) + 1;
+                    break; 
+                default:
+                    throw new UnsupportedOperationException("Not implemented: " + kind);
+            }
+        }
+
+        return new Record(state);
+    }
+} 

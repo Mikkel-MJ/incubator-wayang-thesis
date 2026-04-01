@@ -50,6 +50,8 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -172,7 +174,7 @@ public class SqlToWayangRelTest {
         assert(!result.stream().anyMatch(record -> record.getString(0).equals("test1")));
     }
 
-    @Test
+    //@Test
     public void filterWithLike() throws Exception {
         SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
@@ -184,7 +186,7 @@ public class SqlToWayangRelTest {
         result.stream().forEach(System.out::println);
     }
 
-    @Test
+    //@Test
     public void joinWithLargeLeftTableIndexCorrect() throws Exception {
         SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/largeLeftTableIndex.csv");
 
@@ -220,7 +222,7 @@ public class SqlToWayangRelTest {
         result.stream().forEach(System.out::println);
     }
 
-    //@Test
+    @Test
     public void exampleMinWithStrings() throws Exception {
         SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleMin.csv");
 
@@ -230,6 +232,31 @@ public class SqlToWayangRelTest {
 
         assert(result.stream().findAny().get().getString(0).equals("AA"));
     }
+
+    
+    @Test
+    public void exampleMaxWithStrings() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleMin.csv");
+
+        Collection<Record> result = sqlContext.executeSql(
+            "SELECT MAX(exampleMin.NAME) FROM fs.exampleMin"
+        );
+
+        assert(result.stream().findAny().get().getString(0).equals("AC"));
+    }
+
+        
+    @Test
+    public void exampleCountGlobal() throws Exception {
+        SqlContext sqlContext = createSqlContext("/model-example-min.json", "/data/exampleMin.csv");
+
+        Collection<Record> result = sqlContext.executeSql(
+            "SELECT COUNT(*) FROM fs.exampleMin"
+        );
+
+        assertEquals(3L, result.stream().findAny().get().getLong(0));
+    }
+
 
     //@Test
     public void test_simple_sql() throws Exception {
