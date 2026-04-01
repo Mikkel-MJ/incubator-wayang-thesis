@@ -1,1 +1,17 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.postHistory as ph, postgres.votes as v, postgres.users as u WHERE u.Id = v.UserId AND v.UserId = ph.UserId AND ph.UserId =c.UserId AND v.BountyAmount>=0 AND v.CreationDate>='2010-07-26 00:00:00'::timestamp AND v.CreationDate<='2014-09-08 00:00:00'::timestamp AND u.Reputation>=1 AND u.Views>=0 AND u.Views<=110 AND u.UpVotes=0 AND u.CreationDate>='2010-07-28 19:29:11'::timestamp AND u.CreationDate<='2014-08-14 05:29:30'::timestamp;
+select count(*)
+from postgres.comments as c,
+     postgres.posthistory as ph,
+     postgres.votes as v,
+     postgres.users as u
+where u.id = v.userid
+  and v.userid = ph.userid
+  and ph.userid = c.userid
+  and v.bountyamount >= 0
+  and v.creationdate >= timestamp '2010-07-26 00:00:00'
+  and v.creationdate <= timestamp '2014-09-08 00:00:00'
+  and u.reputation >= 1
+  and u.views >= 0
+  and u.views <= 110
+  and u.upvotes = 0
+  and u.creationdate >= timestamp '2010-07-28 19:29:11'
+  and u.creationdate <= timestamp '2014-08-14 05:29:30';

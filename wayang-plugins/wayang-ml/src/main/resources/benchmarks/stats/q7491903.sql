@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.votes as v WHERE c.UserId = v.UserId AND c.Score=0;
+select count(*) from postgres.comments as c, postgres.votes as v where c.userid = v.userid and c.score=0;

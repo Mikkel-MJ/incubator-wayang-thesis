@@ -1,1 +1,24 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.posts as p, postgres.postLinks as pl, postgres.postHistory as ph, postgres.votes as v, postgres.users as u WHERE p.Id = pl.PostId AND p.Id = ph.PostId AND p.Id = c.PostId AND u.Id = c.UserId AND u.Id = v.UserId AND c.Score=0 AND c.CreationDate>='2010-08-02 20:27:48'::timestamp AND c.CreationDate<='2014-09-10 16:09:23'::timestamp AND p.PostTypeId=1 AND p.Score=4 AND p.ViewCount<=4937 AND pl.CreationDate>='2011-11-03 05:09:35'::timestamp AND ph.PostHistoryTypeId=1 AND u.Reputation<=270 AND u.Views>=0 AND u.Views<=51 AND u.DownVotes>=0;
+select count(*)
+from postgres.comments as c,
+    postgres.posts as p,
+    postgres.postlinks as pl,
+    postgres.posthistory as ph,
+    postgres.votes as v,
+    postgres.users as u
+where p.id = pl.postid
+  and p.id = ph.postid
+  and p.id = c.postid
+  and u.id = c.userid
+  and u.id = v.userid
+  and c.score = 0
+  and c.creationdate >= timestamp '2010-08-02 20:27:48'
+  and c.creationdate <= timestamp '2014-09-10 16:09:23'
+  and p.posttypeid = 1
+  and p.score = 4
+  and p.viewcount <= 4937
+  and pl.creationdate >= timestamp '2011-11-03 05:09:35'
+  and ph.posthistorytypeid = 1
+  and u.reputation <= 270
+  and u.views >= 0
+  and u.views <= 51
+  and u.downvotes = 0;

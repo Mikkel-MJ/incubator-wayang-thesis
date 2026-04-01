@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.postHistory as ph, postgres.posts as p, postgres.votes as v, postgres.users as u WHERE p.Id = ph.PostId AND u.Id = p.OwnerUserId AND p.Id = v.PostId AND p.PostTypeId=1 AND p.Score>=-1 AND p.CommentCount>=0 AND p.CommentCount<=11;
+select count(*) from postgres.posthistory as ph, postgres.posts as p, postgres.votes as v, postgres.users as u where p.id = ph.postid and u.id = p.owneruserid and p.id = v.postid and p.posttypeid=1 and p.score>=-1 and p.commentcount>=0 and p.commentcount<=11;

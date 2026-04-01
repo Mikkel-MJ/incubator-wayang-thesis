@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.votes as v, postgres.users as u, postgres.posts as p WHERE c.PostId = p.Id AND u.Id = c.UserId AND v.PostId = p.Id AND c.Score=0 AND u.Views>=0 AND u.Views<=74;
+select count(*) from postgres.comments as c, postgres.votes as v, postgres.users as u, postgres.posts as p where c.postid = p.id and u.id = c.userid and v.postid = p.id and c.score=0 and u.views>=0 and u.views<=74;

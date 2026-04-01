@@ -1,1 +1,8 @@
-SELECT COUNT(*) FROM postgres.posts as p, postgres.postLinks as pl, postgres.users as u WHERE p.Id = pl.PostId AND p.OwnerUserId = u.Id AND p.CommentCount<=17 AND u.CreationDate<='2014-09-12 07:12:16'::timestamp;
+select count(*)
+from postgres.posts as p,
+     postgres.postlinks as pl,
+     postgres.users as u
+where p.id = pl.postid
+  and p.owneruserid = u.id
+  and p.commentcount <= 17
+  and u.creationdate <= timestamp '2014-09-12 07:12:16';

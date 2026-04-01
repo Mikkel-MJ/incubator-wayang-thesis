@@ -1,1 +1,17 @@
-SELECT COUNT(*) FROM postgres.tags as t, postgres.posts as p, postgres.users as u, postgres.votes as v, postgres.badges as b WHERE p.Id = t.ExcerptPostId AND u.Id = v.UserId AND u.Id = b.UserId AND u.Id = p.OwnerUserId AND u.Views>=0 AND u.Views<=515 AND u.UpVotes>=0 AND u.CreationDate<='2014-09-07 13:46:41'::timestamp AND v.BountyAmount>=0 AND v.BountyAmount<=200 AND b.Date<='2014-09-12 12:56:22'::timestamp;
+select count(*)
+from postgres.tags as t,
+     postgres.posts as p,
+     postgres.users as u,
+     postgres.votes as v,
+     postgres.badges as b
+where p.id = t.excerptpostid
+  and u.id = v.userid
+  and u.id = b.userid
+  and u.id = p.owneruserid
+  and u.views >= 0
+  and u.views <= 515
+  and u.upvotes >= 0
+  and u.creationdate <= timestamp '2014-09-07 13:46:41'
+  and v.bountyamount >= 0
+  and v.bountyamount <= 200
+  and b."date" <= timestamp '2014-09-12 12:56:22';

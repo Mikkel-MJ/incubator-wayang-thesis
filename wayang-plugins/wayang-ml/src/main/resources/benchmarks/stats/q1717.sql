@@ -1,1 +1,17 @@
-SELECT COUNT(*) FROM postgres.postLinks as pl, postgres.posts as p, postgres.users as u, postgres.badges as b WHERE p.Id = pl.RelatedPostId AND u.Id = p.OwnerUserId AND u.Id = b.UserId AND pl.CreationDate<='2014-08-17 01:23:50'::timestamp AND p.Score>=-1 AND p.Score<=10 AND p.AnswerCount<=5 AND p.CommentCount=2 AND p.FavoriteCount>=0 AND p.FavoriteCount<=6 AND u.Views<=33 AND u.DownVotes>=0 AND u.CreationDate>='2010-08-19 17:31:36'::timestamp AND u.CreationDate<='2014-08-06 07:23:12'::timestamp AND b.Date<='2014-09-10 22:50:06'::timestamp;
+select count(*)
+from postgres.postlinks as pl,
+     postgres.posts as p,
+     postgres.users as u,
+     postgres.badges as b
+where p.id = pl.relatedpostid
+  and u.id = p.owneruserid
+  and u.id = b.userid
+  and pl.creationdate <= timestamp '2014-08-17 01:23:50'
+  and p.score >= -1
+  and p.score <= 10
+  and p.answercount <= 5
+  and p.commentcount = 2
+  and p.favoritecount >= 0
+  and p.favoritecount <= 6
+  and u.views <= 33
+  and u.downvotes >= 0;
