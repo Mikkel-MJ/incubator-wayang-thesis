@@ -26,7 +26,6 @@ import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.AggregateFun
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.GetResult;
 import org.apache.wayang.api.sql.calcite.converter.aggregatehelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangAggregate;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.function.ProjectionDescriptor;
@@ -46,13 +45,13 @@ import java.util.Comparator;
 
 public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate> {
 
-    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangAggregateVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override
     Operator visit(final WayangAggregate wayangRelNode) {
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
 
         final List<AggregateCall> aggregateCalls = wayangRelNode.getAggCallList();
         final int groupCount = wayangRelNode.getGroupCount();
