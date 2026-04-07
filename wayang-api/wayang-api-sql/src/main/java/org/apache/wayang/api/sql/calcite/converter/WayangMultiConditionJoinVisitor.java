@@ -68,23 +68,6 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
         final List<String> rightProjection = wayangRelNode.getRowType().getFieldNames().stream()
                 .skip(leftProjectionAliases.size()).collect(Collectors.toList());
 
-        System.out.println("[MultiCondJoinVisitor]: left field list get name " + wayangRelNode.getLeft().getRowType()
-                .getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println(
-                "[MultiCondJoinVisitor]: left field names " + wayangRelNode.getLeft().getRowType().getFieldNames());
-        System.out.println("[MultiCondJoinVisitor]: right field list get name " + wayangRelNode.getRowType()
-                .getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println(
-                "[MultiCondJoinVisitor]: right field names " + wayangRelNode.getRight().getRowType().getFieldNames());
-        System.out.println("[MultiCondJoinVisitor]: field list get name " + wayangRelNode.getRight().getRowType()
-                .getFieldList().stream().map(field -> field.getName()).collect(Collectors.toList()));
-        System.out.println("[MultiCondJoinVisitor]: field names " + wayangRelNode.getRowType().getFieldNames());
-        System.out.println("[MultiCondJoinVisitor]: join: " + wayangRelNode);
-        System.out.println("[MultiCondJoinVisitor]: left proj aliases: " + leftProjectionAliases);
-        System.out.println("[MultiCondJoinVisitor]: left proj: " + leftProjection);
-        System.out.println("[MultiCondJoinVisitor]:right proj aliases: " + rightProjectionAliases);
-        System.out.println("[MultiCondJoinVisitor]: right proj: " + rightProjection);
-
         final JoinCallTreeFactory factory = new JoinCallTreeFactory();
         final Node joinCallTree = factory.fromRexNode(wayangRelNode.getCondition());
 

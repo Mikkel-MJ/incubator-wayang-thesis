@@ -34,7 +34,7 @@ public class PostgresSourceValidationRule extends ValidationRule {
     /*
      * Index of platform choice for Postgres
      */
-    private int postgresIndex = 5;
+    private int postgresIndex = 2;
 
     public PostgresSourceValidationRule() {}
 

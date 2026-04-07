@@ -52,15 +52,6 @@ public class WayangSortVisitor extends WayangRelNodeVisitor<WayangSort> {
         final RexInputRef offset = (RexInputRef) wayangRelNode.offset;
         final RelCollation collation = wayangRelNode.getCollation();
 
-        System.out.println("sort rel: " + wayangRelNode);
-        System.out.println("fetch: " + fetch);
-        System.out.println("offset: " + offset);
-        System.out.println("collation: " + collation);
-        System.out.println(
-                "collation item: " + wayangRelNode.getRowType().getFieldList().get(collation.getKeys().getInt(0)));
-        System.out
-                .println("fetch item: " + wayangRelNode.getRowType().getFieldList().get(collation.getKeys().getInt(0)));
-
         final List<Direction> collationDirections = collation.getFieldCollations().stream()
                 .map(fieldCol -> fieldCol.getDirection())
                 .collect(Collectors.toList());

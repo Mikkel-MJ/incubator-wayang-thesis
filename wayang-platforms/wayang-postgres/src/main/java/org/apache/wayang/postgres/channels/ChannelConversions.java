@@ -64,10 +64,21 @@ public class ChannelConversions {
             )
     );
 
+    public static final ChannelConversion SQL_TO_FLINK_DATASET_CONVERSION_MANY = new DefaultChannelConversion(
+            PostgresPlatform.getInstance().getSqlQueryChannelDescriptor(),
+            DataSetChannel.DESCRIPTOR_MANY,
+            () -> new SqlToFlinkDataSetOperator(
+                  PostgresPlatform.getInstance(),
+                  DataSetType.createDefault(Record.class),
+                  DataSetType.createDefault(Record.class)
+            )
+    );
+
     public static final Collection<ChannelConversion> ALL = Arrays.asList(
             SQL_TO_STREAM_CONVERSION,
-            SQL_TO_UNCACHED_RDD_CONVERSION,
-            SQL_TO_FLINK_DATASET_CONVERSION
+            SQL_TO_UNCACHED_RDD_CONVERSION
+            //SQL_TO_FLINK_DATASET_CONVERSION,
+            //SQL_TO_FLINK_DATASET_CONVERSION_MANY
     );
 
 }

@@ -42,7 +42,7 @@ import org.apache.commons.lang3.ArrayUtils;
 public class IMDBJOBenchmark {
     public static SqlContext sqlContext;
 
-    public static final int MAX_SOURCES_REPLACED = 1;
+    public static final int MAX_SOURCES_REPLACED = 3;
 
     public static WayangPlan getWayangPlan(
         final String path,
