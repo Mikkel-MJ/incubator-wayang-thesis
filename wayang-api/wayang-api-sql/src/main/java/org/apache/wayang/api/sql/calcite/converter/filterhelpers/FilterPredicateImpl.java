@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.CallTreeFactory;
@@ -23,10 +24,11 @@ import com.google.common.collect.Range;
 
 public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredicate<Record> {
     class FilterCallTreeFactory implements CallTreeFactory {
-        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind) {
+        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind,
+                final SqlTypeName returnType) {
             return new SerializableFunction<List<Object>, Object>() {
                 @Override
-                public Object apply(List<Object> input) {
+                public Object apply(final List<Object> input) {
                     switch (kind) {
                         case NOT:
                             return !(boolean) input.get(0);
@@ -56,16 +58,18 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                             return widenToDouble(input.get(0)) - widenToDouble(input.get(1));
                         case PLUS:
                             return widenToDouble(input.get(0)) + widenToDouble(input.get(1));
+                        case CAST:
+                            return castCalcite(input.get(0), returnType);
                         case SEARCH:
                             if (input.get(0) instanceof ImmutableRangeSet) {
-                                ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(0);
+                                final ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(0);
                                 if (!(input.get(1) instanceof Comparable)) {
                                     throw new AssertionError("field is not comparable: " + input.get(1).getClass());
                                 }
-                                Comparable field = ensureComparable(input.get(1));
-                                Comparable left = ensureComparable(range.span().lowerEndpoint());
-                                Comparable right = ensureComparable(range.span().upperEndpoint());
-                                Range<Comparable> newRange = Range.closed(left, right);
+                                final Comparable field = ensureComparable(input.get(1));
+                                final Comparable left = ensureComparable(range.span().lowerEndpoint());
+                                final Comparable right = ensureComparable(range.span().upperEndpoint());
+                                final Range<Comparable> newRange = Range.closed(left, right);
                                 return newRange.contains(field);
                             } else if (input.get(1) instanceof ImmutableRangeSet) {
                                 final ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(1);
@@ -133,9 +137,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         }
     }
 
-    private final Node callTree;
-
-    public static final Double widenToDouble(Object field) {
+    public static final Double widenToDouble(final Object field) {
         if (field instanceof Number) {
             return ((Number) field).doubleValue();
         } else if (field instanceof Date) {
@@ -147,7 +149,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
         }
     }
 
-    public static final Comparable ensureComparable(Object field) {
+    public static final Comparable ensureComparable(final Object field) {
         if (field instanceof Number) {
             return ((Number) field).doubleValue();
         } else if (field instanceof Date) {
@@ -169,6 +171,58 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                     "Type not supported in filter comparisons yet: " + field.getClass());
         }
     }
+
+    private static Object castCalcite(final Object v, final SqlTypeName returnType) {
+        if (v == null) {
+            return null;
+        }
+
+        switch (returnType) {
+            case BOOLEAN:
+                if (v instanceof Boolean)
+                    return v;
+                if (v instanceof Number)
+                    return ((Number) v).intValue() != 0;
+                return Boolean.valueOf(v.toString());
+            case TINYINT:
+                return Byte.valueOf(String.valueOf(SqlFunctions.toInt(v)));
+            case SMALLINT:
+                return Short.valueOf(String.valueOf(SqlFunctions.toInt(v)));
+            case INTEGER:
+                return SqlFunctions.toInt(v);
+            case BIGINT:
+                return SqlFunctions.toLong(v);
+            case REAL:
+            case FLOAT:
+                return SqlFunctions.toFloat(v);
+            case DOUBLE:
+                return SqlFunctions.toDouble(v);
+            case DECIMAL:
+                return SqlFunctions.toBigDecimal(v);
+            case CHAR:
+            case VARCHAR:
+                return v.toString();
+            case DATE:
+                if (v instanceof java.sql.Date)
+                    return v;
+                return java.sql.Date.valueOf(v.toString());
+            case TIME:
+                if (v instanceof java.sql.Time)
+                    return v;
+                return java.sql.Time.valueOf(v.toString());
+            case TIMESTAMP:
+                if (v instanceof java.sql.Timestamp)
+                    return v;
+                return java.sql.Timestamp.valueOf(v.toString());
+            case ANY:
+                return v;
+            default:
+                throw new UnsupportedOperationException(
+                        "CAST to " + returnType + " not supported for value " + v.getClass());
+        }
+    }
+
+    private final Node callTree;
 
     public FilterPredicateImpl(final RexNode condition) {
         this.callTree = new FilterCallTreeFactory().fromRexNode(condition);

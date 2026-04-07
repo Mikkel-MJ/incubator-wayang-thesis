@@ -8,6 +8,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
 
 /**
@@ -38,5 +39,5 @@ public interface CallTreeFactory extends Serializable {
      * @return a serializable function of +, -, * or /
      * @throws UnsupportedOperationException on unrecognized {@link SqlKind}
      */
-    public SerializableFunction<List<Object>, Object> deriveOperation(SqlKind kind);
+    public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind, final SqlTypeName returnType);
 }

@@ -19,7 +19,7 @@ public final class Call implements Node {
         this.operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
         this.operandTypes = call.getOperands().stream().map(RexNode::getKind).collect(Collectors.toList());
         this.kind = call.getKind();
-        this.operation = tree.deriveOperation(this.kind);
+        operation = tree.deriveOperation(call.getKind(), call.getType().getSqlTypeName());
     }
 
     @Override
