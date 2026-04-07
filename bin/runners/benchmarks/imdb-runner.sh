@@ -51,5 +51,3 @@ echo "Running JOBenchmark"
             sleep 1s
         #done
     done
-
-

@@ -30,7 +30,6 @@ import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinCallTreeFacto
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.JoinFlattenResult;
 import org.apache.wayang.api.sql.calcite.converter.joinhelpers.KeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangJoin;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.function.JoinKeyDescriptor;
@@ -43,14 +42,14 @@ import org.apache.wayang.core.util.ReflectionUtils;
 
 public class WayangJoinVisitor extends WayangRelNodeVisitor<WayangJoin> {
 
-    WayangJoinVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangJoinVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override
     Operator visit(final WayangJoin wayangRelNode) {
-        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0), aliasFinder);
-        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1), aliasFinder);
+        final Operator childOpLeft = wayangRelConverter.convert(wayangRelNode.getInput(0));
+        final Operator childOpRight = wayangRelConverter.convert(wayangRelNode.getInput(1));
 
         final RexNode condition = wayangRelNode.getCondition();
         final RexCall call = (RexCall) condition;

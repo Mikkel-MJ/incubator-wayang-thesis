@@ -70,8 +70,8 @@ public class TrainingCandidates {
     public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
-        //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true);
-        trainIMDB(args[0], args[1], args[2], args[3], true, Integer.valueOf(args[4]));
+        trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true, Integer.valueOf(args[4]));
+        //trainIMDB(args[0], args[1], args[2], args[3], true, Integer.valueOf(args[4]));
     }
 
     /*
@@ -221,7 +221,8 @@ public class TrainingCandidates {
         String dataPath,
         String encodePath,
         int index,
-        boolean skipConversions
+        boolean skipConversions,
+        int candidateIndex
     ) {
         Class<? extends GeneratableJob> job = Jobs.getJob(index);
 
@@ -250,49 +251,67 @@ public class TrainingCandidates {
 
             DataQuanta<?> quanta = createdJob.buildPlan(jobArgs);
             PlanBuilder builder = quanta.getPlanBuilder();
-            WayangContext context = builder.getWayangContext();
-            Configuration config = context.getConfiguration();
-            config.setProperty("wayang.ml.experience.enabled", "false");
+            WayangContext wayangContext = builder.getWayangContext();
+            Configuration config = wayangContext.getConfiguration();
             config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
-            config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("spark.executor.cores", "8");
+            config.setProperty("spark.app.name", "JOB Query");
+            config.setProperty("spark.rpc.message.maxSize", "2047");
+            config.setProperty("spark.executor.memory", "42g");
+            config.setProperty("spark.executor.cores", "4");
+            config.setProperty("spark.executor.instances", "2");
+            config.setProperty("spark.default.parallelism", "8");
+            config.setProperty("spark.driver.maxResultSize", "16g");
+            config.setProperty("spark.shuffle.service.enabled", "true");
+            config.setProperty("spark.dynamicAllocation.enabled", "true");
+            config.setProperty("spark.dynamicAllocation.minExecutors", "2");
             config.setProperty("wayang.flink.mode.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "8");
+            config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
             config.setProperty("wayang.flink.port", "7071");
-            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
-            config.setProperty("spark.executor.memory", "16g");
+            config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
+            config.setProperty("wayang.flink.collect.path", "file:///work/lsbo-paper/data/flink-data");
+            //config.setProperty("wayang.flink.collect.path", "file:///tmp/flink-data");
+            config.setProperty("wayang.ml.experience.enabled", "false");
+            config.setProperty(
+                "wayang.core.optimizer.pruning.strategies",
+                "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
+            );
+            config.setProperty("wayang.core.optimizer.pruning.topk", "100");
 
             WayangPlan plan = builder.build();
 
-            Job wayangJob = context.createJob("", plan, jars);
-            ExecutionPlan exPlan = wayangJob.buildInitialExecutionPlan();
+            Job wayangJob = wayangContext.createJob("", plan, jars);
+            wayangJob.prepareWayangPlan();
+            wayangJob.estimateKeyFigures();
+            final Collection<PlanImplementation> executionPlans = wayangJob.enumeratePlanImplementations();
+            OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+            OneHotMappings.encodeIds = false;
+
+            System.out.println("Found " + executionPlans.size() + " executionPlans");
+
+            final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
+            (producerTask, channel, consumerTask) -> false;
+            Tuple2<ExecutionPlan, Long> planWithCost = executionPlans.stream()
+                .sorted((o1, o2)-> ((Long)o1.getTimeEstimate().getUpperEstimate()).compareTo(o2.getTimeEstimate().getUpperEstimate()))
+                .skip(candidateIndex)
+                .limit(1)
+                .map(cand -> {
+                    final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(cand);
+                    final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, stageSplittingCriterion);
+
+                    return new Tuple2<>(executionPlan, cand.getTimeEstimate().getUpperEstimate());
+                })
+                .findFirst()
+                .get();
+
+            System.out.println(ExplainUtils.parsePlan(planWithCost.field0, true));
             OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
             TreeNode wayangNode = TreeEncoder.encode(plan);
-            TreeNode execNode = TreeEncoder.encode(exPlan, skipConversions).withIdsFrom(wayangNode);
+            TreeNode execNode = TreeEncoder.encode(planWithCost.field0, skipConversions).withIdsFrom(wayangNode);
             //System.out.println(exPlan.toExtensiveString());
+            //System.out.println(execNode.toString());
 
-            quanta = createdJob.buildPlan(jobArgs);
-            builder = quanta.getPlanBuilder();
-            context = builder.getWayangContext();
-            context.setLogLevel(Level.INFO);
-            config = context.getConfiguration();
-            config.setProperty("wayang.ml.experience.enabled", "false");
-            config.setProperty("spark.master", "spark://spark-cluster:7077");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
-            config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("wayang.flink.mode.run", "distribution");
-            config.setProperty("wayang.flink.parallelism", "8");
-            config.setProperty("wayang.flink.master", "flink-cluster");
-            config.setProperty("wayang.flink.port", "7071");
-            config.setProperty("wayang.flink.rest.client.max-content-length", "2000MiB");
-            config.setProperty("spark.app.name", "TPC-H Benchmark Query " + index);
-            config.setProperty("spark.executor.memory", "16g");
-            config.setProperty("wayang.core.optimizer.pruning.topk", "100");
-            plan = builder.build();
-            writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), 1_000_000));
+            writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), planWithCost.field1.intValue()));
             writer.newLine();
             writer.flush();
           } catch(Exception e) {

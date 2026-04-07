@@ -23,7 +23,6 @@ import org.apache.calcite.sql.SqlKind;
 
 import org.apache.wayang.api.sql.calcite.converter.filterhelpers.FilterPredicateImpl;
 import org.apache.wayang.api.sql.calcite.rel.WayangFilter;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.core.function.PredicateDescriptor;
@@ -33,13 +32,13 @@ import java.io.Serializable;
 import java.util.EnumSet;
 
 public class WayangFilterVisitor extends WayangRelNodeVisitor<WayangFilter> implements Serializable {
-    WayangFilterVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangFilterVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override
     Operator visit(final WayangFilter wayangRelNode) {
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0), super.aliasFinder);
+        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(0));
         final RexNode condition = wayangRelNode.getCondition();
 
         final FilterPredicateImpl javaImpl = new FilterPredicateImpl(condition);

@@ -42,7 +42,7 @@ import org.apache.commons.lang3.ArrayUtils;
 public class IMDBJOBenchmark {
     public static SqlContext sqlContext;
 
-    public static int maxReplacedSources = 2;
+    public static final int MAX_SOURCES_REPLACED = 3;
 
     public static WayangPlan getWayangPlan(
         final String path,
@@ -148,10 +148,10 @@ public class IMDBJOBenchmark {
 
         Set<String> replacedSources = new HashSet<>();
         boolean isSet = false;
-        int nrOfReplacedSources = 0;
+        int nrOfSourcesReplaced = 0;
 
         for (Operator op : sources) {
-            if (nrOfReplacedSources >= maxReplacedSources) {
+            if (nrOfSourcesReplaced >= MAX_SOURCES_REPLACED) {
                 return;
             }
 
@@ -177,7 +177,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
 
                             break;
                         case "aka_name":
@@ -208,7 +208,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
                             //System.out.println("Setting to file: " + tableName);
                             break;
                         case "company_name":
@@ -224,7 +224,8 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
+
                             //System.out.println("Setting to file: " + tableName);
                             break;
                         case "info_type":
@@ -240,6 +241,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
+                            nrOfSourcesReplaced++;
                             //System.out.println("Setting to file: " + tableName);
                             break;
                         case "movie_info":
@@ -256,7 +258,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
                             //System.out.println("Setting to file: " + tableName);
                             break;
                         case "person_info":
@@ -272,7 +274,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
                             //System.out.println("Setting to file: " + tableName);
                             break;
                         case "movie_keyword":
@@ -289,7 +291,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
                             //System.out.println("Setting to file: " + tableName);
 
                             break;
@@ -306,7 +308,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
                             //System.out.println("Setting to file: " + tableName);
                             break;
                         case "movie_link":
@@ -322,7 +324,7 @@ public class IMDBJOBenchmark {
                             replacement.connectTo(0, parser, 0);
                             replacedSources.add(tableName);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
                             //System.out.println("Setting to file: " + tableName);
                             break;
                         default:

@@ -144,8 +144,8 @@ public class FlinkJoinOperator<InputType0, InputType1, KeyType>
     @Override
     public List<ChannelDescriptor> getSupportedOutputChannels(int index) {
         assert index <= this.getNumOutputs() || (index == 0 && this.getNumOutputs() == 0);
-        //return Collections.singletonList(DataSetChannel.DESCRIPTOR);
-        return Arrays.asList(DataSetChannel.DESCRIPTOR, DataSetChannel.DESCRIPTOR_MANY);
+        return Collections.singletonList(DataSetChannel.DESCRIPTOR);
+        //return Arrays.asList(DataSetChannel.DESCRIPTOR, DataSetChannel.DESCRIPTOR_MANY);
     }
 
     @Override

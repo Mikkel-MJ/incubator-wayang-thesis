@@ -68,7 +68,6 @@ import org.apache.calcite.tools.RuleSet;
 
 import org.apache.wayang.api.sql.calcite.converter.WayangRelConverter;
 import org.apache.wayang.api.sql.calcite.schema.WayangSchema;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.LocalCallbackSink;
@@ -137,7 +136,7 @@ public class Optimizer {
                 .chain(ImmutableList.of(SqlStdOperatorTable.instance()));
 
         final SqlValidator.Config validatorConfig = SqlValidator.Config.DEFAULT
-                .withLenientOperatorLookup(config.lenientOperatorLookup())
+                    .withLenientOperatorLookup(config.lenientOperatorLookup())
                 .withConformance(config.conformance())
                 .withDefaultNullCollation(config.defaultNullCollation())
                 .withIdentifierExpansion(true);
@@ -308,8 +307,6 @@ public class Optimizer {
         // turn scalar subqueries into LogicalCorrelate
         final RelNode noSubqueries = Optimizer.removeSubqueries(node);
 
-        PrintUtils.print("Generated plan with no subqueries:", noSubqueries);
-
         // convert LogicalCorrelates into joins
         final RelNode decorrelate = RelDecorrelator.decorrelateQuery(noSubqueries,
                 RelBuilder.create(Frameworks.newConfigBuilder().context(this.getPlanner().getContext()).build()));
@@ -323,13 +320,12 @@ public class Optimizer {
                 Collections.emptyList(),
                 Collections.emptyList());
 
-        PrintUtils.print("Found plan with join order", optimalJoinOrder);
         return optimalJoinOrder;
     }
 
     /**
      * Removes any subqueries from the given relnode using {@link HepPlanner}.
-     * 
+     *
      * @param node root node of your relnode tree
      */
     public static RelNode removeSubqueries(final RelNode node) {
@@ -345,15 +341,14 @@ public class Optimizer {
     }
 
     public WayangPlan convert(final RelNode relNode) {
-        return convert(relNode, new ArrayList<>(), null);
+        return convert(relNode, new ArrayList<>());
     }
 
-    public WayangPlan convert(final RelNode relNode, final Collection<Record> collector,
-            final AliasFinder aliasFinder) {
+    public WayangPlan convert(final RelNode relNode, final Collection<Record> collector) {
         // LocalCallbackSink<Record> sink =
         // LocalCallbackSink.createCollectingSink(collector, Record.class);
         final LocalCallbackSink<Record> sink = LocalCallbackSink.createStdoutSink(Record.class);
-        final Operator op = new WayangRelConverter().convert(relNode, aliasFinder);
+        final Operator op = new WayangRelConverter().convert(relNode);
 
         op.connectTo(0, sink, 0);
 

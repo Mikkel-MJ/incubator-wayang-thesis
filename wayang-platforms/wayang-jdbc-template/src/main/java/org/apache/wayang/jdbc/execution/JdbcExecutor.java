@@ -144,7 +144,6 @@ public class JdbcExecutor extends ExecutorTemplate {
         } else if (operator instanceof JdbcProjectionOperator) {
             final JdbcProjectionOperator<?, ?> projection = (JdbcProjectionOperator<?, ?>) operator;
 
-            System.out.println("on project: " + operator);
             assert nextOperators.size() == 1
                     : "amount of next operators of projection operator was not one, got: "
                             + nextOperators.size();

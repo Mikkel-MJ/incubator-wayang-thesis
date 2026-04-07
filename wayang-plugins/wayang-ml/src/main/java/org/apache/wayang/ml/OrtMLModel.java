@@ -360,7 +360,7 @@ public class OrtMLModel {
                 resultTensor,
                 inputIndexStructure,
                 encoded,
-                new BitmaskValidationRule(),
+                //new BitmaskValidationRule(),
                 new OperatorValidationRule(),
                 new PostgresSourceValidationRule()
             );

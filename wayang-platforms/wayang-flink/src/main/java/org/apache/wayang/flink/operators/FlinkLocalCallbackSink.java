@@ -83,7 +83,6 @@ public class FlinkLocalCallbackSink <Type extends Serializable> extends LocalCal
                 this.collector.addAll(inputDataSet.collect());
             }*/
             inputDataSet.print();
-
         } catch (Exception e) {
             e.printStackTrace();
         }

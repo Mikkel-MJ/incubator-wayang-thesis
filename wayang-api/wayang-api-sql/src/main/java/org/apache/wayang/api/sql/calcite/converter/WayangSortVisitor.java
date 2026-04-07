@@ -28,7 +28,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.wayang.api.sql.calcite.converter.sorthelpers.SortFilter;
 import org.apache.wayang.api.sql.calcite.converter.sorthelpers.SortKeyExtractor;
 import org.apache.wayang.api.sql.calcite.rel.WayangSort;
-import org.apache.wayang.api.sql.calcite.utils.AliasFinder;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.basic.operators.FilterOperator;
 import org.apache.wayang.basic.operators.SortOperator;
@@ -38,8 +37,8 @@ import org.apache.wayang.core.plan.wayangplan.Operator;
 
 public class WayangSortVisitor extends WayangRelNodeVisitor<WayangSort> {
 
-    WayangSortVisitor(final WayangRelConverter wayangRelConverter, final AliasFinder aliasFinder) {
-        super(wayangRelConverter, aliasFinder);
+    WayangSortVisitor(final WayangRelConverter wayangRelConverter) {
+        super(wayangRelConverter);
     }
 
     @Override
@@ -47,20 +46,11 @@ public class WayangSortVisitor extends WayangRelNodeVisitor<WayangSort> {
         assert (wayangRelNode.getInputs().size() == 1)
                 : "Sorts must only have one input, but found: " + wayangRelNode.getInputs().size();
 
-        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput(), aliasFinder);
+        final Operator childOp = wayangRelConverter.convert(wayangRelNode.getInput());
 
         final RexLiteral fetch = (RexLiteral) wayangRelNode.fetch;
         final RexInputRef offset = (RexInputRef) wayangRelNode.offset;
         final RelCollation collation = wayangRelNode.getCollation();
-
-        System.out.println("sort rel: " + wayangRelNode);
-        System.out.println("fetch: " + fetch);
-        System.out.println("offset: " + offset);
-        System.out.println("collation: " + collation);
-        System.out.println(
-                "collation item: " + wayangRelNode.getRowType().getFieldList().get(collation.getKeys().getInt(0)));
-        System.out
-                .println("fetch item: " + wayangRelNode.getRowType().getFieldList().get(collation.getKeys().getInt(0)));
 
         final List<Direction> collationDirections = collation.getFieldCollations().stream()
                 .map(fieldCol -> fieldCol.getDirection())
