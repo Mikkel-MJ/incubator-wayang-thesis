@@ -156,9 +156,10 @@ public class Record implements Serializable, Copyable<Record>, Comparable<Record
         for (int i = 0; i < this.values.length; i++) {
             if (!this.values[i].getClass().equals(that.values[i].getClass())) {
                 throw new IllegalStateException(
-                        "Tried to compare records with dissimilar classes. " +
-                                "this item class: " + this.values[i].getClass() +
-                                ", that item class: " + that.values[i].getClass());
+                    "Tried to compare records with dissimilar classes. " +
+                    "this item class: " + this.values[i].getClass() +
+                    ", that item class: " + that.values[i].getClass()
+                );
             }
 
             if (!(this.values[i] instanceof Comparable)) {
@@ -173,6 +174,7 @@ public class Record implements Serializable, Copyable<Record>, Comparable<Record
             if (cmp != 0)
                 return cmp;
         }
+
         return Integer.compare(this.values.length, that.values.length);
     }
 }

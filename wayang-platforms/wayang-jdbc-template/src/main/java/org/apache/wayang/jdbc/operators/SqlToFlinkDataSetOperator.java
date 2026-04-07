@@ -69,7 +69,8 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
 
     @Override
     public List<ChannelDescriptor> getSupportedOutputChannels(int index) {
-        return Arrays.asList(DataSetChannel.DESCRIPTOR, DataSetChannel.DESCRIPTOR_MANY);
+        return Collections.singletonList(DataSetChannel.DESCRIPTOR);
+        //return Arrays.asList(DataSetChannel.DESCRIPTOR, DataSetChannel.DESCRIPTOR_MANY);
     }
 
     @Override
@@ -95,21 +96,19 @@ public class SqlToFlinkDataSetOperator<Input, Output> extends UnaryToUnaryOperat
 
         output.accept(resultSetDataSet, flinkExecutor);
 
-        input.dispose();
-
         // TODO: Add load profile estimators
         ExecutionLineageNode queryLineageNode = new ExecutionLineageNode(operatorContext);
         queryLineageNode.addPredecessor(input.getLineage());
         ExecutionLineageNode outputLineageNode = new ExecutionLineageNode(operatorContext);
         output.getLineage().addPredecessor(outputLineageNode);
 
-        //return queryLineageNode.collectAndMark();
-        return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
+        return queryLineageNode.collectAndMark();
+        //return ExecutionOperator.modelLazyExecution(inputs, outputs, operatorContext);
     }
 
     @Override
     public boolean containsAction() {
-        return true;
+        return false;
     }
 
     @Override

@@ -14,7 +14,7 @@ public final class Call implements Node {
     final List<SqlKind> operandTypes;
     final SerializableFunction<List<Object>, Object> operation;
     final SqlKind kind;
-    
+
     public Call(final RexCall call, final CallTreeFactory tree) {
         this.operands = call.getOperands().stream().map(tree::fromRexNode).collect(Collectors.toList());
         this.operandTypes = call.getOperands().stream().map(RexNode::getKind).collect(Collectors.toList());
@@ -49,7 +49,18 @@ public final class Call implements Node {
                     final String columnSql = this.operands.get(0).createSqlString(fieldNames);
                     final String sqlString = this.operands.get(1).createSqlString(fieldNames);
 
-                    return columnSql + " BETWEEN " + sqlString;
+                        return columnSql + " BETWEEN " + sqlObjToString(lower) + " AND " + sqlObjToString(upper);
+                    } else if (value instanceof ImmutableSortedSet) {
+                        final ImmutableSortedSet<Range> ranges = (ImmutableSortedSet<Range>) value;
+                        final String points = ranges.stream().map(
+                                span -> sqlObjToString("'" + sqlObjToString(span.lowerEndpoint())) + "','"
+                                        + sqlObjToString(span.upperEndpoint()) + "'")
+                                .collect(Collectors.joining(","));
+                        final String clause = columnSql + " IN (" + points + ")";
+                        return clause;
+                    } else {
+                        throw new UnsupportedOperationException("type not supported: " + value.getClass());
+                    }
                 default:
                     return operands.get(0).createSqlString(fieldNames) + " " + this.kind.sql + " "
                             + operands.get(1).createSqlString(fieldNames);

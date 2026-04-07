@@ -125,9 +125,6 @@ public class SqlContext extends WayangContext {
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 transformationRules);
 
-        System.out.println("wayang rel " + relNode);
-
-        PrintUtils.print("wayang rel 2: ", optimized);
         final TableScanVisitor visitor = new TableScanVisitor(new ArrayList<>(), null);
         visitor.visit(optimized, 0, null);
 
@@ -172,11 +169,8 @@ public class SqlContext extends WayangContext {
                 relNode.getTraitSet().plus(WayangConvention.INSTANCE),
                 rules);
 
-        PrintUtils.print("wayang rel 2: ", wayangRel);
         final Collection<Record> collector = new ArrayList<>();
         final WayangPlan wayangPlan = optimizer.convert(wayangRel, collector);
-
-        PrintUtils.print("wayang plan 2: ", wayangPlan);
 
         if (udfJars.length == 0) {
             this.execute(getJobName(), wayangPlan);

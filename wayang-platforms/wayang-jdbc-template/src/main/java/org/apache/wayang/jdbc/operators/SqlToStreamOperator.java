@@ -212,7 +212,6 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
 
         final Operator boundaryOperator = input.getChannel().getProducer().getOperator();
 
-        System.out.println("[SqlToStreamOperator] ID: " + this + ", executing sql: " + input.getSqlQuery());
         final ResultSetIterator<Output> resultSetIterator = new ResultSetIterator<>(connection, input.getSqlQuery(),
                 boundaryOperator instanceof JoinOperator);
 

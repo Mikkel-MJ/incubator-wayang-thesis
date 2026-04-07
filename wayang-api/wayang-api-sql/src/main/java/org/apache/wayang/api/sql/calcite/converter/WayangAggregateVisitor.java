@@ -93,6 +93,8 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
             aggregateOperator = new ReduceByOperator<>(
                     new TransformationDescriptor<>(new KeyExtractor(new HashSet<>(groupFields)),
                             Record.class,
+            final ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
+                    new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class,
                             Object.class),
                     reduceDescriptor);
         } else {

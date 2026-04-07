@@ -307,8 +307,6 @@ public class Optimizer {
         // turn scalar subqueries into LogicalCorrelate
         final RelNode noSubqueries = Optimizer.removeSubqueries(node);
 
-        PrintUtils.print("Generated plan with no subqueries:", noSubqueries);
-
         // convert LogicalCorrelates into joins
         final RelNode decorrelate = RelDecorrelator.decorrelateQuery(noSubqueries,
                 RelBuilder.create(Frameworks.newConfigBuilder().context(this.getPlanner().getContext()).build()));
@@ -322,13 +320,12 @@ public class Optimizer {
                 Collections.emptyList(),
                 Collections.emptyList());
 
-        PrintUtils.print("Found plan with join order", optimalJoinOrder);
         return optimalJoinOrder;
     }
 
     /**
      * Removes any subqueries from the given relnode using {@link HepPlanner}.
-     * 
+     *
      * @param node root node of your relnode tree
      */
     public static RelNode removeSubqueries(final RelNode node) {

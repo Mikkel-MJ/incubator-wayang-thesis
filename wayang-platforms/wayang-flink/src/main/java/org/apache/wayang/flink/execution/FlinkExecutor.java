@@ -23,6 +23,7 @@ import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.core.optimizer.OptimizationContext;
 import org.apache.wayang.core.plan.executionplan.ExecutionTask;
+import org.apache.wayang.core.plan.executionplan.ExecutionStage;
 import org.apache.wayang.core.plan.wayangplan.ExecutionOperator;
 import org.apache.wayang.core.platform.ChannelInstance;
 import org.apache.wayang.core.platform.Executor;
@@ -75,6 +76,12 @@ public class FlinkExecutor extends PushExecutorTemplate {
     private int numDefaultPartitions;
 
 
+    /**
+     * Counts the number of issued Flink actions.
+     */
+    private int numActions = 0;
+
+
     public FlinkExecutor(FlinkPlatform flinkPlatform, Job job) {
         super(job);
         this.platform = flinkPlatform;
@@ -84,9 +91,7 @@ public class FlinkExecutor extends PushExecutorTemplate {
         this.numDefaultPartitions = (int) this.getConfiguration().getLongProperty("wayang.flink.parallelism");
         this.fee.setParallelism(this.numDefaultPartitions);
         this.flinkContextReference.noteObtainedReference();
-        this.fee.getConfig().disableForceKryo();
-        //this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.wayang.api.sql.calcite.converter.calciteserialisation.CalciteRexSerializable.class, DefaultSerializers.ClassSerializer.class);
-        //this.fee.getConfig().registerTypeWithKryoSerializer(org.apache.calcite.rel.externalize.RelJson.class, DefaultSerializers.ClassSerializer.class);
+        //this.fee.getConfig().disableForceKryo();
     }
 
     @Override
@@ -124,6 +129,11 @@ public class FlinkExecutor extends PushExecutorTemplate {
         long executionDuration = endTime - startTime;
         this.job.reportProgress(task.getOperator().getName(), 100);
 
+        ExecutionOperator operator = task.getOperator();
+        ExecutionStage stage = task.getStage();
+        Collection<ExecutionTask> terminalTasks = stage.getTerminalTasks();
+        Collection<ExecutionTask> startTasks = stage.getStartTasks();
+
         // Check how much we executed.
         PartialExecution partialExecution = this.createPartialExecution(executionLineageNodes, executionDuration);
 
@@ -134,15 +144,14 @@ public class FlinkExecutor extends PushExecutorTemplate {
         // Collect any cardinality updates.
         this.registerMeasuredCardinalities(producedChannelInstances);
 
-        ExecutionOperator operator = task.getOperator();
-
         // Warn if requested eager execution did not take place.
         if (isRequestEagerExecution){
-            if(partialExecution == null) {
+            if( partialExecution == null) {
                 this.logger.info("{} was not executed eagerly as requested.", task);
             }else {
                 try {
-                    if (!operator.isSink()) {
+                    //TODO validate the execute in different contexts
+                    if (terminalTasks.contains(task)) {
                         this.fee.execute();
                     }
                 } catch (Exception e) {

@@ -15,14 +15,14 @@ cd ${WORKDIR}
 cd wayang-0.7.1
 
 data_path=/work/lsbo-paper/data/JOBenchmark/data
-train_encode_path=/work/lsbo-paper/data/JOBenchmark/encodings/light/train.txt
-train_path=/work/lsbo-paper/data/JOBenchmark/queries/light
+train_encode_path=/work/lsbo-paper/data/benchmarks/tpch/encodings/train.txt
+train_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
 
 echo "Encoding training data with native optimizer"
 
-for query in "$train_path"/*.sql
-do
+#for query in "$train_path"/*.sql
+for query in {0..30}; do
     for i in {0..99}; do
-        ./bin/wayang-submit org.apache.wayang.ml.training.TrainingCandidates java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/ $train_encode_path $query $i
+        ./bin/wayang-submit org.apache.wayang.ml.training.TrainingCandidates java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/ $train_encode_path $query $i
     done
 done

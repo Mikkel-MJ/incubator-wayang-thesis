@@ -24,20 +24,20 @@ retrained_bvae_10_path=/work/lsbo-paper/python-ml/src/Models/tpch/retrained/bvae
 
 cost_path=/work/lsbo-paper/data/models/cost.onnx
 
-data_path=/work/lsbo-paper/data
+data_path=/work/lsbo-paper/data/benchmarks/tpch/data
 experience_path=/work/lsbo-paper/data/experience/
 
-for query in {900..999}; do
+for query in {0..29}; do
     for i in {0..2}; do
-        #echo "Benchmarking Test data with native optimizer"
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ $data_path/benchmarks/generatables/ $query
+        echo "Benchmarking Test data with native optimizer"
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ /work/lsbo-paper/data/benchmarks/tpch/native/ $query
 
-        echo "Benchmarking Test data with bvae-b-1"
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ $data_path/benchmarks/generatables/bvae/retrained/ $query bvae $bvae_1_path $experience_path
+        #echo "Benchmarking Test data with bvae-b-1"
+        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ $data_path/benchmarks/generatables/bvae/retrained/ $query bvae $bvae_1_path $experience_path
 
         # Lord forgive me - for Flink has sinned
-        sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
-        sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
-        sleep 5s
+        #sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
+        #sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
+        #sleep 5s
     done
 done

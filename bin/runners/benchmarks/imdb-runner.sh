@@ -1,3 +1,5 @@
+
+
 export WORKDIR=/work/lsbo-paper
 export DEPENDENCIES_DIR="${WORKDIR}/dependencies"
 export HADOOP_HOME="${DEPENDENCIES_DIR}/hadoop"
@@ -26,12 +28,14 @@ retrained_bvae_2_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-
 retrained_bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrained/bvae-5.onnx
 
 echo "Running JOBenchmark"
+    queries=(23 24 25 27 29 30)
 
     #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
-    for query in "$test_path"/*.sql; do
+    #for query in "$test_path"/*.sql; do
     #for i in {0..2}; do
     #for query in $(ls "$test_path"/*.sql | tail -n +14); do
-    #for query_name in "${selected_queries[@]}"; do
+    for query_name in "${queries[@]}"; do
+        query="$test_path"/"$query_name".sql
             ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark spark,postgres file://$data_path/ $timings_path/native/ $query
             #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/tao/ $query bvae $bvae_1_path $data_path/experience/
@@ -47,4 +51,3 @@ echo "Running JOBenchmark"
             sleep 1s
         #done
     done
-

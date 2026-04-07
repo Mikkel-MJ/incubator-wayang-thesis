@@ -374,13 +374,13 @@ public class LSBO {
 
         /*TODO should NOT be assigned an specific port, set port as 0 (zero)*/
         serverSocket = new ServerSocket(0, 1, InetAddress.getByAddress(addr));
-        serverSocket.setSoTimeout(10000);
+        serverSocket.setSoTimeout(10_000);
 
         // This is read from the python process to retrieve it
         System.out.println(serverSocket.getLocalPort());
 
         socket = serverSocket.accept();
-        serverSocket.setSoTimeout(0);
+        serverSocket.setSoTimeout(10_000);
 
         return socket;
     }
