@@ -83,6 +83,7 @@ public class STATSBenchmark {
      */
     public static String psqlUser = "postgres";
     public static String psqlPassword = "postgres";
+    public static final int MAX_SOURCES_REPLACED = 2;
 
     public static void main(String[] args) {
         System.out.println("running DSB with args: " + Arrays.toString(args));
@@ -185,6 +186,7 @@ public class STATSBenchmark {
 
             try {
                 WayangPlan plan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+                STATSSources.setSources(plan, args[1], MAX_SOURCES_REPLACED);
 
                 wayangContext.setLogLevel(Level.DEBUG);
 

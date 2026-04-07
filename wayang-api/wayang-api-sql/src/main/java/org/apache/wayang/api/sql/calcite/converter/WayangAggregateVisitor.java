@@ -93,8 +93,6 @@ public class WayangAggregateVisitor extends WayangRelNodeVisitor<WayangAggregate
             aggregateOperator = new ReduceByOperator<>(
                     new TransformationDescriptor<>(new KeyExtractor(new HashSet<>(groupFields)),
                             Record.class,
-            final ReduceByOperator<Record, Object> reduceByOperator = new ReduceByOperator<>(
-                    new TransformationDescriptor<>(new KeyExtractor(groupingFields), Record.class,
                             Object.class),
                     reduceDescriptor);
         } else {
@@ -121,10 +119,10 @@ class AggregateBinaryOperator implements SerializableBinaryOperator<Record> {
             switch (kind) {
                 case MIN:
                 case MAX:
-                    break; 
+                    break;
                 case COUNT:
                     //state[i] = 1;
-                    break; 
+                    break;
                 default:
                     throw new UnsupportedOperationException("Not implemented: " + kind);
             }
@@ -142,12 +140,12 @@ class AggregateBinaryOperator implements SerializableBinaryOperator<Record> {
                     break;
                 case MAX:
                     state[i] = SqlFunctions.geAny(arg0.getField(0), arg1.getField(0)) ? arg0.getField(0) : arg1.getField(0);
-                    break; 
+                    break;
                 case COUNT:
 
                     state[i] = state[i] instanceof Integer ? ((int) state[i]) : 1;
                     state[i] = ((int) state[i]) + 1;
-                    break; 
+                    break;
                 default:
                     throw new UnsupportedOperationException("Not implemented: " + kind);
             }
@@ -155,4 +153,4 @@ class AggregateBinaryOperator implements SerializableBinaryOperator<Record> {
 
         return new Record(state);
     }
-} 
+}
