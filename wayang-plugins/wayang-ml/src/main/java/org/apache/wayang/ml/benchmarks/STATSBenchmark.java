@@ -25,6 +25,7 @@ import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.spark.Spark;
@@ -185,7 +186,8 @@ public class STATSBenchmark {
             );
 
             try {
-                WayangPlan plan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+                Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+                WayangPlan plan = convertedPlan.getField0();
                 STATSSources.setSources(plan, args[1], MAX_SOURCES_REPLACED);
 
                 wayangContext.setLogLevel(Level.DEBUG);
@@ -200,6 +202,9 @@ public class STATSBenchmark {
                     wayangContext.executeVAE(plan, jars);
                     System.out.println("Finished execution");
                 }
+
+                Collection<Record> collector = convertedPlan.getField1();
+                collector.stream().forEach(System.out::println);
             } catch (SqlParseException sqlE) {
                 sqlE.printStackTrace();
             }
@@ -249,7 +254,7 @@ public class STATSBenchmark {
 
     }
 
-    public static WayangPlan getWayangPlan(
+    public static Tuple2<WayangPlan, Collection<Record>> getWayangPlan(
         final String path,
         final Configuration configuration,
         final Plugin[] plugins,
@@ -261,9 +266,7 @@ public class STATSBenchmark {
         // need to chop off the last ';' otherwise sqlContext cant parse it
         final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
 
-        WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
-
-        return plan;
+        return sqlContext.buildWayangPlan(query, udfJars);
     }
 
 

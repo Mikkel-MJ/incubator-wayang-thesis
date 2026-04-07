@@ -45,6 +45,7 @@ import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
@@ -185,7 +186,9 @@ public class DSBenchmark {
             );
 
             try {
-                WayangPlan plan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+
+                Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
+                WayangPlan plan = convertedPlan.getField0();
 
                 wayangContext.setLogLevel(Level.DEBUG);
 
@@ -248,7 +251,7 @@ public class DSBenchmark {
 
     }
 
-    public static WayangPlan getWayangPlan(
+    public static Tuple2<WayangPlan, Collection<Record>> getWayangPlan(
         final String path,
         final Configuration configuration,
         final Plugin[] plugins,
@@ -260,9 +263,7 @@ public class DSBenchmark {
         // need to chop off the last ';' otherwise sqlContext cant parse it
         final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
 
-        WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
-
-        return plan;
+        return sqlContext.buildWayangPlan(query, udfJars);
     }
 
 

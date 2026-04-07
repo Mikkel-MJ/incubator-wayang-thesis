@@ -32,6 +32,7 @@ import org.apache.wayang.api.sql.calcite.optimizer.Optimizer;
 import org.apache.wayang.api.sql.calcite.rules.WayangRules;
 import org.apache.wayang.api.sql.calcite.schema.SchemaUtils;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.plugin.Plugin;
@@ -98,7 +99,7 @@ public class SqlContext extends WayangContext {
      * @return a {@link WayangPlan} of a given sql string
      * @throws SqlParseException
      */
-    public WayangPlan buildWayangPlan(final String sql, final String... udfJars) throws SqlParseException {
+    public Tuple2<WayangPlan, Collection<Record>> buildWayangPlan(final String sql, final String... udfJars) throws SqlParseException {
         final Properties configProperties = Optimizer.ConfigProperties.getDefaults();
         final RelDataTypeFactory relDataTypeFactory = new JavaTypeFactoryImpl();
 
@@ -129,7 +130,8 @@ public class SqlContext extends WayangContext {
         visitor.visit(optimized, 0, null);
 
         final Collection<Record> collector = new ArrayList<>();
-        return optimizer.convert(optimized, collector);
+
+        return new Tuple2<>(optimizer.convert(optimized, collector), collector);
     }
 
     /**
