@@ -25,8 +25,8 @@ public class STATSSources {
     public static final Map<String, BiFunction<String, String, Object[]>> TABLE_PARSERS = Map.of(
         "users",       STATSSources::parseUsers,
         "posts",       STATSSources::parsePosts,
-        "postLinks",   STATSSources::parsePostLinks,
-        "postHistory", STATSSources::parsePostHistory,
+        "postlinks",   STATSSources::parsePostLinks,
+        "posthistory", STATSSources::parsePostHistory,
         "comments",    STATSSources::parseComments,
         "votes",       STATSSources::parseVotes,
         "badges",      STATSSources::parseBadges,
