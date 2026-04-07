@@ -54,7 +54,7 @@ echo "Selected queries: ${selected_queries[*]}"
 
 selected_queries=( {0..29} )
 
-skip=0  # Number of already-completed queries to skip
+skip=21  # Number of already-completed queries to skip
 
 for i in "${!selected_queries[@]}"; do
     if (( i < skip )); then
@@ -68,7 +68,7 @@ for i in "${!selected_queries[@]}"; do
     query=${num}
     query_name=$(( num + 1 ))
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/tpch/CarbVAE.json" --stats="./src/Data/splits/tpch/stats.${query_name}.txt" --trainset="./src/Data/splits/tpch/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/tpch/initialization/${query_name}.txt" --experience="./src/Data/splits/tpch/experience/${query_name}.txt"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx16g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/tpch/CarbVAE.json" --stats="./src/Data/splits/tpch/stats.${query_name}.txt" --trainset="./src/Data/splits/tpch/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/tpch/initialization/${query_name}.txt" --experience="./src/Data/splits/tpch/experience/${query_name}.txt"
 done
 
 
@@ -84,6 +84,7 @@ done
     # Lord forgive me - for Flink has sinned
 #    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
 #    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
+ */
 
 #done
 
