@@ -45,9 +45,12 @@ import org.apache.wayang.ml.util.Jobs;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.wayang.api.PlanBuilder;
 import org.apache.wayang.ml.MLContext;
+import org.apache.wayang.ml.benchmarks.STATSSources;
+import org.apache.wayang.ml.benchmarks.DSBenchmark;
 import org.apache.wayang.core.api.exception.WayangException;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
 import org.apache.wayang.basic.operators.TextFileSource;
+import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.optimizer.enumeration.PlanImplementation;
 import org.apache.wayang.core.optimizer.enumeration.StageAssignmentTraversal;
 
@@ -66,13 +69,150 @@ import scala.collection.JavaConversions;
 
 public class TrainingCandidates {
 
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static final int MAX_SOURCES_REPLACED = 3;
+
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
-        trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true, Integer.valueOf(args[4]));
+        trainSTATS(args[0], args[1], args[2], args[3], true, Integer.valueOf(args[4]));
+        //trainGeneratables(args[0], args[1], args[2], Integer.valueOf(args[3]), true, Integer.valueOf(args[4]));
         //trainIMDB(args[0], args[1], args[2], args[3], true, Integer.valueOf(args[4]));
     }
+
+    /*
+     * args format:
+     * 1: platforms, comma sep. (string)
+     * 2: tpch file path
+     * 3: encode to file path (string)
+     * 4: job index for the job to run (int)
+     * 5: overwrite skipConversions (boolean)
+     * 6: index of candidate to write (int)
+     **/
+    public static void trainSTATS(
+        String platforms,
+        String dataPath,
+        String encodePath,
+        String query,
+        boolean skipConversions,
+        int candidateIndex
+    ) {
+        System.out.println("Running job query: " + query);
+        try {
+            FileWriter fw = new FileWriter(encodePath, true);
+            BufferedWriter writer = new BufferedWriter(fw);
+
+            try {
+                String[] jars = new String[]{
+                    ReflectionUtils.getDeclaringJar(Training.class),
+                    ReflectionUtils.getDeclaringJar(IMDBJOBenchmark.class),
+                };
+
+                List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(platforms));
+                Configuration config = new Configuration();
+
+                final String calciteModel = "{\n" +
+                        "    \"version\": \"1.0\",\n" +
+                        "    \"defaultSchema\": \"wayang\",\n" +
+                        "    \"schemas\": [\n" +
+                        "        {\n" +
+                        "            \"name\": \"postgres\",\n" +
+                        "            \"type\": \"custom\",\n" +
+                        "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
+                        "            \"operand\": {\n" +
+                        "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
+                        "                \"jdbcUrl\": \"jdbc:postgresql://stats:5432/stats\",\n" +
+                        "                \"jdbcUser\": \"" + psqlUser + "\",\n" +
+                        "                \"jdbcPassword\": \"" + psqlPassword + "\"\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "    ]\n" +
+                        "}";
+
+                config.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
+                config.setProperty("wayang.calcite.model", calciteModel);
+                config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://stats:5432/stats");
+                config.setProperty("wayang.postgres.jdbc.user", psqlUser);
+                config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
+                config.setProperty("spark.master", "spark://spark-cluster:7077");
+                config.setProperty("spark.app.name", "JOB Query");
+                config.setProperty("spark.rpc.message.maxSize", "2047");
+                config.setProperty("spark.executor.memory", "42g");
+                config.setProperty("spark.executor.cores", "4");
+                config.setProperty("spark.executor.instances", "2");
+                config.setProperty("spark.default.parallelism", "8");
+                config.setProperty("spark.driver.maxResultSize", "16g");
+                config.setProperty("spark.shuffle.service.enabled", "true");
+                config.setProperty("spark.dynamicAllocation.enabled", "true");
+                config.setProperty("spark.dynamicAllocation.minExecutors", "2");
+                config.setProperty("wayang.flink.mode.run", "distribution");
+                config.setProperty("wayang.flink.parallelism", "1");
+                config.setProperty("wayang.flink.master", "flink-cluster");
+                config.setProperty("wayang.flink.port", "7071");
+                config.setProperty("wayang.flink.rest.client.max-content-length", "200MiB");
+                config.setProperty("wayang.flink.collect.path", "file:///work/lsbo-paper/data/flink-data");
+                //config.setProperty("wayang.flink.collect.path", "file:///tmp/flink-data");
+                config.setProperty("wayang.ml.experience.enabled", "false");
+                config.setProperty(
+                    "wayang.core.optimizer.pruning.strategies",
+                    "org.apache.wayang.core.optimizer.enumeration.TopKPruningStrategy"
+                );
+                config.setProperty("wayang.core.optimizer.pruning.topk", "100");
+
+                final MLContext wayangContext = new MLContext(config);
+                plugins.stream().forEach(plug -> wayangContext.register(plug));
+
+                System.out.println("Getting plan");
+                Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
+                WayangPlan plan = convertedPlan.getField0();
+                STATSSources.setSources(plan, dataPath, MAX_SOURCES_REPLACED);
+
+                Job wayangJob = wayangContext.createJob("", plan, jars);
+                wayangJob.prepareWayangPlan();
+                wayangJob.estimateKeyFigures();
+                final Collection<PlanImplementation> executionPlans = wayangJob.enumeratePlanImplementations();
+                OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+                OneHotMappings.encodeIds = false;
+
+                System.out.println("Found " + executionPlans.size() + " executionPlans");
+
+                final StageAssignmentTraversal.StageSplittingCriterion stageSplittingCriterion =
+                (producerTask, channel, consumerTask) -> false;
+                Tuple2<ExecutionPlan, Long> planWithCost = executionPlans.stream()
+                    .sorted((o1, o2)-> ((Long)o1.getTimeEstimate().getUpperEstimate()).compareTo(o2.getTimeEstimate().getUpperEstimate()))
+                    .skip(candidateIndex)
+                    .limit(1)
+                    .map(cand -> {
+                        final ExecutionTaskFlow executionTaskFlow = ExecutionTaskFlow.createFrom(cand);
+                        final ExecutionPlan executionPlan = ExecutionPlan.createFrom(executionTaskFlow, stageSplittingCriterion);
+
+                        return new Tuple2<>(executionPlan, cand.getTimeEstimate().getUpperEstimate());
+                    })
+                    .findFirst()
+                    .get();
+
+                System.out.println(ExplainUtils.parsePlan(planWithCost.field0, true));
+                OneHotMappings.setOptimizationContext(wayangJob.getOptimizationContext());
+                TreeNode wayangNode = TreeEncoder.encode(plan);
+                TreeNode execNode = TreeEncoder.encode(planWithCost.field0, skipConversions).withIdsFrom(wayangNode);
+                //System.out.println(exPlan.toExtensiveString());
+                //System.out.println(execNode.toString());
+
+                writer.write(String.format("%s:%s:%d", wayangNode.toStringEncoding(), execNode.toStringEncoding(), planWithCost.field1.intValue()));
+                writer.newLine();
+                writer.flush();
+              } catch(WayangException e) {
+                  e.printStackTrace();
+                  /*
+                  writer.write(query);
+                  writer.newLine();
+                  writer.flush();*/
+              }
+          } catch(Exception e) {
+              e.printStackTrace();
+          }
+    }
+
 
     /*
      * args format:
