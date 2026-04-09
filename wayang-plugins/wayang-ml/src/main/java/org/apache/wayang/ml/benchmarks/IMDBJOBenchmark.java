@@ -23,6 +23,7 @@ import org.apache.wayang.core.function.TransformationDescriptor;
 import org.apache.wayang.core.types.DataSetType;
 import org.apache.wayang.core.types.DataUnitType;
 import org.apache.wayang.apps.imdb.data.*;
+import org.apache.wayang.basic.data.Tuple2;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.io.IOException;
@@ -64,7 +65,9 @@ public class IMDBJOBenchmark {
         final String query = StringUtils.chop(Files.readString(pathToQuery).stripTrailing());
         */
 
-        WayangPlan plan = sqlContext.buildWayangPlan(query, udfJars);
+
+        Tuple2<WayangPlan, Collection<Record>> convertedPlan = sqlContext.buildWayangPlan(query, udfJars);
+        WayangPlan plan = convertedPlan.getField0();
 
         //((LinkedList<Operator> )plan.getSinks()).get(0).addTargetPlatform(Java.platform());
 
@@ -193,7 +196,7 @@ public class IMDBJOBenchmark {
                             replacedSources.add(tableName);
                             replacement.connectTo(0, parser, 0);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
 
                             break;
                         case "comp_cast_type":

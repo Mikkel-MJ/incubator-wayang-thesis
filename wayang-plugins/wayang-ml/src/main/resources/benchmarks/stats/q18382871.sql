@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.postHistory as ph, postgres.badges as b, postgres.users as u WHERE u.Id = b.UserId AND u.Id = ph.UserId AND u.Id = c.UserId AND c.CreationDate<='2014-09-10 00:33:30'::timestamp AND u.DownVotes<=0 AND u.UpVotes<=47;
+select count(*) from postgres.comments as c, postgres.posthistory as ph, postgres.badges as b, postgres.users as u where u.id = b.userid and u.id = ph.userid and u.id = c.userid and c.creationdate<=timestamp '2014-09-10 00:33:30' and u.downvotes<=0 and u.upvotes<=47;

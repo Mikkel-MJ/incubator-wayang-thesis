@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.posts as p, postgres.postLinks as pl, postgres.postHistory as ph WHERE p.Id = pl.PostId AND pl.PostId = ph.PostId AND p.CreationDate>='2010-07-19 20:08:37'::timestamp AND ph.CreationDate>='2010-07-20 00:30:00'::timestamp;
+select count(*) from postgres.posts as p, postgres.postlinks as pl, postgres.posthistory as ph where p.id = pl.postid and pl.postid = ph.postid and p.creationdate>=timestamp '2010-07-19 20:08:37' and ph.creationdate>=timestamp '2010-07-20 00:30:00';

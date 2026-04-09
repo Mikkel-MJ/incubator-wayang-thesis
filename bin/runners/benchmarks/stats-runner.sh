@@ -14,15 +14,22 @@ export PATH="$PATH:${GIRAPH_HOME}/bin"
 cd ${WORKDIR}
 cd wayang-0.7.1
 
-data_path=/work/lsbo-paper/data/JOBenchmark/data
-train_encode_path=/work/lsbo-paper/data/benchmarks/stats/encodings/train.txt
-train_path=/work/lsbo-paper/data/benchmarks/stats/queries
+data_path=/work/lsbo-paper/data/benchmarks/stats/data
+timings_path=/work/lsbo-paper/data/benchmarks/stats
+test_path=/work/lsbo-paper/data/benchmarks/stats/queries
 
-echo "Encoding training data with native optimizer"
+echo "Running STATSBenchmark"
 
-for query in "$train_path"/*.sql; do
-#for query in {0..30}; do
-    for i in {0..99}; do
-        ./bin/wayang-submit org.apache.wayang.ml.training.TrainingCandidates java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/ $train_encode_path $query $i
-    done
+skip=41  # Number of queries to skip
+
+i=0
+for query in "$test_path"/*.sql; do
+    if (( i < skip )); then
+        echo "Skipping $query"
+        (( i++ ))
+        continue
+    fi
+
+    timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/native/ $query
+    (( i++ ))
 done

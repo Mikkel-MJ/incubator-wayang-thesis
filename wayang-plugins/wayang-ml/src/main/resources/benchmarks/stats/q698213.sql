@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.posts as p, postgres.postHistory as ph WHERE p.Id = c.PostId AND p.Id = ph.PostId AND p.CommentCount>=0 AND p.CommentCount<=25;
+select count(*) from postgres.comments as c, postgres.posts as p, postgres.posthistory as ph where p.id = c.postid and p.id = ph.postid and p.commentcount>=0 and p.commentcount<=25;

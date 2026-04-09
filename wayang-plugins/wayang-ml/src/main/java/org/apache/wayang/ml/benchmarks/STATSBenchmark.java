@@ -25,13 +25,13 @@ import org.apache.wayang.core.api.WayangContext;
 import org.apache.wayang.core.plan.wayangplan.PlanTraversal;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.operators.JoinOperator;
 import org.apache.wayang.java.Java;
 import org.apache.wayang.spark.Spark;
 import org.apache.wayang.flink.Flink;
 import org.apache.wayang.postgres.Postgres;
 import org.apache.wayang.ml.MLContext;
-import org.apache.wayang.spark.Spark;
 import org.apache.logging.log4j.Level;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.wayang.api.PlanBuilder;
@@ -41,11 +41,9 @@ import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
-import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
 import org.apache.wayang.basic.operators.MapOperator;
-import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.util.ExplainUtils;
 import org.apache.wayang.api.sql.calcite.utils.PrintUtils;
@@ -71,7 +69,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.SQLException;
 
-public class DSBenchmark {
+public class STATSBenchmark {
 
     public static SqlContext sqlContext;
 
@@ -84,10 +82,12 @@ public class DSBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
+    public static final int MAX_SOURCES_REPLACED = 3;
 
     public static void main(String[] args) {
+        System.out.println("running DSB with args: " + Arrays.toString(args));
         try {
             List<Plugin> plugins = JavaConversions.seqAsJavaList(Parameters.loadPlugins(args[0]));
             Configuration config = new Configuration();
@@ -128,7 +128,7 @@ public class DSBenchmark {
                     "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
                     "            \"operand\": {\n" +
                     "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
-                    "                \"jdbcUrl\": \"jdbc:postgresql://dsb:5432/dsb\",\n" +
+                    "                \"jdbcUrl\": \"jdbc:postgresql://stats:5432/stats\",\n" +
                     "                \"jdbcUser\": \"" + psqlUser + "\",\n" +
                     "                \"jdbcPassword\": \"" + psqlPassword + "\"\n" +
                     "            }\n" +
@@ -138,7 +138,7 @@ public class DSBenchmark {
 
             config.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
             config.setProperty("wayang.calcite.model", calciteModel);
-            config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://dsb:5432/dsb");
+            config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://stats:5432/stats");
             config.setProperty("wayang.postgres.jdbc.user", psqlUser);
             config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
 
@@ -147,7 +147,7 @@ public class DSBenchmark {
             }
 
             if (args.length > 6) {
-                DSBenchmark.setMLModel(config, modelType, args[5], args[6]);
+                STATSBenchmark.setMLModel(config, modelType, args[5], args[6]);
             }
 
             // Take the query name
@@ -186,9 +186,9 @@ public class DSBenchmark {
             );
 
             try {
-
                 Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
                 WayangPlan plan = convertedPlan.getField0();
+                STATSSources.setSources(plan, args[1], MAX_SOURCES_REPLACED);
 
                 wayangContext.setLogLevel(Level.DEBUG);
 
@@ -202,6 +202,9 @@ public class DSBenchmark {
                     wayangContext.executeVAE(plan, jars);
                     System.out.println("Finished execution");
                 }
+
+                Collection<Record> collector = convertedPlan.getField1();
+                collector.stream().forEach(System.out::println);
             } catch (SqlParseException sqlE) {
                 sqlE.printStackTrace();
             }

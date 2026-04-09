@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.tags as t, postgres.posts as p, postgres.users as u, postgres.votes as v, postgres.badges as b WHERE p.Id = t.ExcerptPostId AND u.Id = v.UserId AND u.Id = b.UserId AND u.Id = p.OwnerUserId AND u.DownVotes>=0;
+select count(*) from postgres.tags as t, postgres.posts as p, postgres.users as u, postgres.votes as v, postgres.badges as b where p.id = t.excerptpostid and u.id = v.userid and u.id = b.userid and u.id = p.owneruserid and u.downvotes>=0;

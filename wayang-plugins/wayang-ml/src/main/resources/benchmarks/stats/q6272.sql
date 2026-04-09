@@ -1,1 +1,16 @@
-SELECT COUNT(*) FROM postgres.postHistory as ph, postgres.votes as v, postgres.users as u, postgres.badges as b WHERE u.Id = ph.UserId AND u.Id = v.UserId AND u.Id = b.UserId AND ph.PostHistoryTypeId=2 AND u.Views=5 AND u.DownVotes>=0 AND u.UpVotes>=0 AND u.UpVotes<=224 AND u.CreationDate<='2014-09-04 04:41:22'::timestamp AND b.Date>='2010-07-19 19:39:10'::timestamp AND b.Date<='2014-09-05 18:37:48'::timestamp;
+select count(*)
+from postgres.posthistory as ph,
+     postgres.votes as v,
+     postgres.users as u,
+     postgres.badges as b
+where u.id = ph.userid
+  and u.id = v.userid
+  and u.id = b.userid
+  and ph.posthistorytypeid = 2
+  and u.views = 5
+  and u.downvotes >= 0
+  and u.upvotes >= 0
+  and u.upvotes <= 224
+  and u.creationdate <= timestamp '2014-09-04 04:41:22'
+  and b."date" >= timestamp '2010-07-19 19:39:10'
+  and b."date" <= timestamp '2014-09-05 18:37:48';

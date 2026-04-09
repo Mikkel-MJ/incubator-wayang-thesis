@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.votes as v, postgres.posts as p, postgres.badges as b, postgres.users as u WHERE p.Id = v.PostId AND u.Id = p.OwnerUserId AND u.Id = b.UserId AND p.Score<=22 AND u.Reputation>=1;
+select count(*) from postgres.votes as v, postgres.posts as p, postgres.badges as b, postgres.users as u where p.id = v.postid and u.id = p.owneruserid and u.id = b.userid and p.score<=22 and u.reputation>=1;

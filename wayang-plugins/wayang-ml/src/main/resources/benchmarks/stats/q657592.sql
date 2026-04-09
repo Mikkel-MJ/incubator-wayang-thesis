@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.posts as p, postgres.users as u WHERE u.Id = p.OwnerUserId AND c.UserId = u.Id AND c.Score=0 AND p.AnswerCount<=5 AND p.CommentCount>=0 AND p.CommentCount<=11 AND p.FavoriteCount<=27 AND u.Reputation>=1;
+select count(*) from postgres.comments as c, postgres.posts as p, postgres.users as u where u.id = p.owneruserid and c.userid = u.id and c.score=0 and p.answercount<=5 and p.commentcount>=0 and p.commentcount<=11 and p.favoritecount<=27 and u.reputation>=1;

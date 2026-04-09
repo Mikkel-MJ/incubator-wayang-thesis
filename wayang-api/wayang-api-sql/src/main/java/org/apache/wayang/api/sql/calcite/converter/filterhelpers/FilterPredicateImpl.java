@@ -9,13 +9,13 @@ import java.util.stream.Collectors;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.NlsString;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.CallTreeFactory;
 import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.function.FunctionDescriptor;
 import org.apache.wayang.core.function.FunctionDescriptor.SerializableFunction;
-import org.checkerframework.checker.units.qual.s;
 import org.apache.wayang.api.sql.calcite.converter.calltrees.Node;
 
 import com.google.common.collect.ImmutableRangeSet;
@@ -24,10 +24,11 @@ import com.google.common.collect.Range;
 
 public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredicate<Record> {
     class FilterCallTreeFactory implements CallTreeFactory {
-        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind) {
+        public SerializableFunction<List<Object>, Object> deriveOperation(final SqlKind kind,
+                final SqlTypeName returnType) {
             return new SerializableFunction<List<Object>, Object>() {
                 @Override
-                public Object apply(List<Object> input) {
+                public Object apply(final List<Object> input) {
                     switch (kind) {
                         case NOT:
                             return !(boolean) input.get(0);
@@ -54,29 +55,30 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                         case OR:
                             return input.stream().anyMatch(obj -> Boolean.class.cast(obj).booleanValue());
                         case MINUS:
-                            return widenToDouble.apply(input.get(0)) - widenToDouble.apply(input.get(1));
+                            return widenToDouble(input.get(0)) - widenToDouble(input.get(1));
                         case PLUS:
-                            return widenToDouble.apply(input.get(0)) + widenToDouble.apply(input.get(1));
+                            return widenToDouble(input.get(0)) + widenToDouble(input.get(1));
+                        case CAST:
+                            return castCalcite(input.get(0), returnType);
                         case SEARCH:
-                            //System.out.println("searchin");
                             if (input.get(0) instanceof ImmutableRangeSet) {
-                                ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(0);
+                                final ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(0);
                                 if (!(input.get(1) instanceof Comparable)) {
                                     throw new AssertionError("field is not comparable: " + input.get(1).getClass());
                                 }
-                                Comparable field = ensureComparable.apply(input.get(1));
-                                Comparable left = ensureComparable.apply(range.span().lowerEndpoint());
-                                Comparable right = ensureComparable.apply(range.span().upperEndpoint());
-                                Range<Comparable> newRange = Range.closed(left, right);
+                                final Comparable field = ensureComparable(input.get(1));
+                                final Comparable left = ensureComparable(range.span().lowerEndpoint());
+                                final Comparable right = ensureComparable(range.span().upperEndpoint());
+                                final Range<Comparable> newRange = Range.closed(left, right);
                                 return newRange.contains(field);
                             } else if (input.get(1) instanceof ImmutableRangeSet) {
                                 final ImmutableRangeSet<?> range = (ImmutableRangeSet<?>) input.get(1);
                                 assert input.get(0) == null || input.get(0) instanceof Comparable
                                         : "left input should be null or comparable.";
 
-                                final Comparable field = ensureComparable.apply(input.get(0));
-                                final Comparable left = ensureComparable.apply(range.span().lowerEndpoint());
-                                final Comparable right = ensureComparable.apply(range.span().upperEndpoint());
+                                final Comparable field = ensureComparable(input.get(0));
+                                final Comparable left = ensureComparable(range.span().lowerEndpoint());
+                                final Comparable right = ensureComparable(range.span().upperEndpoint());
                                 final Range<Comparable> newRange = Range.closed(left, right);
 
                                 if (field == null)
@@ -85,12 +87,9 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                             } else if (input.get(1) instanceof ImmutableSortedSet) {
                                 final ImmutableSortedSet<?> set = (ImmutableSortedSet<?>) input.get(1);
 
-                                //System.out.println("set: " + set.asList());
-                                //System.out.println("elem: " + input.get(0));
-                                //System.out.println("set contains? " + set.contains(input.get(0)));
                                 return set.stream().map(Range.class::cast)
                                         .map(range -> range.lowerEndpoint())
-                                        .map(ensureComparable::apply)
+                                        .map(FilterPredicateImpl::ensureComparable)
                                         .collect(Collectors.toSet())
                                         .contains(input.get(0));
                             } else {
@@ -118,8 +117,7 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                 return false;
             if (o2 == null)
                 return true;
-            // System.out.println("[FilterPred.gt]: o1 " + o1 + " and o2, " + o2);
-            return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) > 0;
+            return ensureComparable(o1).compareTo(ensureComparable(o2)) > 0;
         }
 
         private boolean isLessThan(final Object o1, final Object o2) {
@@ -129,58 +127,102 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
                 return true;
             if (o2 == null)
                 return false;
-            return ensureComparable.apply(o1).compareTo(ensureComparable.apply(o2)) < 0;
+            return ensureComparable(o1).compareTo(ensureComparable(o2)) < 0;
         }
 
         private boolean isEqualTo(final Object o1, final Object o2) {
             if (o1 == null || o2 == null)
                 return o1 == o2;
-            return Objects.equals(ensureComparable.apply(o1), ensureComparable.apply(o2));
+            return Objects.equals(ensureComparable(o1), ensureComparable(o2));
+        }
+    }
+
+    public static final Double widenToDouble(final Object field) {
+        if (field instanceof Number) {
+            return ((Number) field).doubleValue();
+        } else if (field instanceof Date) {
+            return (double) ((Date) field).getTime();
+        } else if (field instanceof Calendar) {
+            return (double) ((Calendar) field).getTime().getTime();
+        } else {
+            throw new UnsupportedOperationException("Could not widen to double, field class: " + field.getClass());
+        }
+    }
+
+    public static final Comparable ensureComparable(final Object field) {
+        if (field instanceof Number) {
+            return ((Number) field).doubleValue();
+        } else if (field instanceof Date) {
+            return (double) ((Date) field).getTime();
+        } else if (field instanceof Calendar) {
+            return (double) ((Calendar) field).getTime().getTime();
+        } else if (field instanceof String) {
+            return (String) field;
+        } else if (field instanceof NlsString) {
+            return ((NlsString) field).getValue();
+        } else if (field instanceof Character) {
+            return field.toString();
+        } else if (field instanceof DateString) {
+            return (double) ((DateString) field).getMillisSinceEpoch();
+        } else if (field == null) {
+            return null;
+        } else {
+            throw new UnsupportedOperationException(
+                    "Type not supported in filter comparisons yet: " + field.getClass());
+        }
+    }
+
+    private static Object castCalcite(final Object v, final SqlTypeName returnType) {
+        if (v == null) {
+            return null;
+        }
+
+        switch (returnType) {
+            case BOOLEAN:
+                if (v instanceof Boolean)
+                    return v;
+                if (v instanceof Number)
+                    return ((Number) v).intValue() != 0;
+                return Boolean.valueOf(v.toString());
+            case TINYINT:
+                return Byte.valueOf(String.valueOf(SqlFunctions.toInt(v)));
+            case SMALLINT:
+                return Short.valueOf(String.valueOf(SqlFunctions.toInt(v)));
+            case INTEGER:
+                return SqlFunctions.toInt(v);
+            case BIGINT:
+                return SqlFunctions.toLong(v);
+            case REAL:
+            case FLOAT:
+                return SqlFunctions.toFloat(v);
+            case DOUBLE:
+                return SqlFunctions.toDouble(v);
+            case DECIMAL:
+                return SqlFunctions.toBigDecimal(v);
+            case CHAR:
+            case VARCHAR:
+                return v.toString();
+            case DATE:
+                if (v instanceof java.sql.Date)
+                    return v;
+                return java.sql.Date.valueOf(v.toString());
+            case TIME:
+                if (v instanceof java.sql.Time)
+                    return v;
+                return java.sql.Time.valueOf(v.toString());
+            case TIMESTAMP:
+                if (v instanceof java.sql.Timestamp)
+                    return v;
+                return java.sql.Timestamp.valueOf(v.toString());
+            case ANY:
+                return v;
+            default:
+                throw new UnsupportedOperationException(
+                        "CAST to " + returnType + " not supported for value " + v.getClass());
         }
     }
 
     private final Node callTree;
-
-    final SerializableFunction<Object, Double> widenToDouble = new SerializableFunction<Object, Double>() {
-        @Override
-        public Double apply(Object field) {
-            if (field instanceof Number) {
-                return ((Number) field).doubleValue();
-            } else if (field instanceof Date) {
-                return (double) ((Date) field).getTime();
-            } else if (field instanceof Calendar) {
-                return (double) ((Calendar) field).getTime().getTime();
-            } else {
-                throw new UnsupportedOperationException("Could not widen to double, field class: " + field.getClass());
-            }
-        }
-    };
-
-    final SerializableFunction<Object, Comparable> ensureComparable = new SerializableFunction<Object, Comparable>() {
-        @Override
-        public Comparable apply(Object field) {
-            if (field instanceof Number) {
-                return ((Number) field).doubleValue();
-            } else if (field instanceof Date) {
-                return (double) ((Date) field).getTime();
-            } else if (field instanceof Calendar) {
-                return (double) ((Calendar) field).getTime().getTime();
-            } else if (field instanceof String) {
-                return (String) field;
-            } else if (field instanceof NlsString) {
-                return ((NlsString) field).getValue();
-            } else if (field instanceof Character) {
-                return field.toString();
-            } else if (field instanceof DateString) {
-                return (double) ((DateString) field).getMillisSinceEpoch();
-            } else if (field == null) {
-                return null;
-            } else {
-                throw new UnsupportedOperationException(
-                        "Type not supported in filter comparisons yet: " + field.getClass());
-            }
-        }
-    };
 
     public FilterPredicateImpl(final RexNode condition) {
         this.callTree = new FilterCallTreeFactory().fromRexNode(condition);
@@ -188,7 +230,6 @@ public class FilterPredicateImpl implements FunctionDescriptor.SerializablePredi
 
     @Override
     public boolean test(final Record rec) {
-        // System.out.println("[FilterPred.rec]: " + rec);
         return (boolean) callTree.evaluate(rec);
     }
 

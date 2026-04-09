@@ -1,1 +1,20 @@
-SELECT COUNT(*) FROM postgres.comments as c, postgres.posts as p, postgres.votes as v, postgres.badges as b, postgres.users as u WHERE u.Id =c.UserId AND c.UserId = p.OwnerUserId AND p.OwnerUserId = v.UserId AND v.UserId = b.UserId AND c.Score=1 AND p.Score>=-2 AND p.Score<=23 AND p.ViewCount<=2432 AND p.CommentCount=0 AND p.FavoriteCount>=0 AND u.Reputation>=1 AND u.Reputation<=113 AND u.Views>=0 AND u.Views<=51;
+select count(*)
+from postgres.comments as c,
+     postgres.posts as p,
+     postgres.votes as v,
+     postgres.badges as b,
+     postgres.users as u
+where u.id = c.userid
+  and c.userid = p.owneruserid
+  and p.owneruserid = v.userid
+  and v.userid = b.userid
+  and c.score = 1
+  and p.score >= -2
+  and p.score <= 23
+  and p.viewcount <= 2432
+  and p.commentcount = 0
+  and p.favoritecount >= 0
+  and u.reputation >= 1
+  and u.reputation <= 113
+  and u.views >= 0
+  and u.views <= 51;
