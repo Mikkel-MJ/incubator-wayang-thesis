@@ -193,7 +193,7 @@ public class IMDBJOBenchmark {
                             replacedSources.add(tableName);
                             replacement.connectTo(0, parser, 0);
                             isSet = true;
-                            nrOfReplacedSources++;
+                            nrOfSourcesReplaced++;
 
                             break;
                         case "comp_cast_type":
