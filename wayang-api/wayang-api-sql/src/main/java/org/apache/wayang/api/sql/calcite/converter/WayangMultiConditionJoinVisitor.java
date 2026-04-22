@@ -75,7 +75,6 @@ public class WayangMultiConditionJoinVisitor extends WayangRelNodeVisitor<Wayang
 
         final RexCall call = (RexCall) wayangRelNode.getCondition();
 
-        System.out.println("printing call: " + call);
         final List<RexCall> subConditions = call.operands.stream()
                 .map(RexCall.class::cast)
                 .collect(Collectors.toList());

@@ -27,65 +27,65 @@ if [ ! -d venv ]; then
     ./venv/bin/python3.11 -m pip install -r requirements.txt
 fi
 
-bvae_1_path=/work/lsbo-paper/python-ml/src/Models/tpch/carbvae.onnx
-bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-5.onnx
-bvae_10_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-10.onnx
+carbvae_path=/work/lsbo-paper/python-ml/src/Models/tpch/carbvae.onnx
 
 #data_path=/work/lsbo-paper/data
-data_path=/work/lsbo-paper/data/JOBenchmark/data
+data_path=/work/lsbo-paper/data/benchmarks/tpch/data
 experience_path=/work/lsbo-paper/data/experience/
-train_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
-test_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
+test_path=/work/lsbo-paper/data/benchmarks/stats/queries
 
-# Seeded random selection of 15 queries from 30
-#mapfile -t selected_queries < <(
-#    awk 'BEGIN {
-#        srand(42)
-#        for (i = 1; i <= 30; i++) arr[i] = i
-#        for (i = 30; i >= 2; i--) {
-#            j = int(rand() * i) + 1
-#            tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
-#        }
-#        for (i = 1; i <= 15; i++) print arr[i]
-#    }' | sort -n
-#)
+mapfile -t queries < <(ls "$test_path"/*.sql | xargs -n1 basename | sort)
+
+excluded_queries=("q595820.sql")
+
+filtered_queries=()
+for query in "${queries[@]}"; do
+    skip=0
+    for excluded in "${excluded_queries[@]}"; do
+        if [[ "$query" == "$excluded" ]]; then
+            skip=1
+            break
+        fi
+    done
+    [[ $skip -eq 0 ]] && filtered_queries+=("$query")
+done
+
+
+# Seeded random selection of 15 queries from 142
+mapfile -t selected_queries < <(
+    awk 'BEGIN {
+        srand(42)
+        for (i = 1; i <= 142; i++) arr[i] = i
+        for (i = 142; i >= 2; i--) {
+            j = int(rand() * i) + 1
+            tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp
+        }
+        for (i = 1; i <= 30; i++) print arr[i]
+    }' | sort -n
+)
 
 echo "Selected queries: ${selected_queries[*]}"
 
-selected_queries=( {0..29} )
-
-skip=21  # Number of already-completed queries to skip
+skip=28  # Number of already-completed queries to skip
 
 for i in "${!selected_queries[@]}"; do
     if (( i < skip )); then
         echo "Skipping already-completed query ${selected_queries[$i]}.sql"
         continue
     fi
-
     num="${selected_queries[$i]}"
-    #query="$test_path/${num}.sql"
-    #query_name="${num}.sql"
-    query=${num}
-    query_name=$(( num + 1 ))
+    query_name="${filtered_queries[$num]}"
+    query="$test_path/${filtered_queries[$num]}"
+    #query=${num}
+    #query_name=$(( num + 1 ))
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx16g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/tpch/CarbVAE.json" --stats="./src/Data/splits/tpch/stats.${query_name}.txt" --trainset="./src/Data/splits/tpch/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/tpch/initialization/${query_name}.txt" --experience="./src/Data/splits/tpch/experience/${query_name}.txt"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx16g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/stats/data/" --model-path $carbvae_path --parameters="./src/HyperparameterLogs/stats/CarbVAE.json" --stats="./src/Data/splits/stats/rerun/stats.${query_name}.txt" --trainset="./src/Data/splits/stats/rerun/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/stats/initialization/${query_name}.txt" --experience="./src/Data/splits/stats/rerun/experience/${query_name}.txt"
 done
 
-
-#for query in {949..999}; do
-#for query in "$test_path"/*.sql; do
-#for query in $(ls -1 "$train_path"/*.sql | tail -n 50); do
-#for ((query=900; query<=999; query+=4)); do
-#for query in ${queries[@]}; do
-#    query_name=$(basename "$query")
-#    echo "Start LSBO loop for query ${query}"
-#    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx32g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/imdb/CarbVAE.json" --stats="./src/Data/splits/imdb/complex/stats.${query_name}.txt" --trainset="./src/Data/splits/imdb/complex/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/imdb/complex/initialization/${query_name}.txt" --experience="./src/Data/splits/imdb/complex/experience/${query_name}.txt"
-
-    # Lord forgive me - for Flink has sinned
-#    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
-#    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
- */
-
+#queries=(1 2 6 20 29)
+#
+#for query in $queries; do
+#    query_name=($query + 1)
+#    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx16g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/" --model-path $carbvae_path --parameters="./src/HyperparameterLogs/tpch/CarbVAE.json" --stats="./src/Data/splits/tpch/stats.${query_name}.txt" --trainset="./src/Data/splits/tpch/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/tpch/initialization/${query_name}.txt" --experience="./src/Data/splits/tpch/experience/${query_name}.txt"
 #done
-
 

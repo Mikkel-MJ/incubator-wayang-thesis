@@ -17,10 +17,14 @@ cd wayang-0.7.1
 data_path=/work/lsbo-paper/data/benchmarks/stats/data
 timings_path=/work/lsbo-paper/data/benchmarks/stats
 test_path=/work/lsbo-paper/data/benchmarks/stats/queries
+experience_path=/work/lsbo-paper/data/experience/
+
+classifier_path=/work/lsbo-paper/python-ml/src/Models/stats/classifier.onnx
+retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/stats/retrained.classifier.onnx
 
 echo "Running STATSBenchmark"
 
-skip=41  # Number of queries to skip
+skip=0  # Number of queries to skip
 
 i=0
 for query in "$test_path"/*.sql; do
@@ -30,6 +34,6 @@ for query in "$test_path"/*.sql; do
         continue
     fi
 
-    timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/native/ $query
+    timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/native/rerun/ $query
     (( i++ ))
 done

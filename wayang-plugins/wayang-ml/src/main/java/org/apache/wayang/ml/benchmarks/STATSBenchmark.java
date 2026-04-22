@@ -84,7 +84,6 @@ public class STATSBenchmark {
      */
     public static String psqlUser = "ucloud";
     public static String psqlPassword = "ucloud";
-    public static final int MAX_SOURCES_REPLACED = 3;
 
     public static void main(String[] args) {
         System.out.println("running DSB with args: " + Arrays.toString(args));
@@ -188,7 +187,7 @@ public class STATSBenchmark {
             try {
                 Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
                 WayangPlan plan = convertedPlan.getField0();
-                STATSSources.setSources(plan, args[1], MAX_SOURCES_REPLACED);
+                STATSSources.setSources(plan, args[1]);
 
                 wayangContext.setLogLevel(Level.DEBUG);
 

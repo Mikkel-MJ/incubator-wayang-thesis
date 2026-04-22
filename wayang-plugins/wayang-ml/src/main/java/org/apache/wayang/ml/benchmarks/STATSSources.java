@@ -8,6 +8,7 @@ import org.apache.wayang.basic.types.RecordType;
 import org.apache.wayang.core.plan.wayangplan.WayangPlan;
 import org.apache.wayang.core.plan.wayangplan.Operator;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
+import org.apache.wayang.core.function.FunctionDescriptor.SerializableBiFunction;
 
 import java.sql.Timestamp;
 import java.util.function.BiFunction;
@@ -21,8 +22,10 @@ import java.util.Set;
 
 public class STATSSources {
 
+    public static double REPLACEMENT_RATIO = 0.5;
+
     // Maps table names directly to their corresponding parse method
-    public static final Map<String, BiFunction<String, String, Object[]>> TABLE_PARSERS = Map.of(
+    public static final Map<String, SerializableBiFunction<String, String, Object[]>> TABLE_PARSERS = Map.of(
         "users",       STATSSources::parseUsers,
         "posts",       STATSSources::parsePosts,
         "postlinks",   STATSSources::parsePostLinks,
@@ -73,7 +76,7 @@ public class STATSSources {
      * @param dataPath         the directory path containing the STATS CSV files
      * @param nrOfReplacements the number of sources to replace in the plan
      */
-    public static void setSources(WayangPlan plan, String dataPath, int nrOfReplacements) {
+    public static void setSources(WayangPlan plan, String dataPath) {
         final List<Operator> sources = plan.collectReachableTopLevelSources()
             .stream()
             .map(op -> (TableSource) op)
@@ -82,6 +85,7 @@ public class STATSSources {
 
         Set<String> replacedSources = new HashSet<>();
         int nrOfSourcesReplaced = 0;
+        int nrOfReplacements = (int) Math.ceil(sources.size() * REPLACEMENT_RATIO);
 
         for (Operator op : sources) {
             if (nrOfSourcesReplaced >= nrOfReplacements) {
@@ -92,7 +96,7 @@ public class STATSSources {
                 String tableName = ((TableSource) op).getTableName();
                 String filePath = dataPath + tableName + ".csv";
                 if (!replacedSources.contains(tableName)) {
-                    BiFunction<String, String, Object[]> parsingFunction = TABLE_PARSERS.get(tableName);
+                    SerializableBiFunction<String, String, Object[]> parsingFunction = TABLE_PARSERS.get(tableName);
                     TextFileSource replacement = new TextFileSource(filePath, "UTF-8");
 
                     MapOperator<String, Record> parser = new MapOperator<>(

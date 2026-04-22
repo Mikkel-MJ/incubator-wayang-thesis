@@ -273,11 +273,11 @@ public class OrtMLModel {
     ) throws OrtException {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input = OrtTensorEncoder.encode(encoded);
         Map<String, NodeInfo> inputInfoList = this.session.getInputInfo();
-        //long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
-        //long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
-        //
-        long[] input1Dims = new long[]{1, input.field0.get(0).length, input.field0.get(0)[0].length};
-        long[] input2Dims = new long[]{1, input.field1.get(0).length, input.field1.get(0)[0].length};
+        long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
+        long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+
+        //long[] input1Dims = new long[]{1, input.field0.get(0).length, input.field0.get(0)[0].length};
+        //long[] input2Dims = new long[]{1, input.field1.get(0).length, input.field1.get(0)[0].length};
 
         System.out.println("Feature dims: " + Arrays.toString(input1Dims));
         System.out.println("Index dims: " + Arrays.toString(input2Dims));
@@ -359,10 +359,10 @@ public class OrtMLModel {
             long[][] platformChoices = PlatformChoiceValidator.validate(
                 resultTensor,
                 inputIndexStructure,
-                encoded,
-                //new BitmaskValidationRule(),
+                encoded/*,
+                new BitmaskValidationRule(),
                 new OperatorValidationRule(),
-                new PostgresSourceValidationRule()
+                new PostgresSourceValidationRule()*/
             );
 
             System.out.println("Choices: " + Arrays.deepToString(platformChoices));

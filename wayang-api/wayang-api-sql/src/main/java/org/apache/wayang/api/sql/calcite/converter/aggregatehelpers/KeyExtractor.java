@@ -39,8 +39,6 @@ public class KeyExtractor implements FunctionDescriptor.SerializableFunction<Rec
             }
         }
 
-        System.out.println("record: " + r);
-        System.out.println("keys: " + keys);
         return keys;
     }
 
