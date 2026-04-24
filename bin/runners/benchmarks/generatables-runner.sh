@@ -15,7 +15,7 @@ cd ${WORKDIR}
 cd wayang-0.7.1
 
 classifier_path=/work/lsbo-paper/python-ml/src/Models/tpch/classifier.onnx
-retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/tpch/fresh-retrained.classifier.onnx
+retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/tpch/retrain.classifier.onnx
 
 data_path=/work/lsbo-paper/data/benchmarks/tpch/data
 experience_path=/work/lsbo-paper/data/experience/

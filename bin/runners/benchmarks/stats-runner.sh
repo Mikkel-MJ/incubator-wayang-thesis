@@ -20,20 +20,27 @@ test_path=/work/lsbo-paper/data/benchmarks/stats/queries
 experience_path=/work/lsbo-paper/data/experience/
 
 classifier_path=/work/lsbo-paper/python-ml/src/Models/stats/classifier.onnx
-retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/stats/retrained.classifier.onnx
+retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/stats/retrain.classifier.onnx
 
 echo "Running STATSBenchmark"
 
 skip=0  # Number of queries to skip
 
 i=0
-for query in "$test_path"/*.sql; do
-    if (( i < skip )); then
-        echo "Skipping $query"
-        (( i++ ))
-        continue
-    fi
+#for query in "$test_path"/*.sql; do
+#    if (( i < skip )); then
+#        echo "Skipping $query"
+#        (( i++ ))
+#        continue
+#    fi
 
-    timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/native/rerun/ $query
-    (( i++ ))
-done
+    #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $experience_path
+
+query="$test_path"/q60601561.sql
+timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $experience_path
+query="$test_path"/q312148706.sql
+timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $experience_path
+query="$test_path"/q18597973.sql
+timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $experience_path
+#    (( i++ ))
+#done
