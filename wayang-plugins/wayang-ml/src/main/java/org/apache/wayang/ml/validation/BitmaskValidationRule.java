@@ -35,7 +35,7 @@ public class BitmaskValidationRule extends ValidationRule {
     /*
      * Index of disallowed platform choices
      */
-    private Set<Integer> disallowed = Set.of(1, 2, 4, 7, 8);
+    private Set<Integer> disallowed = Set.of(0);
 
     public BitmaskValidationRule() {}
 
@@ -45,17 +45,6 @@ public class BitmaskValidationRule extends ValidationRule {
             for (Integer disallowedId : disallowed) {
                     choices[i][disallowedId] = -Float.MAX_VALUE;
             }
-            /*
-            for (int j = 0; j < choices[i].length; j++) {
-                Float max = Arrays.stream(choices[i]).max(Comparator.naturalOrder()).orElse(Float.MIN_VALUE);
-
-                if (choices[i][j].equals(max) && disallowed.contains(j)) {
-                    choices[i][j] = 0f;
-                    //Reset to rerun the validation for the values
-                    j = -1;
-                }
-
-            }*/
         }
     }
 }

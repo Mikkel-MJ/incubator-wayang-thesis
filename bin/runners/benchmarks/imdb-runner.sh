@@ -21,7 +21,7 @@ timings_path=/work/lsbo-paper/data/benchmarks/job/complex
 test_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
 
 classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/classifier.onnx
-retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/true-retrained.classifier.onnx
+retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrain.classifier.onnx
 
 echo "Running JOBenchmark"
 
@@ -32,7 +32,7 @@ for query in "$test_path"/*.sql; do
 #for query_name in "${queries[@]}"; do
 #    query="$test_path"/"$query_name".sql
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $data_path/experience/
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $data_path/experience/
         ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/true-retrained/ $query bvae $retrained_classifier_path $data_path/experience/
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/ $query bvae $retrained_bvae_1_path $data_path/experience/
         #./bin/wayang-submit -Xmx33g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
