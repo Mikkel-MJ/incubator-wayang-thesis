@@ -138,6 +138,8 @@ public class TreeNode extends BinaryTree<long[]>{
         Matcher matcher = pattern.matcher(encoded);
         String value = "";
 
+        System.out.println("TreeNode.fromString: " + encoded);
+
         if (!matcher.find()) {
             return null;
         }
@@ -202,7 +204,7 @@ public class TreeNode extends BinaryTree<long[]>{
 
         if (this.encoded.length > 0) {
             // Check if this already encodes a platform specific operator
-            long[] platformChoices = Arrays.copyOfRange(this.encoded, operatorsCount, operatorsCount + platformsCount);
+            long[] platformChoices = Arrays.copyOfRange(this.encoded, 1 + operatorsCount, 1 + operatorsCount + platformsCount);
             if (ArrayUtils.indexOf(platformChoices, 1) != -1) {
                 System.out.println("Encoding while choices: " + Arrays.toString(platformChoices));
                 return this;
@@ -224,7 +226,7 @@ public class TreeNode extends BinaryTree<long[]>{
 
         assert platform != "";
 
-        this.encoded[operatorsCount + platformPosition] = 1;
+        this.encoded[1 + operatorsCount + platformPosition] = 1;
 
         /*
         if (this.getLeft() != null) {

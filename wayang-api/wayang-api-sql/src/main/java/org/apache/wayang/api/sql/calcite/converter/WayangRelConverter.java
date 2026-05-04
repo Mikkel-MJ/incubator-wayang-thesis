@@ -37,10 +37,8 @@ public class WayangRelConverter {
         } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isAlwaysTrue()) {
             return new WayangCrossJoinVisitor(this).visit((WayangJoin) node);
         } else if (node instanceof WayangJoin && ((WayangJoin) node).getCondition().isA(SqlKind.AND)) {
-            System.out.println("visiting multicond join: " + node);
             return new WayangMultiConditionJoinVisitor(this).visit((WayangJoin) node);
         }else if (node instanceof WayangJoin) {
-            System.out.println("visiting join: " + node);
             return new WayangJoinVisitor(this).visit((WayangJoin) node);
         } else if (node instanceof WayangAggregate) {
             return new WayangAggregateVisitor(this).visit((WayangAggregate) node);
