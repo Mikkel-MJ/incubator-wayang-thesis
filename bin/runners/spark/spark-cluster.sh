@@ -42,7 +42,7 @@ if [ $UCLOUD_RANK = 0 ]; then
     echo "Configuring workers"
     cp /work/lsbo-paper/runners/spark/workers /opt/spark/conf
 
-    sleep 100s
+    sleep 300s
 
     echo "Starting master"
     sudo $SPARK_HOME/sbin/start-all.sh

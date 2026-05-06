@@ -34,7 +34,7 @@ public class PostgresSourceValidationRule extends ValidationRule {
     /*
      * Index of platform choice for Postgres
      */
-    private int postgresIndex = 2;
+    private int postgresIndex = 3;
 
     public PostgresSourceValidationRule() {}
 
@@ -73,12 +73,21 @@ public class PostgresSourceValidationRule extends ValidationRule {
         TreeNode tree
     ) {
         long[] flatIndexTree = Arrays.stream(indexes[0]).reduce(Longs::concat).orElseThrow();
+        System.out.println("GET INPUT INDEXES");
         for (int i = 0; i < flatIndexTree.length; i+=3) {
             final long rootId = flatIndexTree[i];
             final long leftId = flatIndexTree[i+1];
             final long rightId = flatIndexTree[i+2];
 
+            System.out.println("Root ID: " + rootId);
+            System.out.println("Index: " + index);
+
             if (rootId == index) {
+                System.out.println("Left ID: " + leftId);
+                System.out.println("Left isNull: " + tree.getNode((int) leftId).isNullOperator());
+
+                System.out.println("Right ID: " + rightId);
+                System.out.println("Right isNull: " + tree.getNode((int) rightId).isNullOperator());
                 Optional<Long> left = (leftId == 0 || tree.getNode((int) leftId).isNullOperator()) ? Optional.empty() : Optional.of(leftId);
                 Optional<Long> right = (rightId == 0 || tree.getNode((int) rightId).isNullOperator()) ? Optional.empty() : Optional.of(rightId);
 

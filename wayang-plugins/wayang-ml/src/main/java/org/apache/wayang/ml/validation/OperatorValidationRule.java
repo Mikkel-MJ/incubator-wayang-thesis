@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public class OperatorValidationRule extends ValidationRule {
 
-    private int postgresIndex = 2;
+    private int postgresIndex = 3;
 
     public OperatorValidationRule() {}
 
@@ -51,7 +51,7 @@ public class OperatorValidationRule extends ValidationRule {
                     choices[i][postgresIndex] = -Float.MAX_VALUE;
                 }
 
-                //Prevent TextFileSources from being outside of postgres
+                //Prevent PostgresTableSources from being outside of postgres
                 if (node.operator instanceof PostgresTableSource) {
                     choices[i][postgresIndex] = Float.MAX_VALUE;
                 }

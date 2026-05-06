@@ -35,7 +35,7 @@ public class BitmaskValidationRule extends ValidationRule {
     /*
      * Index of disallowed platform choices
      */
-    private Set<Integer> disallowed = Set.of(0);
+    private Set<Integer> disallowed = Set.of(0, 1);
 
     public BitmaskValidationRule() {}
 
