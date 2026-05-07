@@ -118,11 +118,13 @@ public class OrtMLModel {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input1
     ) throws OrtException {
         double costPrediction;
-        //long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
-        //long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
-        //
-        long[] input1Dims = new long[]{1, input1.field0.get(0).length, input1.field0.get(0)[0].length};
-        long[] input2Dims = new long[]{1, input1.field1.get(0).length, input1.field1.get(0)[0].length};
+
+        Map<String, NodeInfo> inputInfoList = this.session.getInputInfo();
+        long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
+        long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+
+        //long[] input2Dims = new long[]{1, input1.field0.get(0).length, input1.field0.get(0)[0].length};
+        //long[] input2Dims = new long[]{1, input1.field1.get(0).length, input1.field1.get(0)[0].length};
 
         Instant start = Instant.now();
         float[][][] inputValueStructure = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
