@@ -35,7 +35,7 @@ for query in "$test_path"/*.sql; do
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $data_path/experience/
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $data_path/experience/
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $data_path/experience/cost/
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $data_path/experience/cost/
 
 
         # Lord forgive me - for Flink has sinned

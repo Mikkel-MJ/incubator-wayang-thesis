@@ -27,5 +27,5 @@ for query in {0..29}; do
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ /work/lsbo-paper/data/benchmarks/tpch/native/ $query
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ /work/lsbo-paper/data/benchmarks/tpch/classifier/ $query bvae $classifier_path  $experience_path
     #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ /work/lsbo-paper/data/benchmarks/tpch/classifier/retrained/ $query bvae $retrained_classifier_path $experience_path
-    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,flink,postgres file://$data_path/ /work/lsbo-paper/data/benchmarks/tpch/cost/ $query cost $cost_path $experience_path
+    ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.GeneratableBenchmarks java,spark,postgres file://$data_path/ /work/lsbo-paper/data/benchmarks/tpch/cost/ $query cost $cost_path $experience_path
 done
