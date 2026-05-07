@@ -43,7 +43,7 @@ public final class Literal implements Node {
                 break;
             case CHAR:
                 value = literal.getValueAs(String.class);
-                sqlString = value.toString();
+                sqlString = "'" + value.toString() + "'";
                 break;
             case TIMESTAMP:
                 value = literal.getValueAs(Long.class);

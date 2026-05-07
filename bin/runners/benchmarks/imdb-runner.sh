@@ -22,6 +22,7 @@ test_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
 
 classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/classifier.onnx
 retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrain.classifier.onnx
+cost_path=/work/lsbo-paper/python-ml/src/Models/imdb/nativeml.onnx
 
 echo "Running JOBenchmark"
 
@@ -32,12 +33,9 @@ for query in "$test_path"/*.sql; do
 #for query_name in "${queries[@]}"; do
 #    query="$test_path"/"$query_name".sql
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $data_path/experience/
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/true-retrained/ $query bvae $retrained_classifier_path $data_path/experience/
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/ $query bvae $retrained_bvae_1_path $data_path/experience/
-        #./bin/wayang-submit -Xmx33g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
-        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/2/ $query bvae $retrained_bvae_2_path $data_path/experience/
-        #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/bvae/retrained/5/ $query bvae $retrained_bvae_5_path $data_path/experience/
+        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $data_path/experience/
+        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $data_path/experience/
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $data_path/experience/cost/
 
 
         # Lord forgive me - for Flink has sinned

@@ -27,7 +27,7 @@ if [ ! -d venv ]; then
     ./venv/bin/python3.11 -m pip install -r requirements.txt
 fi
 
-bvae_1_path=/work/lsbo-paper/python-ml/src/Models/tpch/carbvae.onnx
+bvae_1_path=/work/lsbo-paper/python-ml/src/Models/imdb/carbvae.onnx
 bvae_5_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-5.onnx
 bvae_10_path=/work/lsbo-paper/python-ml/src/Models/imdb/bvae-10.onnx
 
@@ -50,11 +50,12 @@ test_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
 #    }' | sort -n
 #)
 
+
+selected_queries=(7)
+
 echo "Selected queries: ${selected_queries[*]}"
 
-selected_queries=( {0..29} )
-
-skip=21  # Number of already-completed queries to skip
+skip=0  # Number of already-completed queries to skip
 
 for i in "${!selected_queries[@]}"; do
     if (( i < skip )); then
@@ -63,12 +64,12 @@ for i in "${!selected_queries[@]}"; do
     fi
 
     num="${selected_queries[$i]}"
-    #query="$test_path/${num}.sql"
-    #query_name="${num}.sql"
-    query=${num}
-    query_name=$(( num + 1 ))
+    query="$test_path/${num}.sql"
+    query_name="${num}.sql"
+    #query=${num}
+    #query_name=$(( num + 1 ))
     echo "Start LSBO loop for query ${query}"
-    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx16g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/tpch/CarbVAE.json" --stats="./src/Data/splits/tpch/stats.${query_name}.txt" --trainset="./src/Data/splits/tpch/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/tpch/initialization/${query_name}.txt" --experience="./src/Data/splits/tpch/experience/${query_name}.txt"
+    ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx16g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/JOBenchmark/data/" --model-path $bvae_1_path --parameters="./src/HyperparameterLogs/imdb/CarbVAE.json" --stats="./src/Data/splits/imdb/complex/stats.${query_name}.txt" --trainset="./src/Data/splits/imdb/complex/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/imdb/complex/initialization/${query_name}.txt" --experience="./src/Data/splits/imdb/complex/experience/${query_name}.txt"
 done
 
 
@@ -84,7 +85,6 @@ done
     # Lord forgive me - for Flink has sinned
 #    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
 #    sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
- */
 
 #done
 

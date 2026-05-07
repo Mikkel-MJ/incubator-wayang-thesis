@@ -23,6 +23,8 @@ import java.util.Comparator;
 
 public class OneHotMappings {
 
+    private static final int PADDING_SIZE = 1;
+
     private static OneHotMappings INSTANCE;
 
     private static HashMap<String, Integer> operatorMapping = createOperatorMapping();
@@ -63,7 +65,7 @@ public class OneHotMappings {
           .forEachOrdered(entry -> mappings.put(entry.getName(), mappings.size()));
 
         // add a null operator for encoding
-        mappings.put(null, mappings.size());
+        //mappings.put(null, mappings.size());
         //mappings.forEach((k,v) -> System.out.println(k + ": " + v));
 
         return mappings;
@@ -73,7 +75,7 @@ public class OneHotMappings {
         HashMap<String, Integer> mappings = new HashMap<>();
 
         //Add a null/padding platform for representation of null operators
-        mappings.put(null, 0);
+        //mappings.put(null, 0);
 
         Platforms.getPlatforms()
         .stream()
@@ -110,7 +112,7 @@ public class OneHotMappings {
         }
 
         int platformIndex = -1;
-        int offset = 1 + operatorsCount;
+        int offset = PADDING_SIZE + operatorsCount;
 
         for (int i = offset; i < platformsCount + offset && platformIndex == -1; i++) {
             if(encoded[i] == 1)  {

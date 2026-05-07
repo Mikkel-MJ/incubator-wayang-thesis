@@ -36,6 +36,8 @@ import java.util.Set;
 
 public class OneHotEncoder implements Encoder {
 
+    public static final int PADDING_SIZE = 1;
+
     public static long[] encode(PlanImplementation plan) {
         OneHotVector result = new OneHotVector();
 
@@ -395,7 +397,8 @@ public class OneHotEncoder implements Encoder {
         int operatorsCount = operatorMappings.size();
         int platformsCount = platformMappings.size();
 
-        long[] result = new long[1 + operatorsCount + platformsCount + 3];
+        //long[] result = new long[PADDING_SIZE + operatorsCount + platformsCount + 3];
+        long[] result = new long[PADDING_SIZE + operatorsCount + platformsCount + 3];
 
         if (OneHotMappings.encodeIds) {
             result[0] = (long) new HashCodeBuilder(17, 37)
@@ -406,9 +409,9 @@ public class OneHotEncoder implements Encoder {
                 .toHashCode();
         }
 
-        result[1 + operatorsCount + platformsCount] = Udf.getComplexity(operator).ordinal();
-        result[1 + operatorsCount + platformsCount + 1] = inputCardinality;
-        result[1 + operatorsCount + platformsCount + 2] = outputCardinality;
+        result[PADDING_SIZE + operatorsCount + platformsCount] = Udf.getComplexity(operator).ordinal();
+        result[PADDING_SIZE + operatorsCount + platformsCount + 1] = inputCardinality;
+        result[PADDING_SIZE + operatorsCount + platformsCount + 2] = outputCardinality;
 
         Integer operatorPosition = operatorMappings.get(operator.getClass().getName());
         result[1 + operatorPosition] = 1;
@@ -461,7 +464,7 @@ public class OneHotEncoder implements Encoder {
         int operatorsCount = operatorMappings.size();
         int platformsCount = platformMappings.size();
         // Schema is: [ID, operator_1, ..., operator_N, platform_1, ..., platform_P, udf, in_c, out_c]
-        long[] result = new long[1 + operatorsCount + platformsCount + 3];
+        long[] result = new long[PADDING_SIZE + operatorsCount + platformsCount + 3];
 
         if (OneHotMappings.encodeIds) {
             result[0] = (long) new HashCodeBuilder(17, 37)
@@ -472,9 +475,9 @@ public class OneHotEncoder implements Encoder {
                 .toHashCode();
         }
 
-        result[1 + operatorsCount + platformsCount] = Udf.getComplexity(operator).ordinal();
-        result[1 + operatorsCount + platformsCount + 1] = inputCardinality;
-        result[1 + operatorsCount + platformsCount + 2] = outputCardinality;
+        result[PADDING_SIZE + operatorsCount + platformsCount] = Udf.getComplexity(operator).ordinal();
+        result[PADDING_SIZE + operatorsCount + platformsCount + 1] = inputCardinality;
+        result[PADDING_SIZE + operatorsCount + platformsCount + 2] = outputCardinality;
 
         Integer operatorPosition = operatorMappings.get(operator.getClass().getSuperclass().getName());
 
@@ -485,10 +488,10 @@ public class OneHotEncoder implements Encoder {
 
         assert operatorPosition != null : operator.getClass().getSuperclass().getName() + " was not found in mappings";
 
-        result[1 + operatorPosition] = 1;
+        result[PADDING_SIZE + operatorPosition] = 1;
 
         Integer platformPosition = platformMappings.get(operator.getPlatform().getClass().getName());
-        result[1 + operatorsCount + platformPosition] = 1;
+        result[PADDING_SIZE + operatorsCount + platformPosition] = 1;
 
         return result;
     }
@@ -499,10 +502,10 @@ public class OneHotEncoder implements Encoder {
 
         int operatorsCount = operatorMappings.size();
         int platformsCount = platformMappings.size();
-        long[] result = new long[1 + operatorsCount + platformsCount + 3];
+        long[] result = new long[PADDING_SIZE + operatorsCount + platformsCount + 3];
 
         // Set platform choice for null operator
-        result[1 + operatorsCount] = 1;
+        //result[PADDING_SIZE + operatorsCount] = 1;
 
         return result;
     }

@@ -34,6 +34,9 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class TreeNode extends BinaryTree<long[]>{
+
+    private static final int PADDING_SIZE = 1;
+
     public long[] encoded;
     //public TreeNode left;
     //public TreeNode right;
@@ -138,8 +141,6 @@ public class TreeNode extends BinaryTree<long[]>{
         Matcher matcher = pattern.matcher(encoded);
         String value = "";
 
-        System.out.println("TreeNode.fromString: " + encoded);
-
         if (!matcher.find()) {
             return null;
         }
@@ -204,7 +205,7 @@ public class TreeNode extends BinaryTree<long[]>{
 
         if (this.encoded.length > 0) {
             // Check if this already encodes a platform specific operator
-            long[] platformChoices = Arrays.copyOfRange(this.encoded, 1 + operatorsCount, 1 + operatorsCount + platformsCount);
+            long[] platformChoices = Arrays.copyOfRange(this.encoded, PADDING_SIZE + operatorsCount, PADDING_SIZE + operatorsCount + platformsCount);
             if (ArrayUtils.indexOf(platformChoices, 1) != -1) {
                 System.out.println("Encoding while choices: " + Arrays.toString(platformChoices));
                 return this;
@@ -226,7 +227,7 @@ public class TreeNode extends BinaryTree<long[]>{
 
         assert platform != "";
 
-        this.encoded[1 + operatorsCount + platformPosition] = 1;
+        this.encoded[PADDING_SIZE + operatorsCount + platformPosition] = 1;
 
         /*
         if (this.getLeft() != null) {

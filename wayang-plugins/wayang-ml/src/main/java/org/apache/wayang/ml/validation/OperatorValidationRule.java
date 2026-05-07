@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public class OperatorValidationRule extends ValidationRule {
 
-    private int postgresIndex = 2;
+    private int postgresIndex = 3;
 
     public OperatorValidationRule() {}
 
