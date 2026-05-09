@@ -25,7 +25,7 @@ cost_path=/work/lsbo-paper/python-ml/src/Models/stats/nativeml.onnx
 
 echo "Running STATSBenchmark"
 
-skip=0  # Number of queries to skip
+skip=53  # Number of queries to skip
 
 i=0
 for query in "$test_path"/*.sql; do

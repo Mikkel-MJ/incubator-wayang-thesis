@@ -33,6 +33,9 @@ mv spark-${SPARK_VERSION}-bin-hadoop3 ${SPARK_HOME}
 
 sudo chown -R ucloud /opt/spark
 
+cp /work/lsbo-paper/runners/spark/spark-env.sh /opt/spark/conf
+
+
 if [ $UCLOUD_RANK = 0 ]; then
     cd $WORKDIR
     echo "Setting up keys"
