@@ -319,6 +319,7 @@ public class Job extends OneTimeExecutable {
             }
 
             // Take care of the execution.
+            /*
             Instant start = Instant.now();
             while (!this.execute(executionPlan, executionId)) {
                 this.optimizationRound.start();
@@ -366,6 +367,7 @@ public class Job extends OneTimeExecutable {
             if (this.configuration.getBooleanProperty("wayang.core.log.enabled")) {
                 this.logExecution();
             }
+            */
         } catch (WayangException e) {
             throw e;
         } catch (Throwable t) {

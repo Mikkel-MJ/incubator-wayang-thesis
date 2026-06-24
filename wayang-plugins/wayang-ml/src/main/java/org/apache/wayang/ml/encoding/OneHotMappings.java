@@ -65,7 +65,7 @@ public class OneHotMappings {
           .forEachOrdered(entry -> mappings.put(entry.getName(), mappings.size()));
 
         // add a null operator for encoding
-        //mappings.put(null, mappings.size());
+        mappings.put(null, mappings.size());
         //mappings.forEach((k,v) -> System.out.println(k + ": " + v));
 
         return mappings;
@@ -75,7 +75,7 @@ public class OneHotMappings {
         HashMap<String, Integer> mappings = new HashMap<>();
 
         //Add a null/padding platform for representation of null operators
-        //mappings.put(null, 0);
+        mappings.put(null, 0);
 
         Platforms.getPlatforms()
         .stream()
