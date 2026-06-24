@@ -417,8 +417,6 @@ public class OrtMLModel {
                 this.configuration.getStringProperty("wayang.ml.optimizations.file")
             )*/;
 
-
-
             return new Tuple<WayangPlan, TreeNode>(decodedPlan, reconstructed);
         } catch(Exception e) {
             e.printStackTrace();

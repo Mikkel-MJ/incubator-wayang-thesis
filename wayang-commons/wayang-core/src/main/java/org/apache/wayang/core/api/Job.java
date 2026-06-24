@@ -509,6 +509,8 @@ public class Job extends OneTimeExecutable {
                 BufferedWriter writer = new BufferedWriter(fw);
                 writer.write(String.format("Conversion: %d", execTime));
                 writer.newLine();
+                writer.write(String.format("# of operators: %d", this.wayangPlan.size()));
+                writer.newLine();
                 writer.flush();
             } catch(Exception e) {
                 e.printStackTrace();

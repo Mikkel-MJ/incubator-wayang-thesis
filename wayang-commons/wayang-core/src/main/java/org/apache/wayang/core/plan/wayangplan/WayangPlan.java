@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A Wayang plan consists of a set of {@link Operator}s.
@@ -226,4 +227,18 @@ public class WayangPlan {
         operators.forEach(o -> sw.append(o.toString()+"\n"));
         return sw.toString();
     }
+
+    /**
+     * Returns the number of operators held in this plan
+     */
+    public int size() {
+        final AtomicInteger size = new AtomicInteger();
+
+        PlanTraversal.upstream()
+                .withCallback(operator -> size.getAndIncrement())
+                .traverse(this.sinks);
+
+        return size.get();
+    }
 }
+
