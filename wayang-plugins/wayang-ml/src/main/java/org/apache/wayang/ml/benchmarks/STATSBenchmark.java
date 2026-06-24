@@ -95,7 +95,7 @@ public class STATSBenchmark {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "DSB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
-            config.setProperty("spark.executor.memory", "42g");
+            config.setProperty("spark.executor.memory", "36g");
             config.setProperty("spark.executor.cores", "4");
             config.setProperty("spark.executor.instances", "2");
             config.setProperty("spark.default.parallelism", "8");

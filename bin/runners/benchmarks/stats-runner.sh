@@ -20,12 +20,13 @@ test_path=/work/lsbo-paper/data/benchmarks/stats/queries
 experience_path=/work/lsbo-paper/data/experience/
 
 classifier_path=/work/lsbo-paper/python-ml/src/Models/stats/classifier.onnx
+job_classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/classifier.onnx
 retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/stats/retrain.classifier.onnx
 cost_path=/work/lsbo-paper/python-ml/src/Models/stats/nativeml.onnx
 
 echo "Running STATSBenchmark"
 
-skip=53  # Number of queries to skip
+skip=122  # Number of queries to skip
 
 i=0
 for query in "$test_path"/*.sql; do
@@ -35,9 +36,10 @@ for query in "$test_path"/*.sql; do
         continue
     fi
 
-    #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $experience_path
+    timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/classifier/out_of_distribution/ $query bvae $job_classifier_path $experience_path
     #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $experience_path
-    timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $experience_path
+    #timeout --kill-after=30m --foreground 30m ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.STATSBenchmark java,spark,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $experience_path
 
     (( i++ ))
 done
+
