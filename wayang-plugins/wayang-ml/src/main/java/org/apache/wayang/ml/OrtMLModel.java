@@ -412,10 +412,6 @@ public class OrtMLModel {
                 String.format("Reconstruction: %d", execTime),
                 this.configuration.getStringProperty("wayang.ml.optimizations.file")
             )*/;
-            Logging.writeToFile(
-                String.format("# of operators: %d", decodedPlan.size()),
-                this.configuration.getStringProperty("wayang.ml.optimizations.file")
-            );
 
             return new Tuple<WayangPlan, TreeNode>(decodedPlan, reconstructed);
         } catch(Exception e) {
