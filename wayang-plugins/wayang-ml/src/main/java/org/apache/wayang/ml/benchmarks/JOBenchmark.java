@@ -170,6 +170,11 @@ public class JOBenchmark {
                 optimizationTimeFile + ".txt"
             );
 
+            config.setProperty(
+                "wayang.ml.validations.file",
+                args[2] + "query" + args[3] + "validations.txt"
+            );
+
             final MLContext wayangContext = new MLContext(config);
             plugins.stream().forEach(plug -> wayangContext.register(plug));
 

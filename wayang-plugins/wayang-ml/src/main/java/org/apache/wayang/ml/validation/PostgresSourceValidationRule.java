@@ -18,6 +18,7 @@
 
 package org.apache.wayang.ml.validation;
 
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.ml.encoding.TreeNode;
 
@@ -36,7 +37,9 @@ public class PostgresSourceValidationRule extends ValidationRule {
      */
     private int postgresIndex = 3;
 
-    public PostgresSourceValidationRule() {}
+    public PostgresSourceValidationRule(Configuration configuration) {
+        super(configuration);
+    }
 
     public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators
@@ -56,6 +59,7 @@ public class PostgresSourceValidationRule extends ValidationRule {
                              * choices later will take care of the rest
                              */
                             choices[i][j] = -Float.MAX_VALUE;
+                            this.logApplication();
                             break;
                         }
                     }

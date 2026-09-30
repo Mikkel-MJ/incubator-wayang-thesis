@@ -18,6 +18,7 @@
 
 package org.apache.wayang.ml.validation;
 
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.basic.operators.TextFileSource;
@@ -37,7 +38,9 @@ public class OperatorValidationRule extends ValidationRule {
 
     private int postgresIndex = 3;
 
-    public OperatorValidationRule() {}
+    public OperatorValidationRule(Configuration configuration) {
+        super(configuration);
+    }
 
     public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators
@@ -49,11 +52,13 @@ public class OperatorValidationRule extends ValidationRule {
                 //Prevent TextFileSources from being in postgres
                 if (node.operator instanceof TextFileSource) {
                     choices[i][postgresIndex] = -Float.MAX_VALUE;
+                    this.logApplication();
                 }
 
                 //Prevent TextFileSources from being outside of postgres
                 if (node.operator instanceof PostgresTableSource) {
                     choices[i][postgresIndex] = Float.MAX_VALUE;
+                    this.logApplication();
                 }
             }
         }
