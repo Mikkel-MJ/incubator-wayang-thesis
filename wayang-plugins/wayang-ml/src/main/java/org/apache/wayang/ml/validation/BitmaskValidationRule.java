@@ -47,7 +47,7 @@ public class BitmaskValidationRule extends ValidationRule {
         for(int i = 1; i < choices.length; i++) {
             for (Integer disallowedId : disallowed) {
                     choices[i][disallowedId] = -Float.MAX_VALUE;
-                    this.logApplication();
+                    this.logApplication("");
             }
         }
     }

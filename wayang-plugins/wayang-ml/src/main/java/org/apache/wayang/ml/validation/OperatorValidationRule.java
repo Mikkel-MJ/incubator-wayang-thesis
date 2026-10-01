@@ -52,13 +52,13 @@ public class OperatorValidationRule extends ValidationRule {
                 //Prevent TextFileSources from being in postgres
                 if (node.operator instanceof TextFileSource) {
                     choices[i][postgresIndex] = -Float.MAX_VALUE;
-                    this.logApplication();
+                    this.logApplication("TextFileSource not allowed in Postgres");
                 }
 
-                //Prevent TextFileSources from being outside of postgres
+                //Prevent TableSources from being outside of postgres
                 if (node.operator instanceof PostgresTableSource) {
                     choices[i][postgresIndex] = Float.MAX_VALUE;
-                    this.logApplication();
+                    this.logApplication("TableSource not allowed outside Postgres");
                 }
             }
         }

@@ -56,7 +56,7 @@ public abstract class ValidationRule {
      * class name to the file configured under {@value #VALIDATIONS_FILE_KEY}.
      * Does nothing if the property is not set.
      */
-    protected void logApplication() {
+    protected void logApplication(String message) {
         if (this.configuration == null) {
             return;
         }
@@ -70,7 +70,7 @@ public abstract class ValidationRule {
 
         synchronized (LOG_LOCK) {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile.get(), true))) {
-                writer.write(this.getClass().getName());
+                writer.write("[" + this.getClass().getName() + "]: " + message);
                 writer.newLine();
             } catch (IOException e) {
                 e.printStackTrace();
