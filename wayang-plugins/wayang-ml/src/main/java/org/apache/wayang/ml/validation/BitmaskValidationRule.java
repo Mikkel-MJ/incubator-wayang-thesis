@@ -18,6 +18,7 @@
 
 package org.apache.wayang.ml.validation;
 
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.ml.encoding.TreeNode;
 
@@ -37,7 +38,9 @@ public class BitmaskValidationRule extends ValidationRule {
      */
     private Set<Integer> disallowed = Set.of(0, 1);
 
-    public BitmaskValidationRule() {}
+    public BitmaskValidationRule(Configuration configuration) {
+        super(configuration);
+    }
 
     public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators

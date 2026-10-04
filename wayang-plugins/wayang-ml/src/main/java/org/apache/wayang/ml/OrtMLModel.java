@@ -362,9 +362,9 @@ public class OrtMLModel {
                 resultTensor,
                 inputIndexStructure,
                 encoded,
-                new BitmaskValidationRule(),
-                new OperatorValidationRule(),
-                new PostgresSourceValidationRule()
+                new BitmaskValidationRule(configuration),
+                new OperatorValidationRule(configuration),
+                new PostgresSourceValidationRule(configuration)
             );
 
             System.out.println("Choices: " + Arrays.deepToString(platformChoices));

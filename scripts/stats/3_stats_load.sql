@@ -1,9 +1,9 @@
-\copy badges from '/work/lsbo-paper/data/benchmarks/stats/data/badges.csv' CSV header;
-\copy comments from '/work/lsbo-paper/data/benchmarks/stats/data/comments.csv' CSV header;
-\copy users from '/work/lsbo-paper/data/benchmarks/stats/data/users.csv' CSV header;
-\copy tags from '/work/lsbo-paper/data/benchmarks/stats/data/tags.csv' CSV header;
-\copy posts from '/work/lsbo-paper/data/benchmarks/stats/data/posts.csv' CSV header;
-\copy votes from '/work/lsbo-paper/data/benchmarks/stats/data/votes.csv' CSV header;
-\copy posthistory from '/work/lsbo-paper/data/benchmarks/stats/data/posthistory.csv' CSV header;
-\copy postlinks from '/work/lsbo-paper/data/benchmarks/stats/data/postlinks.csv' CSV header;
+\copy badges from 'tmp/data/stats/badges.csv' CSV header;
+\copy comments from '/tmp/data/benchmarks/stats/comments.csv' CSV header;
+\copy users from '/tmp/data/benchmarks/stats/users.csv' CSV header;
+\copy tags from '/tmp/data/benchmarks/stats/tags.csv' CSV header;
+\copy posts from '/tmp/data/benchmarks/stats/posts.csv' CSV header;
+\copy votes from '/tmp/data/benchmarks/stats/votes.csv' CSV header;
+\copy posthistory from '/tmp/data/benchmarks/stats/posthistory.csv' CSV header;
+\copy postlinks from '/tmp/data/benchmarks/stats/postlinks.csv' CSV header;
 
