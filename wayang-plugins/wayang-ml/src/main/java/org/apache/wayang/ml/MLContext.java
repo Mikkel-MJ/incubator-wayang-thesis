@@ -147,7 +147,7 @@ public class MLContext extends WayangContext {
                 resultTuple.field1.toString()
             );
 
-            this.execute(platformPlan, udfJars);
+            //this.execute(platformPlan, udfJars);
         } catch (Exception e) {
             e.printStackTrace();
             throw new WayangException("Executing WayangPlan with VAE model failed");

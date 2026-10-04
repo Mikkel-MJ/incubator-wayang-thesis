@@ -78,8 +78,8 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         try {
@@ -168,6 +168,11 @@ public class JOBenchmark {
             config.setProperty(
                 "wayang.ml.optimizations.file",
                 optimizationTimeFile + ".txt"
+            );
+
+            config.setProperty(
+                "wayang.ml.validations.file",
+                args[2] + "query." + queryName + ".validations.txt"
             );
 
             final MLContext wayangContext = new MLContext(config);
