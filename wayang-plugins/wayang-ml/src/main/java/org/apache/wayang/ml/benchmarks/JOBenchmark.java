@@ -172,7 +172,7 @@ public class JOBenchmark {
 
             config.setProperty(
                 "wayang.ml.validations.file",
-                args[2] + "query." + queryName + ".validations.txt"
+                args[2] + "classifier." + queryName + ".validations.txt"
             );
 
             final MLContext wayangContext = new MLContext(config);

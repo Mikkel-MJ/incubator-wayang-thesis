@@ -144,7 +144,7 @@ public class GeneratableBenchmarks {
 
             config.setProperty(
                 "wayang.ml.validations.file",
-                args[2] + "query" + args[3] + "validations.txt"
+                args[2] + "classifier." + args[3] + "validations.txt"
             );
 
             final MLContext wayangContext = new MLContext(config);

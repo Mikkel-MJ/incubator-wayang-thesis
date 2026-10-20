@@ -207,14 +207,14 @@ public class TreeNode extends BinaryTree<long[]>{
             // Check if this already encodes a platform specific operator
             long[] platformChoices = Arrays.copyOfRange(this.encoded, PADDING_SIZE + operatorsCount, PADDING_SIZE + operatorsCount + platformsCount);
             if (ArrayUtils.indexOf(platformChoices, 1) != -1) {
-                System.out.println("Encoding while choices: " + Arrays.toString(platformChoices));
+                //System.out.println("Encoding while choices: " + Arrays.toString(platformChoices));
                 return this;
             }
         }
 
         int platformPosition = -1;
         platformPosition = ArrayUtils.indexOf(node.encoded, 1);
-        System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
+        //System.out.println("Encoding while choices: " + Arrays.toString(node.encoded));
         String platform = "";
 
         assert platformPosition >= 0;
