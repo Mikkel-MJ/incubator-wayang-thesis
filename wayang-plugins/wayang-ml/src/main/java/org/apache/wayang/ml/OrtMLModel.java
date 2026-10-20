@@ -118,11 +118,13 @@ public class OrtMLModel {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input1
     ) throws OrtException {
         double costPrediction;
-        //long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
-        //long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
-        //
-        long[] input1Dims = new long[]{1, input1.field0.get(0).length, input1.field0.get(0)[0].length};
-        long[] input2Dims = new long[]{1, input1.field1.get(0).length, input1.field1.get(0)[0].length};
+
+        Map<String, NodeInfo> inputInfoList = this.session.getInputInfo();
+        long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
+        long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+
+        //long[] input2Dims = new long[]{1, input1.field0.get(0).length, input1.field0.get(0)[0].length};
+        //long[] input2Dims = new long[]{1, input1.field1.get(0).length, input1.field1.get(0)[0].length};
 
         Instant start = Instant.now();
         float[][][] inputValueStructure = new float[1][(int) input1Dims[1]][(int) input1Dims[2]];
@@ -273,11 +275,11 @@ public class OrtMLModel {
     ) throws OrtException {
         Tuple<ArrayList<long[][]>, ArrayList<long[][]>> input = OrtTensorEncoder.encode(encoded);
         Map<String, NodeInfo> inputInfoList = this.session.getInputInfo();
-        //long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
-        //long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
-        //
-        long[] input1Dims = new long[]{1, input.field0.get(0).length, input.field0.get(0)[0].length};
-        long[] input2Dims = new long[]{1, input.field1.get(0).length, input.field1.get(0)[0].length};
+        long[] input1Dims = ((TensorInfo) inputInfoList.get("input1").getInfo()).getShape();
+        long[] input2Dims = ((TensorInfo) inputInfoList.get("input2").getInfo()).getShape();
+
+        //long[] input1Dims = new long[]{1, input.field0.get(0).length, input.field0.get(0)[0].length};
+        //long[] input2Dims = new long[]{1, input.field1.get(0).length, input.field1.get(0)[0].length};
 
         System.out.println("Feature dims: " + Arrays.toString(input1Dims));
         System.out.println("Index dims: " + Arrays.toString(input2Dims));
@@ -360,9 +362,9 @@ public class OrtMLModel {
                 resultTensor,
                 inputIndexStructure,
                 encoded,
-                //new BitmaskValidationRule(),
-                new OperatorValidationRule(),
-                new PostgresSourceValidationRule()
+                new BitmaskValidationRule(configuration),
+                new OperatorValidationRule(configuration),
+                new PostgresSourceValidationRule(configuration)
             );
 
             System.out.println("Choices: " + Arrays.deepToString(platformChoices));
@@ -410,8 +412,6 @@ public class OrtMLModel {
                 String.format("Reconstruction: %d", execTime),
                 this.configuration.getStringProperty("wayang.ml.optimizations.file")
             )*/;
-
-
 
             return new Tuple<WayangPlan, TreeNode>(decodedPlan, reconstructed);
         } catch(Exception e) {

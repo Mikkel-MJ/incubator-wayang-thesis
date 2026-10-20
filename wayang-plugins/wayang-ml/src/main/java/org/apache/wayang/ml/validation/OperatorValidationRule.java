@@ -18,6 +18,7 @@
 
 package org.apache.wayang.ml.validation;
 
+import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.util.Tuple;
 import org.apache.wayang.ml.encoding.TreeNode;
 import org.apache.wayang.basic.operators.TextFileSource;
@@ -35,9 +36,11 @@ import java.util.Set;
  */
 public class OperatorValidationRule extends ValidationRule {
 
-    private int postgresIndex = 2;
+    private int postgresIndex = 3;
 
-    public OperatorValidationRule() {}
+    public OperatorValidationRule(Configuration configuration) {
+        super(configuration);
+    }
 
     public void validate(Float[][] choices, long[][][] indexes, TreeNode tree) {
         //Start at 1, 0th platform choice is for null operators
@@ -45,18 +48,22 @@ public class OperatorValidationRule extends ValidationRule {
             TreeNode node = (TreeNode) tree.getNode(i);
 
             if (node != null && !node.isNullOperator()) {
+                float max = Arrays.stream(choices[i])
+                        .max(Float::compare)
+                        .orElseThrow();
 
                 //Prevent TextFileSources from being in postgres
-                if (node.operator instanceof TextFileSource) {
+                if (node.operator instanceof TextFileSource && choices[i][postgresIndex].equals(max)) {
                     choices[i][postgresIndex] = -Float.MAX_VALUE;
+                    this.logApplication("TextFileSource not allowed in Postgres");
                 }
 
-                //Prevent TextFileSources from being outside of postgres
-                if (node.operator instanceof PostgresTableSource) {
+                //Prevent TableSources from being outside of postgres
+                if (node.operator instanceof PostgresTableSource && choices[i][postgresIndex] < max) {
                     choices[i][postgresIndex] = Float.MAX_VALUE;
+                    this.logApplication("TableSource not allowed outside Postgres");
                 }
             }
         }
     }
-
 }

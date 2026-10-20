@@ -22,13 +22,6 @@ test_path=/work/lsbo-paper/data/JOBenchmark/queries/LeaveOneOut/test
 
 echo "Encoding training data with native optimizer"
 
-for query in "$train_path"/*.sql
-do
-    for i in {0..2}; do
-        ./bin/wayang-submit org.apache.wayang.ml.training.Training java,spark,flink,postgres $data_path/ $train_encode_path $query true
-    done
-done
-
 for query in "$test_path"/*.sql
 do
     for i in {0..2}; do

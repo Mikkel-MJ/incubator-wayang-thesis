@@ -88,5 +88,3 @@ for query in "${queries[@]}"; do
     query_name=$(( query + 1 ))
     ./venv/bin/python3.11 ./src/init_lsbo.py --model carbvae --query $query --memory="-Xmx16g --illegal-access=permit" --exec="/work/lsbo-paper/wayang-0.7.1/bin/wayang-submit" --args="java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/" --model-path $carbvae_path --parameters="./src/HyperparameterLogs/tpch/CarbVAE.json" --stats="./src/Data/splits/tpch/stats.${query_name}.txt" --trainset="./src/Data/splits/tpch/retrain.txt" --zdim 32 --steps 1000 --initialization="./src/Data/splits/tpch/initialization/${query_name}.txt" --experience="./src/Data/splits/tpch/experience/${query_name}.txt"
 done
-
-

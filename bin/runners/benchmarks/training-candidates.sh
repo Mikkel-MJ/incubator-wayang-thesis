@@ -14,15 +14,15 @@ export PATH="$PATH:${GIRAPH_HOME}/bin"
 cd ${WORKDIR}
 cd wayang-0.7.1
 
-data_path=/work/lsbo-paper/data/JOBenchmark/data
-train_encode_path=/work/lsbo-paper/data/benchmarks/stats/encodings/train.txt
+data_path=/work/lsbo-paper/data/benchmarks/stats/data
+train_encode_path=/work/lsbo-paper/data/benchmarks/stats/encodings/classifier.train.txt
 train_path=/work/lsbo-paper/data/benchmarks/stats/queries
 
 echo "Encoding training data with native optimizer"
 
 for query in "$train_path"/*.sql; do
 #for query in {0..30}; do
-    for i in {0..99}; do
-        ./bin/wayang-submit org.apache.wayang.ml.training.TrainingCandidates java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/tpch/data/ $train_encode_path $query $i
-    done
+    #for i in {0..99}; do
+    ./bin/wayang-submit org.apache.wayang.ml.training.TrainingCandidates java,spark,flink,postgres file:///work/lsbo-paper/data/benchmarks/stats/data/ $train_encode_path $query 0
+    #done
 done

@@ -72,6 +72,9 @@ public class OneHotMappings {
     private static HashMap<String, Integer> createPlatformMapping() {
         HashMap<String, Integer> mappings = new HashMap<>();
 
+        //Add a null/padding platform for representation of null operators
+        mappings.put(null, 0);
+
         Platforms.getPlatforms()
         .stream()
         .sorted(Comparator.comparing(c -> c.getName()))
@@ -107,7 +110,7 @@ public class OneHotMappings {
         }
 
         int platformIndex = -1;
-        int offset = operatorsCount;
+        int offset = 1 + operatorsCount;
 
         for (int i = offset; i < platformsCount + offset && platformIndex == -1; i++) {
             if(encoded[i] == 1)  {
@@ -120,7 +123,7 @@ public class OneHotMappings {
         }
 
         for (final Object entry : platformsMapping.keySet()) {
-            if (platformsMapping.get(entry).equals(platformIndex - operatorsCount)) {
+            if (platformsMapping.get(entry).equals(platformIndex - offset)) {
                 return Platforms.getPlatforms()
                 .stream()
                 .filter(pl -> pl.getName().equals(entry))

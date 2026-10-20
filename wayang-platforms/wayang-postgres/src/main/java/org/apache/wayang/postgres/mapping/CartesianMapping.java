@@ -58,7 +58,6 @@ public class CartesianMapping implements Mapping {
     private ReplacementSubplanFactory createReplacementSubplanFactory() {
         return new ReplacementSubplanFactory.OfSingleOperators<JoinOperator<Record, Record, Object>>(
                 (matchedOperator, epoch) -> {
-                    System.out.println("matched postgres mapping with op: " + matchedOperator);
                     return new PostgresJoinOperator<>(matchedOperator).at(epoch);
             });
     }

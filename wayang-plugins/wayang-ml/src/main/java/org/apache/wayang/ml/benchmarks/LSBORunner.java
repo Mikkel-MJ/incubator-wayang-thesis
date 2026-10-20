@@ -18,6 +18,7 @@
 
 package org.apache.wayang.ml.benchmarks;
 
+import org.apache.wayang.basic.data.Record;
 import org.apache.wayang.core.api.Configuration;
 import org.apache.wayang.core.api.Job;
 import org.apache.wayang.core.api.WayangContext;
@@ -55,6 +56,9 @@ import org.apache.wayang.api.PlanBuilder;
 import org.apache.wayang.ml.training.GeneratableJob;
 import org.apache.wayang.ml.benchmarks.IMDBJOBenchmark;
 import org.apache.wayang.ml.benchmarks.JOBenchmark;
+import org.apache.wayang.ml.benchmarks.DSBenchmark;
+import org.apache.wayang.ml.benchmarks.STATSSources;
+import org.apache.wayang.basic.data.Tuple2;
 import org.apache.wayang.ml.util.Jobs;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -63,6 +67,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.io.File;
@@ -87,6 +92,9 @@ import com.google.protobuf.ByteString;
  */
 public class LSBORunner {
 
+
+    public static String psqlHost = "stats";
+    public static String psqlDatabase = "stats";
     public static String psqlUser = "ucloud";
     public static String psqlPassword = "ucloud";
 
@@ -104,7 +112,7 @@ public class LSBORunner {
                 "            \"factory\": \"org.apache.wayang.api.sql.calcite.jdbc.JdbcSchema$Factory\",\n" +
                 "            \"operand\": {\n" +
                 "                \"jdbcDriver\": \"org.postgresql.Driver\",\n" +
-                "                \"jdbcUrl\": \"jdbc:postgresql://job:5432/job\",\n" +
+                "                \"jdbcUrl\": \"jdbc:postgresql://" + psqlHost + ":5432/" + psqlDatabase + "\",\n" +
                 "                \"jdbcUser\": \"" + psqlUser + "\",\n" +
                 "                \"jdbcPassword\": \"" + psqlPassword + "\"\n" +
                 "            }\n" +
@@ -115,7 +123,7 @@ public class LSBORunner {
         config.load(ReflectionUtils.loadResource("wayang-api-python-defaults.properties"));
         config.setProperty("org.apache.calcite.sql.parser.parserTracing", "true");
         config.setProperty("wayang.calcite.model", calciteModel);
-        config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://job:5432/job");
+        config.setProperty("wayang.postgres.jdbc.url", "jdbc:postgresql://" + psqlHost + ":5432/" + psqlDatabase);
         config.setProperty("wayang.postgres.jdbc.user", psqlUser);
         config.setProperty("wayang.postgres.jdbc.password", psqlPassword);
 
@@ -174,8 +182,9 @@ public class LSBORunner {
         WayangPlan plan = plans.get("query" + args[2]);*/
 
         try {
-            WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
+            //WayangPlan plan = getTPCHPlan(args[0], args[1], Integer.parseInt(args[2]));
             //WayangPlan plan = getJOBPlan(plugins, args[1], config, args[2], jars);
+            WayangPlan plan = getSTATSPlan(plugins, args[1], config, args[2], jars);
 
             //Set sink to be on Java
             /*
@@ -202,6 +211,22 @@ public class LSBORunner {
             return null;
         }
     }
+
+
+    private static WayangPlan getSTATSPlan(List<Plugin> plugins, String dataPath, Configuration config, String queryPath, String[] jars) {
+        try {
+            Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(queryPath, config, plugins.toArray(Plugin[]::new), jars);
+            WayangPlan plan = convertedPlan.getField0();
+            STATSSources.setSources(plan, dataPath);
+
+            return plan;
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return null;
+        }
+    }
+
 
     private static WayangPlan getTPCHPlan(String platforms, String dataPath, int query) {
         try {

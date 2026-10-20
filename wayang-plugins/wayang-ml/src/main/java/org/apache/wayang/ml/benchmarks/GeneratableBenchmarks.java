@@ -83,7 +83,7 @@ public class GeneratableBenchmarks {
             config.setProperty("spark.rpc.message.maxSize", "2047");
 
             // Executor memory (on 48GB nodes)
-            config.setProperty("spark.executor.memory", "36g");
+            config.setProperty("spark.executor.memory", "24g");
             config.setProperty("spark.executor.memoryOverhead", "4g");
             config.setProperty("spark.executor.cores", "8");
 

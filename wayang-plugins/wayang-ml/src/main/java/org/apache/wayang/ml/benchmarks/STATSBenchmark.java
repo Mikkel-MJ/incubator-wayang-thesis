@@ -82,9 +82,8 @@ public class STATSBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "ucloud";
-    public static String psqlPassword = "ucloud";
-    public static final int MAX_SOURCES_REPLACED = 3;
+    public static String psqlUser = "postgres";
+    public static String psqlPassword = "postgres";
 
     public static void main(String[] args) {
         System.out.println("running DSB with args: " + Arrays.toString(args));
@@ -96,7 +95,7 @@ public class STATSBenchmark {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "DSB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
-            config.setProperty("spark.executor.memory", "42g");
+            config.setProperty("spark.executor.memory", "36g");
             config.setProperty("spark.executor.cores", "4");
             config.setProperty("spark.executor.instances", "2");
             config.setProperty("spark.default.parallelism", "8");
@@ -172,6 +171,11 @@ public class STATSBenchmark {
                 optimizationTimeFile + ".txt"
             );
 
+            config.setProperty(
+                "wayang.ml.validations.file",
+                args[2] + "query." + queryName + ".validations.txt"
+            );
+
             final MLContext wayangContext = new MLContext(config);
             plugins.stream().forEach(plug -> wayangContext.register(plug));
 
@@ -188,7 +192,7 @@ public class STATSBenchmark {
             try {
                 Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
                 WayangPlan plan = convertedPlan.getField0();
-                STATSSources.setSources(plan, args[1], MAX_SOURCES_REPLACED);
+                STATSSources.setSources(plan, args[1]);
 
                 wayangContext.setLogLevel(Level.DEBUG);
 

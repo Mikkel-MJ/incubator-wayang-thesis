@@ -69,8 +69,6 @@ import scala.collection.JavaConversions;
 
 public class TrainingCandidates {
 
-    public static final int MAX_SOURCES_REPLACED = 3;
-
     public static String psqlUser = "ucloud";
     public static String psqlPassword = "ucloud";
 
@@ -165,7 +163,7 @@ public class TrainingCandidates {
                 System.out.println("Getting plan");
                 Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(query, config, plugins.toArray(Plugin[]::new), jars);
                 WayangPlan plan = convertedPlan.getField0();
-                STATSSources.setSources(plan, dataPath, MAX_SOURCES_REPLACED);
+                STATSSources.setSources(plan, dataPath);
 
                 Job wayangJob = wayangContext.createJob("", plan, jars);
                 wayangJob.prepareWayangPlan();
