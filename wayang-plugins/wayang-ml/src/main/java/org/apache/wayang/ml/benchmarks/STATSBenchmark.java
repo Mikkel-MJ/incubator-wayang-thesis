@@ -166,6 +166,7 @@ public class STATSBenchmark {
                 executionTimeFile + ".txt"
             );
 
+
             config.setProperty(
                 "wayang.ml.optimizations.file",
                 optimizationTimeFile + ".txt"
@@ -173,7 +174,7 @@ public class STATSBenchmark {
 
             config.setProperty(
                 "wayang.ml.validations.file",
-                args[2] + "query." + queryName + ".validations.txt"
+                args[2] + "classifier." + queryName + ".validations.txt"
             );
 
             final MLContext wayangContext = new MLContext(config);

@@ -8,7 +8,7 @@ platforms=java,spark,flink,postgres
 experience_path=/var/www/html/data/stats/logs/
 output_path=/var/www/html/data/stats/logs/
 
-classifier_path=/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/Models/stats/retrain.classifier.onnx
+classifier_path=/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/Models/stats/classifier.onnx
 
 test_path=/var/www/html/wayang-plugins/wayang-ml/src/main/resources/benchmarks/stats
 
