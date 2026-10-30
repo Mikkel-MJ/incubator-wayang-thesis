@@ -22,25 +22,36 @@ test_path=/work/lsbo-paper/data/JOBenchmark/queries/complex
 
 classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/classifier.onnx
 retrained_classifier_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrain.classifier.onnx
-cost_path=/work/lsbo-paper/python-ml/src/Models/imdb/nativeml.onnx
+cost_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrain.cost.onnx
+
+# Query names (file name without .sql) to skip, e.g. ("1a" "17b")
+# Can be extended via SKIP_QUERIES env var: SKIP_QUERIES="1a 17b" ./imdb-runner.sh
+skip_queries=(1 10)
+skip_queries+=(${SKIP_QUERIES})
 
 echo "Running JOBenchmark"
 
 #for query in $(ls -1 "$test_path"/*.sql | tail -n 85); do
 for query in "$test_path"/*.sql; do
-#for i in {0..2}; do
+    query_name=$(basename "$query" .sql)
+    if [[ " ${skip_queries[*]} " == *" ${query_name} "* ]]; then
+        echo "Skipping query ${query_name}"
+        continue
+    fi
+
+    for i in {0..2}; do
 #for query in $(ls "$test_path"/*.sql | tail -n +14); do
 #for query_name in "${queries[@]}"; do
 #    query="$test_path"/"$query_name".sql
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $data_path/experience/
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $data_path/experience/
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,postgres file://$data_path/ $timings_path/cost/ $query cost $cost_path $data_path/experience/cost/
+        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
 
 
         # Lord forgive me - for Flink has sinned
         #sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/stop-cluster.sh
         #sudo ssh -o StrictHostKeyChecking=no root@flink-cluster sudo /opt/flink/bin/start-cluster.sh
         #sleep 1s
-    #done
+    done
 done

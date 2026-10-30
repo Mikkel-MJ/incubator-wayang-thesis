@@ -53,6 +53,7 @@ import org.apache.wayang.apps.tpch.queries.Query1Wayang;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.wayang.ml.util.TargetPlatforms;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -78,8 +79,8 @@ public class JOBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         try {
@@ -94,14 +95,26 @@ public class JOBenchmark {
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "JOB Query");
             config.setProperty("spark.rpc.message.maxSize", "2047");
-            config.setProperty("spark.executor.memory", "42g");
-            config.setProperty("spark.executor.cores", "4");
-            config.setProperty("spark.executor.instances", "2");
-            config.setProperty("spark.default.parallelism", "8");
-            config.setProperty("spark.driver.maxResultSize", "16g");
-            config.setProperty("spark.shuffle.service.enabled", "true");
+
+            // Executor memory (on 48GB nodes)
+            config.setProperty("spark.executor.memory", "36g");
+            config.setProperty("spark.executor.memoryOverhead", "4g");
+            config.setProperty("spark.executor.cores", "8");
+
+            // Driver memory (on 48GB master node)
+            config.setProperty("spark.driver.memory", "24g");
+            config.setProperty("spark.driver.memoryOverhead", "2g");
+            config.setProperty("spark.driver.maxResultSize", "8g");
+
+            // Dynamic allocation (drop spark.executor.instances)
             config.setProperty("spark.dynamicAllocation.enabled", "true");
             config.setProperty("spark.dynamicAllocation.minExecutors", "2");
+            config.setProperty("spark.dynamicAllocation.maxExecutors", "2");
+            config.setProperty("spark.dynamicAllocation.initialExecutors", "2");
+            config.setProperty("spark.shuffle.service.enabled", "true");
+
+            // Parallelism
+            config.setProperty("spark.default.parallelism", "16"); // 2 executors * 8 cores
             config.setProperty("wayang.flink.mode.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
             config.setProperty("wayang.flink.master", "flink-cluster");
@@ -193,6 +206,8 @@ public class JOBenchmark {
                 WayangPlan plan = IMDBJOBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
 
                 IMDBJOBenchmark.setSources(plan, args[1]);
+
+                TargetPlatforms.setPlatform(plan, Java.platform());
 
                 //ExplainUtils.parsePlan(plan, true);
 
