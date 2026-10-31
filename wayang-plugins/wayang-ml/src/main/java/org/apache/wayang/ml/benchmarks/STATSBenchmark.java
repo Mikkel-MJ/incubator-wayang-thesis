@@ -40,6 +40,7 @@ import org.apache.wayang.apps.util.Parameters;
 import org.apache.wayang.core.plugin.Plugin;
 import org.apache.wayang.ml.costs.PairwiseCost;
 import org.apache.wayang.ml.costs.PointwiseCost;
+import org.apache.wayang.ml.util.TargetPlatforms;
 import org.apache.wayang.core.plan.wayangplan.OutputSlot;
 import org.apache.wayang.basic.operators.TextFileSource;
 import org.apache.wayang.basic.operators.TableSource;
@@ -82,8 +83,8 @@ public class STATSBenchmark {
      * 5: model path
      * 6: experience path
      */
-    public static String psqlUser = "postgres";
-    public static String psqlPassword = "postgres";
+    public static String psqlUser = "ucloud";
+    public static String psqlPassword = "ucloud";
 
     public static void main(String[] args) {
         System.out.println("running DSB with args: " + Arrays.toString(args));
@@ -194,6 +195,8 @@ public class STATSBenchmark {
                 Tuple2<WayangPlan, Collection<Record>> convertedPlan = DSBenchmark.getWayangPlan(args[3], config, plugins.toArray(Plugin[]::new), jars);
                 WayangPlan plan = convertedPlan.getField0();
                 STATSSources.setSources(plan, args[1]);
+
+                TargetPlatforms.setPlatform(plan, Spark.platform());
 
                 wayangContext.setLogLevel(Level.DEBUG);
 
