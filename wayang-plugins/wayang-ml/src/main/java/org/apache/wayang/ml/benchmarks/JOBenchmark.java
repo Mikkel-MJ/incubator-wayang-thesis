@@ -207,7 +207,7 @@ public class JOBenchmark {
 
                 IMDBJOBenchmark.setSources(plan, args[1]);
 
-                TargetPlatforms.setPlatform(plan, Java.platform());
+                TargetPlatforms.setPlatform(plan, Spark.platform());
 
                 //ExplainUtils.parsePlan(plan, true);
 

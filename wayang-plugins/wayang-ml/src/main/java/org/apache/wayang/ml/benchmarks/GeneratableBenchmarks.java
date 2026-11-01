@@ -47,6 +47,7 @@ import org.apache.wayang.ml.training.GeneratableJob;
 import org.apache.wayang.ml.util.Jobs;
 import org.apache.wayang.api.DataQuanta;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.wayang.ml.util.TargetPlatforms;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
@@ -186,6 +187,9 @@ public class GeneratableBenchmarks {
             writer.flush();
             writer.close();
             */
+
+            TargetPlatforms.setPlatform(plan, Spark.platform());
+
             System.out.println(modelType);
             if (!"vae".equals(modelType) && !"bvae".equals(modelType)) {
                 System.out.println("Executing query " + args[3]);

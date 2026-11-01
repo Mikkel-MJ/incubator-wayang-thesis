@@ -26,7 +26,7 @@ cost_path=/work/lsbo-paper/python-ml/src/Models/imdb/retrain.cost.onnx
 
 # Query names (file name without .sql) to skip, e.g. ("1a" "17b")
 # Can be extended via SKIP_QUERIES env var: SKIP_QUERIES="1a 17b" ./imdb-runner.sh
-skip_queries=(1 10)
+skip_queries=(1 12 19 23 24 27 30)
 skip_queries+=(${SKIP_QUERIES})
 
 echo "Running JOBenchmark"
@@ -43,10 +43,10 @@ for query in "$test_path"/*.sql; do
 #for query in $(ls "$test_path"/*.sql | tail -n +14); do
 #for query_name in "${queries[@]}"; do
 #    query="$test_path"/"$query_name".sql
-        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/ $query
+        ./bin/wayang-submit -Xmx16g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/native/spark/ $query
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/ $query bvae $classifier_path $data_path/experience/
         #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,flink,postgres file://$data_path/ $timings_path/classifier/retrained/ $query bvae $retrained_classifier_path $data_path/experience/
-        ./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
+        #./bin/wayang-submit -Xmx32g org.apache.wayang.ml.benchmarks.JOBenchmark java,spark,postgres file://$data_path/ $timings_path/cost/retrained/ $query cost $cost_path $data_path/experience/cost/
 
 
         # Lord forgive me - for Flink has sinned
