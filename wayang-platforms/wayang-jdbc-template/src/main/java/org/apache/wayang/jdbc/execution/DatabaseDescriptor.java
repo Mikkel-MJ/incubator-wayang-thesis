@@ -47,6 +47,22 @@ public class DatabaseDescriptor implements Serializable {
         this.jdbcDriverClassName = jdbcDriverClassName;
     }
 
+    public String getJdbcUrl() {
+        return this.jdbcUrl;
+    }
+
+    public String getUser() {
+        return this.user;
+    }
+
+    public String getPassword() {
+        return this.password;
+    }
+
+    public String getJdbcDriverClassName() {
+        return this.jdbcDriverClassName;
+    }
+
     /**
      * Creates a {@link Connection} to the database described by this instance.
      *

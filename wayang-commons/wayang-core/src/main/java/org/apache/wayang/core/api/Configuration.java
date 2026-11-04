@@ -73,6 +73,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.Properties;
@@ -804,6 +805,19 @@ public class Configuration {
 
     public boolean getBooleanProperty(String key) {
         return this.getOptionalBooleanProperty(key).get();
+    }
+
+    public OptionalInt getOptionalIntProperty(String key) {
+        final Optional<String> intValue = this.properties.optionallyProvideFor(key);
+        if (intValue.isPresent()) {
+            return OptionalInt.of(Integer.valueOf(intValue.get()));
+        } else {
+            return OptionalInt.empty();
+        }
+    }
+
+    public int getIntProperty(String key) {
+        return getOptionalIntProperty(key).orElseThrow(() -> new WayangException(String.format("No value for \"%s\".", key)));
     }
 
     public boolean getBooleanProperty(String key, boolean fallback) {

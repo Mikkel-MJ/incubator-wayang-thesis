@@ -95,6 +95,9 @@ public class STATSBenchmark {
 
             config.setProperty("spark.master", "spark://spark-cluster:7077");
             config.setProperty("spark.app.name", "JOB Query");
+            //config.setProperty("spark.driver.bindAddress", "0.0.0.0");
+            config.setProperty("spark.ui.showConsoleProgress", "false");
+            /*
             config.setProperty("spark.rpc.message.maxSize", "2047");
 
             // Executor memory (on 48GB nodes)
@@ -116,6 +119,7 @@ public class STATSBenchmark {
 
             // Parallelism
             config.setProperty("spark.default.parallelism", "16"); // 2 executors * 8 cores
+            */
 
             config.setProperty("wayang.flink.mode.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
@@ -209,7 +213,7 @@ public class STATSBenchmark {
                 WayangPlan plan = convertedPlan.getField0();
                 STATSSources.setSources(plan, args[1]);
 
-                TargetPlatforms.setPlatform(plan, Spark.platform());
+                //TargetPlatforms.setPlatform(plan, Spark.platform());
 
                 wayangContext.setLogLevel(Level.DEBUG);
 

@@ -104,7 +104,7 @@ public class SqlToStreamOperator<Input, Output> extends UnaryToUnaryOperator<Inp
                         java.sql.ResultSet.TYPE_FORWARD_ONLY,
                         java.sql.ResultSet.CONCUR_READ_ONLY);
                 this.connection.setAutoCommit(true);
-                this.statement.setFetchSize(1);
+                this.statement.setFetchSize(1_000);
                 this.resultSet = this.statement.executeQuery(sqlQuery);
                 this.needsTupleWrapping = needsTupleWrapping;
             } catch (final SQLException e) {
