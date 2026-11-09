@@ -74,6 +74,7 @@ public class SparkPlatform extends Platform {
             "spark.eventLog.enabled",
             "spark.eventLog.dir",
             "spark.serializer",
+            "spark.sql.shuffle.partitions",
             "spark.kryo.classesToRegister",
             "spark.kryo.registrator",
             "spark.local.dir",

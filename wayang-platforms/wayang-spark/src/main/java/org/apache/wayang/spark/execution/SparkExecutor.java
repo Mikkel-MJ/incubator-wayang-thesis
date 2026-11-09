@@ -90,13 +90,15 @@ public class SparkExecutor extends PushExecutorTemplate {
         this.sparkContextReference.noteObtainedReference();
         this.sc = this.sparkContextReference.get();
         this.ss = SparkSession.builder().sparkContext(this.sc.sc()).getOrCreate();
+        /*
         if (this.sc.getConf().contains("spark.executor.cores")) {
             this.numDefaultPartitions = 2 * this.sc.getConf().getInt("spark.executor.cores", -1);
         } else {
             this.numDefaultPartitions =
                     (int) (2 * this.getConfiguration().getLongProperty("wayang.spark.machines")
                             * this.getConfiguration().getLongProperty("wayang.spark.cores-per-machine"));
-        }
+        }*/
+        this.numDefaultPartitions = 48;
     }
 
     @Override

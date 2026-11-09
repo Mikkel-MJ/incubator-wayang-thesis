@@ -97,15 +97,18 @@ public class STATSBenchmark {
             config.setProperty("spark.app.name", "JOB Query");
             //config.setProperty("spark.driver.bindAddress", "0.0.0.0");
             config.setProperty("spark.ui.showConsoleProgress", "false");
-            /*
-            config.setProperty("spark.rpc.message.maxSize", "2047");
+            config.setProperty("spark.executor.cores", "16");
+            config.setProperty("spark.executor.instances", "2");
+            config.setProperty("spark.sql.shuffle.partitions", "128");
+            //config.setProperty("spark.rpc.message.maxSize", "2047");
 
             // Executor memory (on 48GB nodes)
             config.setProperty("spark.executor.memory", "24g");
             config.setProperty("spark.executor.memoryOverhead", "4g");
-            config.setProperty("spark.executor.cores", "8");
+            //config.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
 
             // Driver memory (on 48GB master node)
+            /*
             config.setProperty("spark.driver.memory", "24g");
             config.setProperty("spark.driver.memoryOverhead", "2g");
             config.setProperty("spark.driver.maxResultSize", "8g");
@@ -116,10 +119,10 @@ public class STATSBenchmark {
             config.setProperty("spark.dynamicAllocation.maxExecutors", "2");
             config.setProperty("spark.dynamicAllocation.initialExecutors", "2");
             config.setProperty("spark.shuffle.service.enabled", "true");
+            */
 
             // Parallelism
-            config.setProperty("spark.default.parallelism", "16"); // 2 executors * 8 cores
-            */
+            config.setProperty("spark.default.parallelism", "128"); // 2 executors * 8 cores
 
             config.setProperty("wayang.flink.mode.run", "distribution");
             config.setProperty("wayang.flink.parallelism", "1");
