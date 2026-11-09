@@ -4,11 +4,15 @@ export WAYANG_DIR=/var/www/html/wayang-assembly/target/wayang-0.7.1
 
 data_path=/opt/data/stats/
 timings_path=/var/www/html/data/stats/logs/
-platforms=java,spark,flink,postgres
+platforms=java,spark,postgres
 experience_path=/var/www/html/data/stats/logs/
 output_path=/var/www/html/data/stats/logs/
 
 classifier_path=/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/Models/stats/classifier.onnx
+retrained_classifier_path=/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/Models/stats/retrain.classifier.onnx
+
+nativeml_path=/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/Models/stats/classifier.onnx
+retrained_nativeml_path=/var/www/html/wayang-plugins/wayang-ml/src/main/python/python-ml/src/Models/stats/retrain.cost.onnx
 
 test_path=/var/www/html/wayang-plugins/wayang-ml/src/main/resources/benchmarks/stats
 
@@ -42,6 +46,17 @@ for query_file in "$test_path"/*.sql; do
     echo "Running $query"
     # Run wayang
     ./bin/wayang-submit org.apache.wayang.ml.benchmarks.STATSBenchmark $platforms file://$data_path $output_path $query_file >> $output_path/wayang.$query.log
+
     # Run varibo
-    ./bin/wayang-submit org.apache.wayang.ml.benchmarks.STATSBenchmark $platforms file://$data_path $output_path $query_file bvae $classifier_path $output_path >> $output_path/varibo.$query.log
+    ./bin/wayang-submit org.apache.wayang.ml.benchmarks.STATSBenchmark $platforms file://$data_path $output_path $query_file bvae $classifier_path $output_path >> $output_path/classifier.$query.log
+
+    # Run varibo
+    ./bin/wayang-submit org.apache.wayang.ml.benchmarks.STATSBenchmark $platforms file://$data_path $output_path $query_file bvae $retrained_classifier_path $output_path >> $output_path/varibo.$query.log
+
+    # Run nativeml
+    ./bin/wayang-submit org.apache.wayang.ml.benchmarks.STATSBenchmark $platforms file://$data_path $output_path $query_file cost $nativeml_path $output_path >> $output_path/nativeml.$query.log
+
+    # Run nativeml retrained
+    ./bin/wayang-submit org.apache.wayang.ml.benchmarks.STATSBenchmark $platforms file://$data_path $output_path $query_file cost $retrained_nativeml_path $output_path >> $output_path/retrain.nativeml.$query.log
 done
+
